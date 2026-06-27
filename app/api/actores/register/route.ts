@@ -7,13 +7,16 @@ export async function POST(req: NextRequest) {
   try {
     const { type, name, contactName, phone, whatsapp, address, city, email, password, vehicleType, capacityKg, lat, lng } = await req.json();
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) return jsonError(400, "El email ya está registrado");
+    const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, "") : Date.now().toString();
+    const finalEmail = email || `wa_${cleanWhatsapp}@disaster.acopio`;
+    const existing = await prisma.user.findUnique({ where: { email: finalEmail } });
+    if (existing) return jsonError(400, "El email o whatsapp ya está registrado");
 
-    const hashed = await hashPassword(password);
+    const pwd = password || `password_${cleanWhatsapp}`;
+    const hashed = await hashPassword(pwd);
 
     const user = await prisma.user.create({
-      data: { name, email },
+      data: { name, email: finalEmail },
     });
 
     await prisma.account.create({

@@ -78,11 +78,16 @@ export default function RegisterPage() {
               <span className="map-instructions">📍 Ubicación en el mapa (haz clic para marcar):</span>
               <div className="register-map-wrapper" style={{ height: "200px", marginBottom: "16px" }}>
                 <MapComponent
+                  containerId="register-map"
                   actors={[]}
                   interactive={true}
                   onLocationSelected={(lat, lng) => {
                     update("lat", lat);
                     update("lng", lng);
+                  }}
+                  onAddressFound={(address, city) => {
+                    update("address", address);
+                    update("city", city);
                   }}
                 />
               </div>

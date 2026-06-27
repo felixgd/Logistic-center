@@ -25,30 +25,45 @@ interface Actor {
 }
 
 interface MapComponentProps {
+  containerId?: string;
   actors: Actor[];
   selectedActorId?: string | null;
   interactive?: boolean; // If true, allows clicking on the map to place a single marker (for registration)
   initialLat?: number;
   initialLng?: number;
   onLocationSelected?: (lat: number, lng: number) => void;
+  onAddressFound?: (address: string, city: string) => void;
 }
 
 export default function MapComponent({
+  containerId = "map-canvas",
   actors,
   selectedActorId,
   interactive = false,
   initialLat = 4.711,
   initialLng = -74.072,
   onLocationSelected,
+  onAddressFound,
 }: MapComponentProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
   const clickMarkerRef = useRef<L.Marker | null>(null);
 
+  // Keep reference to the latest callbacks to avoid re-triggering the useEffect
+  const onLocationSelectedRef = useRef(onLocationSelected);
+  useEffect(() => {
+    onLocationSelectedRef.current = onLocationSelected;
+  }, [onLocationSelected]);
+
+  const onAddressFoundRef = useRef(onAddressFound);
+  useEffect(() => {
+    onAddressFoundRef.current = onAddressFound;
+  }, [onAddressFound]);
+
   useEffect(() => {
     // 1. Initialize map if not initialized
     if (!mapRef.current) {
-      const map = L.map("map-canvas", {
+      const map = L.map(containerId, {
         center: [initialLat, initialLng],
         zoom: 13,
         zoomControl: false,
@@ -87,21 +102,53 @@ export default function MapComponent({
           const newMarker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
           clickMarkerRef.current = newMarker;
 
-          if (onLocationSelected) {
-            onLocationSelected(lat, lng);
+          if (onLocationSelectedRef.current) {
+            onLocationSelectedRef.current(lat, lng);
           }
+
+          // Trigger reverse geocoding to automatically resolve address & city
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+            headers: {
+              "User-Agent": "DisasterAcopioPortal/1.0"
+            }
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data && data.address && onAddressFoundRef.current) {
+                const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || "";
+                
+                // Construct a human-readable street address
+                const road = data.address.road || "";
+                const houseNumber = data.address.house_number || "";
+                const neighborhood = data.address.neighbourhood || data.address.suburb || "";
+                let formattedAddress = road;
+                
+                if (houseNumber) {
+                  formattedAddress += ` #${houseNumber}`;
+                } else if (!road && neighborhood) {
+                  formattedAddress = neighborhood;
+                }
+                
+                if (!formattedAddress) {
+                  formattedAddress = data.display_name?.split(",")[0] || "Ubicación en mapa";
+                }
+
+                onAddressFoundRef.current(formattedAddress, city);
+              }
+            })
+            .catch((err) => console.error("Error in reverse geocoding:", err));
         });
       }
     }
 
     return () => {
       // Clean up map on unmount
-      if (mapRef.current && !interactive) {
+      if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, [interactive, initialLat, initialLng, onLocationSelected]);
+  }, [containerId, interactive]);
 
   // Update markers when actors change
   useEffect(() => {
@@ -186,5 +233,5 @@ export default function MapComponent({
     }
   }, [selectedActorId]);
 
-  return <div id="map-canvas" style={{ width: "100%", height: "100%" }} />;
+  return <div id={containerId} style={{ width: "100%", height: "100%" }} />;
 }
