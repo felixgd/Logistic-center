@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jsonError } from "@/lib/auth";
+import { getAuthActor, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 
 function distancia(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -12,7 +12,10 @@ function distancia(lat1: number, lon1: number, lat2: number, lon2: number): numb
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 100) / 100;
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { solicitudId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { solicitudId: string } }) {
+  const auth = getAuthActor(req);
+  if (!auth) return jsonError(401, "Token requerido");
+
   try {
     const solicitud = await prisma.request.findUnique({
       where: { id: params.solicitudId },
@@ -26,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: { solicitudId
       where: {
         status: "available",
         quantity: { gt: 0 },
-        actorId: { not: solicitud.actorId },
+        actorId: auth.actorId,
         name: { contains: solicitud.name, mode: "insensitive" },
         unit: { equals: solicitud.unit, mode: "insensitive" },
       },
