@@ -7,20 +7,21 @@ export async function POST(req: NextRequest) {
   try {
     const { type, name, contactName, phone, whatsapp, address, city, email, password, vehicleType, capacityKg, lat, lng, phoneVerificationToken } = await req.json();
 
-    const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, "") : Date.now().toString();
+    const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
+    if (targetPhone.length < 10) return jsonError(400, "Teléfono / WhatsApp inválido");
 
-    if (phoneVerificationToken) {
-      const verif = await prisma.phone_verification.findFirst({
-        where: { phone: cleanWhatsapp, token: phoneVerificationToken, verified: true },
-      });
-      if (!verif) return jsonError(400, "Teléfono no verificado");
-    }
+    if (!phoneVerificationToken) return jsonError(400, "Debes verificar tu teléfono antes de registrarte");
 
-    const finalEmail = email || `wa_${cleanWhatsapp}@disaster.acopio`;
+    const verif = await prisma.phone_verification.findFirst({
+      where: { phone: targetPhone, token: phoneVerificationToken, verified: true },
+    });
+    if (!verif) return jsonError(400, "Teléfono no verificado. Solicita un nuevo código.");
+
+    const finalEmail = email || `wa_${targetPhone}@disaster.acopio`;
     const existing = await prisma.user.findUnique({ where: { email: finalEmail } });
     if (existing) return jsonError(400, "El email o whatsapp ya está registrado");
 
-    const pwd = password || `password_${cleanWhatsapp}`;
+    const pwd = password || `password_${targetPhone}`;
     const hashed = await hashPassword(pwd);
 
     const user = await prisma.user.create({

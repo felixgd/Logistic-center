@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import QrModal from "@/components/QrModal";
+import TableSearch from "@/components/TableSearch";
+import { useSort } from "@/hooks/useSort";
+import { useSearch } from "@/hooks/useSearch";
 
 export default function AfiliadosPage() {
   const router = useRouter();
@@ -12,6 +15,7 @@ export default function AfiliadosPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [error, setError] = useState("");
   const [qrData, setQrData] = useState<{ url: string; code: string; actorName: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -25,7 +29,9 @@ export default function AfiliadosPage() {
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
-    setActor(JSON.parse(localStorage.getItem("actor") || "{}"));
+    const a = JSON.parse(localStorage.getItem("actor") || "{}");
+    setActor(a);
+    if (a.type === "transporter") { router.push("/dashboard"); return; }
     load();
   }, [token, router]);
 
@@ -51,6 +57,9 @@ export default function AfiliadosPage() {
     if (!res.ok) { setError((await res.json()).error); return; }
     setQrData(await res.json());
   };
+
+  const filteredMembers = useSearch(members, searchTerm, ["name", "email", "phone", "role"]);
+  const { sortedData: sortedMembers, SortHeader } = useSort(filteredMembers, "name");
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`¿Eliminar a "${name}"? Esta acción no se puede deshacer.`)) return;
@@ -80,26 +89,33 @@ export default function AfiliadosPage() {
           </div>
         ) : (
           <div className="card">
-            <table>
-              <thead>
-                <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Desde</th><th>Acciones</th></tr>
-              </thead>
-              <tbody>
-                {members.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.name}</td>
-                    <td>{m.email}</td>
-                    <td>{m.phone || "—"}</td>
-                    <td><span className="badge badge-proceso">{m.role}</span></td>
-                    <td style={{ fontSize: 13, color: "#6b7280" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button className="btn btn-secondary" style={{ padding: "4px 10px", fontSize: 12, marginRight: 4 }} onClick={() => openEdit(m)}>Editar</button>
-                      <button className="btn btn-danger" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => handleDelete(m.id, m.name)}>Eliminar</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar afiliado..." />
+            {sortedMembers.length === 0 ? (
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron afiliados con "{searchTerm}".</p>
+            ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr><SortHeader label="Nombre" sortKey="name" /><SortHeader label="Email" sortKey="email" /><SortHeader label="Teléfono" sortKey="phone" /><SortHeader label="Rol" sortKey="role" /><SortHeader label="Desde" sortKey="createdAt" /><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {sortedMembers.map((m) => (
+                    <tr key={m.id}>
+                      <td>{m.name}</td>
+                      <td>{m.email}</td>
+                      <td>{m.phone || "—"}</td>
+                      <td><span className="badge badge-proceso">{m.role}</span></td>
+                      <td style={{ fontSize: 13, color: "#6b7280" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button className="btn btn-secondary" style={{ padding: "4px 10px", fontSize: 12, marginRight: 4 }} onClick={() => openEdit(m)}>Editar</button>
+                        <button className="btn btn-danger" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => handleDelete(m.id, m.name)}>Eliminar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            )}
           </div>
         )}
       </div>

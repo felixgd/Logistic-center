@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import NavegacionViaje from "@/components/NavegacionViaje";
+import TableSearch from "@/components/TableSearch";
+import { useSort } from "@/hooks/useSort";
+import { useSearch } from "@/hooks/useSearch";
 
 export default function TripsPage() {
   const router = useRouter();
@@ -11,6 +14,8 @@ export default function TripsPage() {
   const [disponibles, setDisponibles] = useState<any[]>([]);
   const [tab, setTab] = useState("mis-viajes");
   const [error, setError] = useState("");
+  const [searchTrips, setSearchTrips] = useState("");
+  const [searchDisponibles, setSearchDisponibles] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -44,6 +49,35 @@ export default function TripsPage() {
 
   const statusBadge = (s: string) => `badge ${({ proposed: "badge-pendiente", assigned: "badge-proceso", in_transit: "badge-proceso", delivered: "badge-completado", cancelled: "badge-cancelado" } as any)[s] || ""}`;
 
+  const formatDate = (d: string | Date | null | undefined) =>
+    d ? new Date(d).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : "—";
+
+  const insumosText = (t: any) =>
+    (t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ");
+
+  const tripsMapped = trips.map((t: any) => ({
+    ...t,
+    _almacen: t.almacen?.name || "",
+    _centro: t.centroAyuda?.name || "",
+    _transportista: t.transportista?.name || "",
+    _insumosText: insumosText(t),
+  }));
+  const filteredTrips = useSearch(tripsMapped, searchTrips, [
+    "codigoViaje", "_almacen", "_centro", "_insumosText", "_transportista", "estado",
+  ]);
+  const { sortedData: sortedTrips, SortHeader: SortHeader1 } = useSort(filteredTrips, "codigoViaje");
+
+  const disponiblesMapped = disponibles.map((t: any) => ({
+    ...t,
+    _origen: t.almacen?.name || "",
+    _destino: t.centroAyuda?.name || "",
+    _insumosText: insumosText(t),
+  }));
+  const filteredDisponibles = useSearch(disponiblesMapped, searchDisponibles, [
+    "codigoViaje", "_origen", "_destino", "_insumosText",
+  ]);
+  const { sortedData: sortedDisponibles, SortHeader: SortHeader2 } = useSort(filteredDisponibles, "codigoViaje");
+
   return (
     <div>
       <Navbar />
@@ -61,36 +95,47 @@ export default function TripsPage() {
           <div className="card empty-state"><h3>No hay viajes</h3><p>Aparecerán cuando se coordinen envíos.</p></div>
         ) : (
           <div className="card">
-            <table>
-              <thead><tr><th>Código</th><th>Almacén</th><th>Centro</th><th>Insumos</th><th>Transportista</th><th>Estado</th><th>Acciones</th></tr></thead>
-              <tbody>
-                {trips.map((t: any) => (
-                  <tr key={t.id}>
-                    <td><strong>{t.codigoViaje}</strong></td>
-                    <td>{t.almacen?.name || "N/A"}</td>
-                    <td>{t.centroAyuda?.name || "N/A"}</td>
-                    <td style={{ fontSize: 13 }}>{(t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
-                    <td>{t.transportista?.name || "—"}</td>
-                    <td><span className={statusBadge(t.estado)}>{t.estado}</span></td>
-                    <td style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-                      <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
-                      {(t.estado === "assigned" || t.estado === "in_transit") && t.transportista?.id === actor.id && (
-                        <NavegacionViaje origen={t.almacen} destino={t.centroAyuda} />
-                      )}
-                      {t.estado === "assigned" && t.transportista?.id === actor.id && (
-                        <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "in_transit")}>Iniciar</button>
-                      )}
-                      {t.estado === "in_transit" && (
-                        <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "delivered")}>Completar</button>
-                      )}
-                      {t.estado === "proposed" && (actor.id === t.almacen?.id || actor.id === t.centroAyuda?.id) && (
-                        <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={async () => { if (confirm("¿Cancelar este viaje?")) { await updateStatus(t.id, "cancelled"); } }}>Cancelar</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TableSearch value={searchTrips} onChange={setSearchTrips} placeholder="Buscar viaje..." />
+            {sortedTrips.length === 0 ? (
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron viajes con "{searchTrips}".</p>
+            ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead><tr><SortHeader1 label="Código" sortKey="codigoViaje" /><SortHeader1 label="Almacén" sortKey="_almacen" /><SortHeader1 label="Centro" sortKey="_centro" /><SortHeader1 label="Insumos" sortKey="_insumosText" /><SortHeader1 label="Transportista" sortKey="_transportista" /><SortHeader1 label="Estado" sortKey="estado" /><SortHeader1 label="Creado" sortKey="createdAt" /><SortHeader1 label="Actualizado" sortKey="updatedAt" /><th>Acciones</th></tr></thead>
+                <tbody>
+                  {sortedTrips.map((t: any) => (
+                    <tr key={t.id}>
+                      <td><strong>{t.codigoViaje}</strong></td>
+                      <td>{t.almacen?.name || "N/A"}</td>
+                      <td>{t.centroAyuda?.name || "N/A"}</td>
+                      <td style={{ fontSize: 13 }}>{(t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
+                      <td>{t.transportista?.name || "—"}</td>
+                      <td><span className={statusBadge(t.estado)}>{t.estado}</span></td>
+                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
+                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                          <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
+                          {(t.estado === "assigned" || t.estado === "in_transit") && t.transportista?.id === actor.id && (
+                            <NavegacionViaje origen={t.almacen} destino={t.centroAyuda} />
+                          )}
+                          {t.estado === "assigned" && t.transportista?.id === actor.id && (
+                            <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "in_transit")}>Iniciar</button>
+                          )}
+                          {t.estado === "in_transit" && (
+                            <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "delivered")}>Completar</button>
+                          )}
+                          {t.estado === "proposed" && (actor.id === t.almacen?.id || actor.id === t.centroAyuda?.id) && (
+                            <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={async () => { if (confirm("¿Cancelar este viaje?")) { await updateStatus(t.id, "cancelled"); } }}>Cancelar</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            )}
           </div>
         ))}
 
@@ -98,20 +143,29 @@ export default function TripsPage() {
           <div className="card empty-state"><h3>No hay viajes disponibles</h3><p>Revisa más tarde.</p></div>
         ) : (
           <div className="card">
-            <table>
-              <thead><tr><th>Código</th><th>Origen</th><th>Destino</th><th>Insumos</th><th>Acción</th></tr></thead>
-              <tbody>
-                {disponibles.map((t: any) => (
-                  <tr key={t.id}>
-                    <td><strong>{t.codigoViaje}</strong></td>
-                    <td>{t.almacen?.name}</td>
-                    <td>{t.centroAyuda?.name}</td>
-                    <td>{t.insumos?.map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
+            <TableSearch value={searchDisponibles} onChange={setSearchDisponibles} placeholder="Buscar viaje disponible..." />
+            {sortedDisponibles.length === 0 ? (
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron viajes con "{searchDisponibles}".</p>
+            ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead><tr><SortHeader2 label="Código" sortKey="codigoViaje" /><SortHeader2 label="Origen" sortKey="_origen" /><SortHeader2 label="Destino" sortKey="_destino" /><SortHeader2 label="Insumos" sortKey="_insumosText" /><SortHeader2 label="Creado" sortKey="createdAt" /><SortHeader2 label="Actualizado" sortKey="updatedAt" /><th>Acción</th></tr></thead>
+                <tbody>
+                  {sortedDisponibles.map((t: any) => (
+                    <tr key={t.id}>
+                      <td><strong>{t.codigoViaje}</strong></td>
+                      <td>{t.almacen?.name}</td>
+                      <td>{t.centroAyuda?.name}</td>
+                      <td>{t.insumos?.map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
+                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
+                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
                     <td><button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => assignTrip(t.id)}>Tomar Viaje</button></td>
                   </tr>
-                ))}
+                  ))}
               </tbody>
             </table>
+            </div>
+            )}
           </div>
         ))}
       </div>

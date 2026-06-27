@@ -20,6 +20,7 @@ export async function GET() {
     centroAyuda: s.reliefActor,
     insumos: s.shipmentItem,
     createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
   }));
 
   return Response.json(mapped);

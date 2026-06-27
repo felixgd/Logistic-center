@@ -17,42 +17,96 @@ export async function POST(req: NextRequest) {
   if (!auth) return jsonError(401, "Token requerido");
 
   try {
-    const pendientes = await prisma.request.findMany({
-      where: { status: "open" },
-      include: { actor: { select: { name: true, lat: true, lng: true } } },
-      orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
-    });
-
     const resultados: any[] = [];
 
-    for (const r of pendientes) {
+    if (auth.actorType === "warehouse") {
+      // Warehouse: match own supplies against open requests
+      const supplies = await prisma.supply.findMany({
+        where: { status: "available", quantity: { gt: 0 }, actorId: auth.actorId },
+        include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
+      });
+      if (supplies.length === 0) {
+        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes insumos disponibles para match." });
+      }
+
+      const pendientes = await prisma.request.findMany({
+        where: { status: "open" },
+        include: { actor: { select: { name: true, lat: true, lng: true } } },
+        orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
+      });
+
+      for (const r of pendientes) {
+        const matchingSupplies = supplies.filter(
+          (s) =>
+            s.unit.toLowerCase() === r.unit.toLowerCase() &&
+            (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))
+        );
+        if (matchingSupplies.length > 0) {
+          resultados.push({
+            requestId: r.id,
+            reliefActorId: r.actorId,
+            centroAyuda: r.actor.name,
+            urgencia: r.urgency,
+            categoria: r.category,
+            insumo: r.name,
+            cantidad: r.quantity,
+            almacenes: matchingSupplies.map((s) => ({
+              almacenId: s.actor.id,
+              nombre: s.actor.name,
+              supplyId: s.id,
+              cantidadDisponible: s.quantity,
+              unidad: s.unit,
+              distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
+            })),
+          });
+        }
+      }
+    } else if (auth.actorType === "relief") {
+      // Relief center: match own requests against available supplies from warehouses
+      const pendientes = await prisma.request.findMany({
+        where: { status: "open", actorId: auth.actorId },
+        include: { actor: { select: { name: true, lat: true, lng: true } } },
+        orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
+      });
+
+      if (pendientes.length === 0) {
+        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes solicitudes abiertas para match." });
+      }
+
       const supplies = await prisma.supply.findMany({
         where: {
           status: "available",
           quantity: { gt: 0 },
-          name: { contains: r.name, mode: "insensitive" },
-          unit: { equals: r.unit, mode: "insensitive" },
+          actorId: { not: auth.actorId },
         },
         include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
       });
 
-      if (supplies.length > 0) {
-        resultados.push({
-          requestId: r.id,
-          reliefActorId: r.actorId,
-          centroAyuda: r.actor.name,
-          urgencia: r.urgency,
-          categoria: r.category,
-          insumo: r.name,
-          cantidad: r.quantity,
-          almacenes: supplies.map((s) => ({
-            almacenId: s.actor.id,
-            nombre: s.actor.name,
-            supplyId: s.id,
-            cantidadDisponible: s.quantity,
-            distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
-          })),
-        });
+      for (const r of pendientes) {
+        const matchingSupplies = supplies.filter(
+          (s) =>
+            s.unit.toLowerCase() === r.unit.toLowerCase() &&
+            (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))
+        );
+        if (matchingSupplies.length > 0) {
+          resultados.push({
+            requestId: r.id,
+            reliefActorId: r.actorId,
+            centroAyuda: r.actor.name,
+            urgencia: r.urgency,
+            categoria: r.category,
+            insumo: r.name,
+            cantidad: r.quantity,
+            almacenes: matchingSupplies.map((s) => ({
+              almacenId: s.actor.id,
+              nombre: s.actor.name,
+              supplyId: s.id,
+              cantidadDisponible: s.quantity,
+              unidad: s.unit,
+              distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
+            })),
+          });
+        }
       }
     }
 
@@ -60,6 +114,10 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
       solicitudesMatch: resultados.length,
     });
+
+    if (resultados.length === 0) {
+      return Response.json({ totalMatches: 0, matches: [], mensaje: "No se encontraron almacenes con insumos que coincidan con tus solicitudes abiertas." });
+    }
 
     return Response.json({ totalMatches: resultados.length, matches: resultados });
   } catch (error: any) {
