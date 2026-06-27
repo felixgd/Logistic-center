@@ -84,6 +84,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"requests" | "shipments">("requests");
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Modals state
   const [activeModal, setActiveModal] = useState<"request" | "supply" | "driver" | "claim" | null>(null);
@@ -151,6 +152,11 @@ export default function HomePage() {
         .catch((err) => console.error("Error polling map data:", err));
     }, 10000);
 
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsAuthenticated(true);
+    }
+
     const storedActor = localStorage.getItem("actor");
     if (storedActor) {
       try {
@@ -164,6 +170,14 @@ export default function HomePage() {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("actor");
+    setIsAuthenticated(false);
+    setFormName("");
+    setFormWhatsapp("");
+  };
 
   const handleCardClick = (actorId: string) => {
     setSelectedActorId(null);
@@ -332,27 +346,56 @@ export default function HomePage() {
   };
 
   return (
-    <div className="homepage-container">
-      {/* Sidebar Section */}
-      <aside className="homepage-sidebar">
-        <div className="sidebar-header">
-          <h1>📦 Logística Acopio</h1>
-          <p className="subtitle">Ayuda mutua y monitoreo en desastres</p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => openModal("request")} className="btn btn-danger" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
-                🚨 Pedir Ayuda
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden" }}>
+      {/* Top Header Navigation */}
+      <header className="main-header">
+        <Link href="/" className="logo">
+          <span>📦 Logística Central</span>
+        </Link>
+        <nav>
+          <Link href="/" className="active">Mapa Central</Link>
+          {isAuthenticated && <Link href="/dashboard">Dashboard</Link>}
+        </nav>
+        <div className="auth-section">
+          {isAuthenticated ? (
+            <>
+              <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
+              <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
+                Cerrar Sesión
               </button>
-              <button onClick={() => openModal("supply")} className="btn btn-success" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
-                📦 Ofrecer Ayuda
+            </>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <Link href="/login" className="btn btn-primary" style={{ padding: "6px 14px", fontSize: 12 }}>
+                Ingresar
+              </Link>
+              <Link href="/register" className="btn btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>
+                Registrarse
+              </Link>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* Sidebar Section */}
+        <aside className="homepage-sidebar">
+          <div className="sidebar-header" style={{ padding: "20px" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#fff" }}>Acciones Rápidas</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => openModal("request")} className="btn btn-danger" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
+                  🚨 Pedir Ayuda
+                </button>
+                <button onClick={() => openModal("supply")} className="btn btn-success" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
+                  📦 Ofrecer Ayuda
+                </button>
+              </div>
+              <button onClick={() => openModal("driver")} className="btn btn-warning" style={{ width: "100%", padding: "10px", fontSize: 13, borderRadius: 8 }}>
+                🚚 Quiero Transportar
               </button>
             </div>
-            <button onClick={() => openModal("driver")} className="btn btn-warning" style={{ width: "100%", padding: "10px", fontSize: 13, borderRadius: 8 }}>
-              🚚 Quiero Transportar
-            </button>
           </div>
-        </div>
 
         {/* Navigation Tabs */}
         <div className="tab-nav">
@@ -648,6 +691,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
