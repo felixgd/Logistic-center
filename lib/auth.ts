@@ -1,16 +1,7 @@
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 
 const SECRET = () => process.env.JWT_SECRET || "secret";
-
-export function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
-}
-
-export function comparePassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
 
 export function signToken(payload: { userId: string; actorId: string; actorType: string }): string {
   return jwt.sign(payload, SECRET(), { expiresIn: "7d" });

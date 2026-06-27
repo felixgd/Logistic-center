@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { hashPassword, signToken } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
 
 interface FrictionlessInput {
   name: string;
@@ -46,7 +46,6 @@ export async function findOrCreateActor(input: FrictionlessInput) {
   } else {
     // 2. Register new user & actor
     const email = `wa_${cleanWhatsapp}_${Date.now().toString(36)}@disaster.acopio`;
-    const hashed = await hashPassword(`password_${cleanWhatsapp}`);
 
     const user = await prisma.user.create({
       data: {
@@ -62,7 +61,6 @@ export async function findOrCreateActor(input: FrictionlessInput) {
         userId: user.id,
         providerId: "whatsapp_passwordless",
         accountId: email,
-        password: hashed,
       },
     });
 

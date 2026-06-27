@@ -91,35 +91,6 @@ export default function TripsPage() {
   ]);
   const { sortedData: sortedDisponibles, SortHeader: SortHeader2 } = useSort(filteredDisponibles, "codigoViaje");
 
-  const formatDate = (d: string | Date | null | undefined) =>
-    d ? new Date(d).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : "—";
-
-  const insumosText = (t: any) =>
-    (t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ");
-
-  const tripsMapped = trips.map((t: any) => ({
-    ...t,
-    _almacen: t.almacen?.name || "",
-    _centro: t.centroAyuda?.name || "",
-    _transportista: t.transportista?.name || "",
-    _insumosText: insumosText(t),
-  }));
-  const filteredTrips = useSearch(tripsMapped, searchTrips, [
-    "codigoViaje", "_almacen", "_centro", "_insumosText", "_transportista", "estado",
-  ]);
-  const { sortedData: sortedTrips, SortHeader: SortHeader1 } = useSort(filteredTrips, "codigoViaje");
-
-  const disponiblesMapped = disponibles.map((t: any) => ({
-    ...t,
-    _origen: t.almacen?.name || "",
-    _destino: t.centroAyuda?.name || "",
-    _insumosText: insumosText(t),
-  }));
-  const filteredDisponibles = useSearch(disponiblesMapped, searchDisponibles, [
-    "codigoViaje", "_origen", "_destino", "_insumosText",
-  ]);
-  const { sortedData: sortedDisponibles, SortHeader: SortHeader2 } = useSort(filteredDisponibles, "codigoViaje");
-
   return (
     <div>
       <Navbar />

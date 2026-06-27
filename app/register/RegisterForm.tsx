@@ -138,7 +138,7 @@ function RegisterFormInner() {
               <strong>Dirección:</strong> {affiliateInfo.address || "No registrada"}<br />
               <strong>Ciudad:</strong> {affiliateInfo.city || "No registrada"}
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>Crear cuenta</button>
+            <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={!verifToken}>Crear cuenta</button>
             <div className="link"><Link href="/login">¿Ya tienes cuenta? Inicia sesión</Link></div>
           </form>
         </div>
@@ -216,7 +216,7 @@ function RegisterFormInner() {
             )}
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Atrás</button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Crear cuenta</button>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={!verifToken}>Crear cuenta</button>
             </div>
           </form>
         )}
