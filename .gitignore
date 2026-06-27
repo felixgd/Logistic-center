@@ -1,0 +1,37 @@
+# dependencias
+node_modules/
+.pnp*
+
+# build
+.next/
+out/
+
+# entorno
+.env
+.env.*
+!.env.example
+
+# vercel
+.vercel/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/*.db

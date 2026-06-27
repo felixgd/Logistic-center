@@ -1,0 +1,174 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamp(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamp(6)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime  @default(now()) @db.Timestamp(6)
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model actor {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  name        String
+  contactName String?
+  phone       String?
+  whatsapp    String?
+  address     String?
+  city        String?
+  lat         Float?
+  lng         Float?
+  vehicleType String?
+  capacityKg  Int?
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  supply      supply[]
+  request     request[]
+  eventLog    event_log[]
+  warehouseShipment    shipment[] @relation("warehouseActor")
+  reliefShipment       shipment[] @relation("reliefActor")
+  transporterShipment  shipment[] @relation("transporterActor")
+}
+
+model event_log {
+  id         String   @id @default(cuid())
+  userId     String?
+  actorId    String?
+  shipmentId String?
+  channel    String   @default("system")
+  eventType  String
+  direction  String?
+  recipient  String?
+  payload    String?
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+  user       user?     @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  actor      actor?    @relation(fields: [actorId], references: [id], onUpdate: NoAction)
+  shipment   shipment? @relation(fields: [shipmentId], references: [id], onUpdate: NoAction)
+}
+
+model request {
+  id                String   @id @default(cuid())
+  userId            String
+  actorId           String
+  category          String
+  name              String
+  unit              String   @default("unidad")
+  quantity          Int      @default(0)
+  quantityFulfilled Int      @default(0)
+  urgency           String   @default("media")
+  status            String   @default("open")
+  notes             String?
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+  user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actor             actor    @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime @db.Timestamp(6)
+  token     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @db.Timestamp(6)
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model shipment {
+  id                 String    @id @default(cuid())
+  createdByUserId    String
+  warehouseActorId   String
+  reliefActorId      String
+  transporterActorId String?
+  requestId          String?
+  status             String    @default("proposed")
+  pickupAddress      String?
+  dropoffAddress     String?
+  scheduledAt        DateTime? @db.Timestamp(6)
+  notes              String?
+  createdAt          DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime  @default(now()) @db.Timestamp(6)
+  createdByUser      user      @relation(fields: [createdByUserId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  warehouseActor     actor     @relation("warehouseActor", fields: [warehouseActorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reliefActor        actor     @relation("reliefActor", fields: [reliefActorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transporterActor   actor?    @relation("transporterActor", fields: [transporterActorId], references: [id], onUpdate: NoAction)
+  shipmentItem       shipment_item[]
+  eventLog           event_log[]
+}
+
+model shipment_item {
+  id         String  @id @default(cuid())
+  shipmentId String
+  supplyId   String?
+  category   String
+  name       String
+  unit       String  @default("unidad")
+  quantity   Int     @default(0)
+  shipment   shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  supply     supply?  @relation(fields: [supplyId], references: [id], onUpdate: NoAction)
+}
+
+model supply {
+  id               String   @id @default(cuid())
+  userId           String
+  actorId          String
+  category         String
+  name             String
+  unit             String   @default("unidad")
+  quantity         Int      @default(0)
+  quantityReserved Int      @default(0)
+  status           String   @default("available")
+  notes            String?
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+  user             user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actor            actor    @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  shipmentItem     shipment_item[]
+}
+
+model user {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime  @default(now()) @db.Timestamp(6)
+  account       account[]
+  session       session[]
+  actor         actor[]
+  supply        supply[]
+  request       request[]
+  shipment      shipment[]
+  eventLog      event_log[]
+}
+
+model verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime  @db.Timestamp(6)
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @db.Timestamp(6)
+}

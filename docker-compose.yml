@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: acopio-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: logistica_acopio
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - acopio-net
+
+  nats:
+    image: nats:latest
+    container_name: acopio-nats
+    restart: unless-stopped
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js", "-m", "8222"]
+    networks:
+      - acopio-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: acopio-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - nats
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/logistica_acopio
+      - DIRECT_URL=postgresql://postgres:password@postgres:5432/logistica_acopio
+      - JWT_SECRET=secret_docker_local_dev_2024
+      - WHATSAPP_API_TOKEN=
+      - WHATSAPP_PHONE_ID=
+      - NATS_URL=nats://nats:4222
+    networks:
+      - acopio-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  acopio-net:
+    driver: bridge
