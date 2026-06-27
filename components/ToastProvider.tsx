@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import ToastNotification from "./ToastNotification";
+import { getAuthHeaders } from "@/lib/api-client";
 
 const EVENT_META: Record<string, { msg: (p: any) => string; path: string }> = {
   "insumo.registrado": { msg: (p) => `Nuevo insumo: ${p?.name || ""}`, path: "/insumos" },
@@ -38,7 +39,7 @@ function ToastNotifier() {
   useEffect(() => {
     if (!token || pathname === "/" || pathname === "/login" || pathname === "/register") return;
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = getAuthHeaders();
 
     const poll = () => {
       const since = new Date(Date.now() - 30000).toISOString();

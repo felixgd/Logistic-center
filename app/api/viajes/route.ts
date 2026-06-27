@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
-import { notifyBySms, formatTripCode, formatItems } from "@/lib/notifications";
+import { notifyBySms, formatTripCode, formatItems, createNotification } from "@/lib/notifications";
+import { sanitizeText, normalizeUnit, validateQuantity } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const auth = getAuthActor(req);
@@ -51,7 +52,27 @@ export async function POST(req: NextRequest) {
   if (!auth) return jsonError(401, "Token requerido");
 
   try {
-    const { warehouseActorId, reliefActorId, items, requestId } = await req.json();
+    const body = await req.json();
+    const warehouseActorId = sanitizeText(body.warehouseActorId);
+    const reliefActorId = sanitizeText(body.reliefActorId);
+    const requestId = body.requestId ? sanitizeText(body.requestId) : null;
+    const rawItems = Array.isArray(body.items) ? body.items : [];
+
+    if (!warehouseActorId || !reliefActorId || rawItems.length === 0) {
+      return jsonError(400, "Almacén, centro de ayuda e insumos son requeridos");
+    }
+
+    const items = rawItems.map((i: any) => {
+      const qtyValidation = validateQuantity(i.quantity);
+      if (!qtyValidation.valid) throw new Error(qtyValidation.error);
+      return {
+        supplyId: i.supplyId ? sanitizeText(i.supplyId) : null,
+        category: sanitizeText(i.category || "general"),
+        name: sanitizeText(i.name),
+        unit: normalizeUnit(i.unit),
+        quantity: qtyValidation.quantity,
+      };
+    });
 
     const codigo = `VIA-${Date.now().toString(36).toUpperCase().slice(-5)}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
@@ -61,20 +82,20 @@ export async function POST(req: NextRequest) {
           createdByUserId: auth.userId,
           warehouseActorId,
           reliefActorId,
-          requestId: requestId || null,
+          requestId,
           status: "proposed",
           notes: `${codigo} ${requestId ? `Req:${requestId}` : ""}`,
           shipmentItem: {
             create: items.map((i: any) => ({
-              supplyId: i.supplyId || null,
-              category: i.category || "general",
+              supplyId: i.supplyId,
+              category: i.category,
               name: i.name,
-              unit: i.unit || "unidad",
+              unit: i.unit,
               quantity: i.quantity,
             })),
           },
         },
-        include: { shipmentItem: true, warehouseActor: true, reliefActor: true },
+        include: { shipmentItem: true, warehouseActor: { select: { id: true, name: true, phone: true, whatsapp: true, userId: true } }, reliefActor: { select: { id: true, name: true, phone: true, whatsapp: true, userId: true } } },
       });
 
       if (requestId) {
@@ -120,7 +141,7 @@ export async function POST(req: NextRequest) {
     const wa = shipment.warehouseActor;
     const ra = shipment.reliefActor;
 
-    const msgAlmacen = `Nuevo envio ${codigo} solicitado por ${ra?.name || "Centro de ayuda"}. Insumos: ${itemsStr}. Responde APROBAR para aceptar.`;
+    const msgAlmacen = `Nuevo envio ${codigo} solicitado por ${ra?.name || "Centro de ayuda"}. Insumos: ${itemsStr}.`;
     const msgCentro = `Envio ${codigo} coordinado con almacen ${wa?.name || "—"}. Insumos: ${itemsStr}.`;
 
     if (wa?.whatsapp) await sendWhatsAppMessage(wa.whatsapp, `📦 Nuevo envio generado\nCodigo: ${codigo}\nCentro: ${ra?.name}\nInsumos: ${itemsStr}`);
@@ -128,6 +149,17 @@ export async function POST(req: NextRequest) {
 
     if (ra?.whatsapp) await sendWhatsAppMessage(ra.whatsapp, `✅ Envio coordinado\nCodigo: ${codigo}\nAlmacen: ${wa?.name}\nInsumos: ${itemsStr}`);
     await notifyBySms(ra?.phone || ra?.whatsapp, msgCentro);
+
+    if (wa?.userId) {
+      await createNotification({
+        userId: wa.userId,
+        actorId: wa.id,
+        type: "viaje.creado",
+        title: "Nuevo envío solicitado",
+        message: `El centro ${ra?.name || "—"} solicitó el envío ${codigo}. Insumos: ${itemsStr}.`,
+        link: "/viajes",
+      });
+    }
 
     return Response.json({
       id: shipment.id,

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
+import { sanitizeText } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const auth = getAuthActor(req);
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
     contactName: actor.contactName,
     phone: actor.phone,
     whatsapp: actor.whatsapp,
+    userPhone: user?.phone,
     address: actor.address,
     city: actor.city,
     lat: actor.lat,
@@ -37,7 +39,14 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, contactName, phone, whatsapp, address, city, vehicleType, capacityKg } = body;
+    const name = body.name !== undefined ? sanitizeText(body.name) : undefined;
+    const contactName = body.contactName !== undefined ? sanitizeText(body.contactName) : undefined;
+    const phone = body.phone !== undefined ? sanitizeText(body.phone) : undefined;
+    const whatsapp = body.whatsapp !== undefined ? sanitizeText(body.whatsapp) : undefined;
+    const address = body.address !== undefined ? sanitizeText(body.address) : undefined;
+    const city = body.city !== undefined ? sanitizeText(body.city) : undefined;
+    const vehicleType = body.vehicleType !== undefined ? sanitizeText(body.vehicleType) : undefined;
+    const capacityKg = body.capacityKg !== undefined ? (body.capacityKg ? Number(body.capacityKg) : null) : undefined;
 
     const actor = await prisma.actor.findUnique({
       where: { id: auth.actorId },
@@ -51,14 +60,14 @@ export async function PUT(req: NextRequest) {
     const updated = await prisma.actor.update({
       where: { id: auth.actorId },
       data: {
-        name: name !== undefined ? name : undefined,
-        contactName: contactName !== undefined ? contactName : undefined,
-        phone: phone !== undefined ? phone : undefined,
-        whatsapp: whatsapp !== undefined ? whatsapp : undefined,
-        address: address !== undefined ? address : undefined,
-        city: city !== undefined ? city : undefined,
-        vehicleType: vehicleType !== undefined ? vehicleType : undefined,
-        capacityKg: capacityKg !== undefined ? (capacityKg ? Number(capacityKg) : null) : undefined,
+        name,
+        contactName,
+        phone,
+        whatsapp,
+        address,
+        city,
+        vehicleType,
+        capacityKg,
       },
     });
 

@@ -2,10 +2,25 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
+import { sanitizeText } from "@/lib/validation";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, name, contactName, phone, whatsapp, address, city, email, vehicleType, capacityKg, lat, lng, phoneVerificationToken } = await req.json();
+    const body = await req.json();
+    const type = sanitizeText(body.type);
+    const name = sanitizeText(body.name);
+    const contactName = sanitizeText(body.contactName || body.name);
+    const phone = sanitizeText(body.phone);
+    const whatsapp = sanitizeText(body.whatsapp);
+    const address = sanitizeText(body.address);
+    const city = sanitizeText(body.city);
+    const email = sanitizeText(body.email);
+    const vehicleType = sanitizeText(body.vehicleType);
+    const capacityKg = body.capacityKg ? Number(body.capacityKg) : null;
+    const lat = body.lat ? Number(body.lat) : null;
+    const lng = body.lng ? Number(body.lng) : null;
+    const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
 
     const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
     if (targetPhone.length < 10) return jsonError(400, "Teléfono / WhatsApp inválido");
@@ -58,12 +73,14 @@ export async function POST(req: NextRequest) {
       whatsapp: actor.whatsapp,
     });
 
-    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type });
+    const csrfToken = generateCsrfToken();
+    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken });
 
     return Response.json(
       {
         mensaje: "Registro exitoso",
         token,
+        csrfToken,
         actor: { id: actor.id, type: actor.type, name: actor.name, email: user.email, isOwner: true },
       },
       { status: 201 }

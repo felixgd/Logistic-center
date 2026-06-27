@@ -15,15 +15,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   if (body.mode === "add") {
     const delta = Number(body.delta);
-    if (isNaN(delta) || delta === 0) return jsonError(400, "Delta inválido");
+    if (isNaN(delta)) return jsonError(400, "Delta inválido");
+    if (supply.quantity + delta < 0) return jsonError(400, "La cantidad no puede ser menor a 0");
     const updated = await prisma.supply.update({
       where: { id: params.id },
       data: { quantity: { increment: delta } },
     });
-    if (updated.quantity < 0) {
-      await prisma.supply.update({ where: { id: params.id }, data: { quantity: supply.quantity } });
-      return jsonError(409, "Cantidad insuficiente");
-    }
     return Response.json(updated);
   }
 

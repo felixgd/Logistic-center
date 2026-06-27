@@ -2,6 +2,8 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { setCsrfToken } from "@/lib/api-client";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
 
 function RegisterFormInner() {
   const router = useRouter();
@@ -22,6 +24,7 @@ function RegisterFormInner() {
   const [verifMocked, setVerifMocked] = useState(false);
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
+  const [countryCode, setCountryCode] = useState("+52");
 
   useEffect(() => {
     if (affiliateCode) {
@@ -40,13 +43,17 @@ function RegisterFormInner() {
 
   const selectTipo = (tipo: string) => { update("type", tipo); setStep(2); };
 
+  const fullPhone = () => {
+    const local = normalizePhone(form.phone);
+    return normalizePhone(countryCode) + local;
+  };
+
   const enviarCodigo = async () => {
-    const target = form.whatsapp || form.phone;
-    if (!target) { setError("Ingresa un teléfono primero"); return; }
+    if (!form.phone || !isValidLocalPhone(form.phone)) { setError("Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)"); return; }
     setVerifSending(true); setError("");
     const res = await fetch("/api/verificar/enviar", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: target }),
+      body: JSON.stringify({ phone: fullPhone() }),
     });
     const data = await res.json();
     if (!res.ok) { setError(data.error); setVerifSending(false); return; }
@@ -56,12 +63,11 @@ function RegisterFormInner() {
   };
 
   const verificarCodigo = async () => {
-    if (!verifCode) return;
+    if (!verifCode || verifCode.length < 6) { setError("Ingresa el código de 6 dígitos"); return; }
     setError("");
-    const target = form.whatsapp || form.phone;
     const res = await fetch("/api/verificar/codigo", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: target, code: verifCode }),
+      body: JSON.stringify({ phone: fullPhone(), code: verifCode }),
     });
     const data = await res.json();
     if (!res.ok) { setError(data.error); return; }
@@ -69,14 +75,32 @@ function RegisterFormInner() {
     setVerifCode("");
   };
 
+  const normalizePhone = (value: string) => value.replace(/\D/g, "");
+  const isValidLocalPhone = (value: string) => normalizePhone(value).length >= 10;
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const validateForm = (): string | null => {
+    if (!form.name.trim()) return "El nombre es requerido";
+    if (!form.phone || !isValidLocalPhone(form.phone)) return "Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)";
+    if (!form.email.trim()) return "El email es requerido";
+    if (!isValidEmail(form.email)) return "Ingresa un email válido";
+    if (!affiliateCode && !form.address.trim()) return "La dirección es requerida";
+    if (!affiliateCode && form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
+    if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const validationError = validateForm();
+    if (validationError) { setError(validationError); return; }
 
+    const full = fullPhone();
     const endpoint = affiliateCode ? "/api/actores/afiliar/registrar" : "/api/actores/register";
     const body = affiliateCode
-      ? { code: affiliateCode, name: form.name, phone: form.phone || form.whatsapp, email: form.email, phoneVerificationToken: verifToken || undefined }
-      : { ...form, phoneVerificationToken: verifToken || undefined };
+      ? { code: affiliateCode, name: form.name, phone: full, email: form.email, phoneVerificationToken: verifToken || undefined }
+      : { ...form, phone: full, whatsapp: full, phoneVerificationToken: verifToken || undefined };
 
     try {
       const res = await fetch(endpoint, {
@@ -86,6 +110,7 @@ function RegisterFormInner() {
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       localStorage.setItem("token", data.token);
+      if (data.csrfToken) setCsrfToken(data.csrfToken);
       localStorage.setItem("actor", JSON.stringify(data.actor));
       router.push("/dashboard");
     } catch { setError("Error al registrarse"); }
@@ -105,13 +130,20 @@ function RegisterFormInner() {
             <div className="form-group"><label>Nombre completo</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
             <div className="form-group">
               <label>Teléfono / WhatsApp</label>
-              <div style={{ display: "flex", gap: 4 }}>
-                <input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="521234567890" required style={{ flex: 1 }} />
+              <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
+                <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
+                <input
+                  value={form.phone}
+                  onChange={(e) => update("phone", normalizePhone(e.target.value))}
+                  placeholder="1234567890"
+                  required
+                  style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: 14 }}
+                />
                 {verifToken ? (
                   <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
                 ) : (
                   <button type="button" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-                    onClick={enviarCodigo} disabled={verifSending || countdown > 0}>
+                    onClick={enviarCodigo} disabled={verifSending || countdown > 0 || !isValidLocalPhone(form.phone)}>
                     {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
                   </button>
                 )}
@@ -179,13 +211,20 @@ function RegisterFormInner() {
             <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
             <div className="form-group">
               <label>WhatsApp</label>
-              <div style={{ display: "flex", gap: 4 }}>
-                <input value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} placeholder="521234567890" required style={{ flex: 1 }} />
+              <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
+                <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
+                <input
+                  value={form.phone}
+                  onChange={(e) => update("phone", normalizePhone(e.target.value))}
+                  placeholder="1234567890"
+                  required
+                  style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: 14 }}
+                />
                 {verifToken ? (
                   <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
                 ) : (
                   <button type="button" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-                    onClick={enviarCodigo} disabled={verifSending || countdown > 0}>
+                    onClick={enviarCodigo} disabled={verifSending || countdown > 0 || !isValidLocalPhone(form.phone)}>
                     {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
                   </button>
                 )}

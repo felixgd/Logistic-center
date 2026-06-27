@@ -2,29 +2,26 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateActor } from "@/lib/frictionless";
 import { publishEvent } from "@/lib/pubsub";
+import { sanitizeText, normalizeUnit, validateQuantity, validateUrgency } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      action, // "request", "supply", "driver"
-      name,
-      whatsapp,
-      address,
-      city,
-      lat,
-      lng,
-      // For drivers
-      vehicleType,
-      capacityKg,
-      // For requests/supplies
-      category,
-      itemName, // Avoid collision with actor name
-      unit,
-      quantity,
-      urgency,
-      notes,
-    } = body;
+    const action = sanitizeText(body.action);
+    const name = sanitizeText(body.name);
+    const whatsapp = sanitizeText(body.whatsapp);
+    const address = sanitizeText(body.address || "Sin dirección");
+    const city = sanitizeText(body.city || "Sin ciudad");
+    const lat = body.lat ? Number(body.lat) : null;
+    const lng = body.lng ? Number(body.lng) : null;
+    const vehicleType = sanitizeText(body.vehicleType);
+    const capacityKg = body.capacityKg ? Number(body.capacityKg) : undefined;
+    const category = sanitizeText(body.category || "general");
+    const itemName = sanitizeText(body.itemName);
+    const unit = normalizeUnit(body.unit);
+    const quantity = body.quantity;
+    const urgency = body.urgency;
+    const notes = sanitizeText(body.notes);
 
     if (!name || !whatsapp) {
       return Response.json({ error: "Nombre y WhatsApp son requeridos." }, { status: 400 });
@@ -45,12 +42,12 @@ export async function POST(req: NextRequest) {
       name,
       whatsapp,
       type,
-      address: address || "Sin dirección",
-      city: city || "Sin ciudad",
-      lat: lat ? Number(lat) : null,
-      lng: lng ? Number(lng) : null,
+      address,
+      city,
+      lat,
+      lng,
       vehicleType,
-      capacityKg: capacityKg ? Number(capacityKg) : undefined,
+      capacityKg,
     });
 
     let resultPayload: any = { token, actor };
@@ -60,21 +57,25 @@ export async function POST(req: NextRequest) {
       if (!itemName) {
         return Response.json({ error: "Nombre del insumo es requerido." }, { status: 400 });
       }
-      const normalizedItem = itemName.trim().toLowerCase();
-      const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
+
+      const qtyValidation = validateQuantity(quantity);
+      if (!qtyValidation.valid) return Response.json({ error: qtyValidation.error }, { status: 400 });
+
+      const urgencyValidation = validateUrgency(urgency);
+      if (!urgencyValidation.valid) return Response.json({ error: urgencyValidation.error }, { status: 400 });
 
       // Create supply request
       const requestRecord = await prisma.request.create({
         data: {
           actorId: actor.id,
           userId: (await prisma.actor.findUnique({ where: { id: actor.id } }))?.userId || actor.id,
-          category: category || "general",
-          name: normalizedItem,
-          unit: normalizedUnit,
-          quantity: Number(quantity),
-          urgency: urgency || "media",
+          category,
+          name: itemName.toLowerCase(),
+          unit,
+          quantity: qtyValidation.quantity,
+          urgency: urgencyValidation.urgency,
           status: "open",
-          notes: notes || "",
+          notes,
         },
       });
 
@@ -82,9 +83,9 @@ export async function POST(req: NextRequest) {
         userId: requestRecord.userId,
         actorId: actor.id,
         requestId: requestRecord.id,
-        name: normalizedItem,
-        quantity: Number(quantity),
-        urgency: urgency || "media",
+        name: itemName.toLowerCase(),
+        quantity: qtyValidation.quantity,
+        urgency: urgencyValidation.urgency,
       });
 
       resultPayload.request = requestRecord;
@@ -92,12 +93,13 @@ export async function POST(req: NextRequest) {
       if (!itemName) {
         return Response.json({ error: "Nombre del insumo es requerido." }, { status: 400 });
       }
-      const normalizedItem = itemName.trim().toLowerCase();
-      const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
+
+      const qtyValidation = validateQuantity(quantity);
+      if (!qtyValidation.valid) return Response.json({ error: qtyValidation.error }, { status: 400 });
 
       // Check for duplicate
       const existing = await prisma.supply.findFirst({
-        where: { actorId: actor.id, name: { equals: normalizedItem, mode: "insensitive" } },
+        where: { actorId: actor.id, name: { equals: itemName.toLowerCase(), mode: "insensitive" } },
       });
       if (existing) {
         return Response.json({ error: "Este almacén ya tiene registrado este insumo." }, { status: 400 });
@@ -108,12 +110,12 @@ export async function POST(req: NextRequest) {
         data: {
           userId: (await prisma.actor.findUnique({ where: { id: actor.id } }))?.userId || actor.id,
           actorId: actor.id,
-          category: category || "general",
-          name: normalizedItem,
-          unit: normalizedUnit,
-          quantity: Number(quantity),
+          category,
+          name: itemName.toLowerCase(),
+          unit,
+          quantity: qtyValidation.quantity,
           status: "available",
-          notes: notes || "",
+          notes,
         },
       });
 
@@ -121,9 +123,9 @@ export async function POST(req: NextRequest) {
         userId: supplyRecord.userId,
         actorId: actor.id,
         supplyId: supplyRecord.id,
-        name: normalizedItem,
-        quantity: Number(quantity),
-        unit: unit || "unidades",
+        name: itemName.toLowerCase(),
+        quantity: qtyValidation.quantity,
+        unit,
       });
 
       resultPayload.supply = supplyRecord;

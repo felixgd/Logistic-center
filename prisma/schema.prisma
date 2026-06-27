@@ -174,15 +174,15 @@ model supply {
 }
 
 model user {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
-  phone         String?   @unique
-  phoneVerified Boolean   @default(false)
-  email         String?   @unique
-  emailVerified Boolean   @default(false)
+  phone         String?        @unique
+  phoneVerified Boolean        @default(false)
+  email         String?        @unique
+  emailVerified Boolean        @default(false)
   image         String?
-  createdAt     DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime  @default(now()) @db.Timestamp(6)
+  createdAt     DateTime       @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime       @default(now()) @db.Timestamp(6)
   account       account[]
   session       session[]
   actor         actor[]
@@ -191,6 +191,20 @@ model user {
   shipment      shipment[]
   eventLog      event_log[]
   actorMemberships actor_user[]
+  notifications notification[]
+}
+
+model notification {
+  id        String   @id @default(cuid())
+  userId    String
+  actorId   String?
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model verification {

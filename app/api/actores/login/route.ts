@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken, jsonError } from "@/lib/auth";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,10 +44,12 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type });
+    const csrfToken = generateCsrfToken();
+    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken });
 
     return Response.json({
       token,
+      csrfToken,
       actor: {
         id: actor.id,
         type: actor.type,

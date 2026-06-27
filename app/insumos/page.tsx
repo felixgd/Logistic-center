@@ -6,6 +6,8 @@ import TableSearch from "@/components/TableSearch";
 import { distancia } from "@/lib/distancia";
 import { useSort } from "@/hooks/useSort";
 import { useSearch } from "@/hooks/useSearch";
+import { useApi, invalidateCache } from "@/lib/swr";
+import { getAuthHeaders } from "@/lib/api-client";
 
 export default function SuppliesPage() {
   const router = useRouter();
@@ -24,18 +26,19 @@ export default function SuppliesPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = getAuthHeaders();
 
-  const load = async () => {
-    const r = await fetch("/api/insumos", { headers }); setSupplies(await r.json());
-  };
+  const { data: suppliesData } = useApi<any[]>(token ? "/api/insumos" : null);
+
+  useEffect(() => {
+    if (suppliesData) setSupplies(suppliesData);
+  }, [suppliesData]);
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
     const a = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(a);
     if (a.type === "transporter") { router.push("/dashboard"); return; }
-    load();
     if (a.type === "relief") {
       fetch("/api/actores/perfil", { headers }).then(r => r.json()).then(setPerfil);
     }
@@ -51,13 +54,13 @@ export default function SuppliesPage() {
     const data = await res.json();
     if (!res.ok) { setError(data.error); return; }
     setForm({ category: "general", name: "", unit: "unidad", quantity: "" }); setShowForm(false);
-    load();
+    invalidateCache("/api/insumos");
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Eliminar este insumo?")) return;
     await fetch(`/api/insumos/${id}`, { method: "DELETE", headers });
-    load();
+    invalidateCache("/api/insumos");
   };
 
   const updateQuantity = async (id: string, mode: "add" | "set", value: number, version?: number) => {
@@ -68,11 +71,11 @@ export default function SuppliesPage() {
     if (!res.ok) {
       const d = await res.json();
       setError(d.error || "Error al actualizar cantidad");
-      load();
+      invalidateCache("/api/insumos");
       return false;
     }
     setError("");
-    load();
+    invalidateCache("/api/insumos");
     return true;
   };
 
@@ -92,7 +95,8 @@ export default function SuppliesPage() {
     if (!res.ok) { const d = await res.json(); setError(d.error); return; }
     setSolicitarId(null);
     setSolicitarForm({ quantity: "" });
-    load();
+    invalidateCache("/api/insumos");
+    invalidateCache("/api/viajes");
   };
 
   const isRelief = actor.type === "relief";

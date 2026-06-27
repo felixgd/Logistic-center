@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch the 10 most recent supply requests (requests)
     const recentRequests = await prisma.request.findMany({
+      where: { status: { in: ["open", "in_progress"] } },
       take: 10,
       orderBy: { createdAt: "desc" },
       include: {
@@ -39,8 +40,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // 3. Fetch the 10 most recent shipments (trips)
+    // 3. Fetch shipments waiting for a transporter (approved by warehouse)
     const recentShipments = await prisma.shipment.findMany({
+      where: { status: "approved" },
       take: 10,
       orderBy: { createdAt: "desc" },
       include: {

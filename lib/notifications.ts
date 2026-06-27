@@ -1,4 +1,33 @@
 import { sendSms } from "@/lib/zavu";
+import { prisma } from "@/lib/prisma";
+
+export interface CreateNotificationInput {
+  userId: string | null | undefined;
+  actorId?: string | null;
+  type: string;
+  title: string;
+  message: string;
+  link?: string | null;
+}
+
+export async function createNotification(input: CreateNotificationInput) {
+  if (!input.userId) return null;
+  try {
+    return await prisma.notification.create({
+      data: {
+        userId: input.userId,
+        actorId: input.actorId || null,
+        type: input.type,
+        title: input.title,
+        message: input.message,
+        link: input.link || null,
+      },
+    });
+  } catch (error) {
+    console.error("[Notification] Error creating notification:", error);
+    return null;
+  }
+}
 
 export function normalizePhone(phone?: string | null): string | null {
   if (!phone) return null;

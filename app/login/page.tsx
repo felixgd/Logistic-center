@@ -2,12 +2,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { setCsrfToken } from "@/lib/api-client";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
-const isValidPhone = (value: string) => normalizePhone(value).length >= 10;
+const isValidLocalPhone = (value: string) => normalizePhone(value).length >= 10;
 
 export default function LoginPage() {
-  const [phone, setPhone] = useState("");
+  const [localPhone, setLocalPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+52");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
@@ -16,6 +19,8 @@ export default function LoginPage() {
   const [mockCode, setMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
   const router = useRouter();
+
+  const fullPhone = () => normalizePhone(countryCode) + normalizePhone(localPhone);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -29,35 +34,54 @@ export default function LoginPage() {
   }, [countdown]);
 
   const enviarCodigo = async () => {
-    if (!isValidPhone(phone)) { setError("Ingresa un teléfono válido"); return; }
+    if (!isValidLocalPhone(localPhone)) { setError("Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)"); return false; }
     setSending(true); setError("");
     const res = await fetch("/api/verificar/enviar", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizePhone(phone) }),
+      body: JSON.stringify({ phone: fullPhone() }),
     });
     const data = await res.json();
-    if (!res.ok) { setError(data.error); setSending(false); return; }
-    setSent(true); setSending(false); setCountdown(60);
+    if (!res.ok) { setError(data.error); setSending(false); return false; }
+    setSent(true); setSending(false); setCountdown(60); setCode("");
     if (data.mocked) { setMocked(true); setMockCode(data.code || ""); }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!sent) { setError("Solicita un código primero"); return; }
-    if (code.length < 6) { setError("Ingresa el código de 6 dígitos"); return; }
+
+    if (!isValidLocalPhone(localPhone)) { setError("Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)"); return; }
+
+    if (!sent || code.length < 6) {
+      const ok = await enviarCodigo();
+      if (ok && !mocked) {
+        setError("Te hemos enviado un código de verificación. Ingrésalo para continuar.");
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/actores/login", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normalizePhone(phone), code }),
+        body: JSON.stringify({ phone: fullPhone(), code }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       localStorage.setItem("token", data.token);
+      if (data.csrfToken) setCsrfToken(data.csrfToken);
       localStorage.setItem("actor", JSON.stringify(data.actor));
       router.push("/dashboard");
     } catch { setError("Error al conectar con el servidor"); }
   };
+
+  const handleResend = async () => {
+    if (countdown > 0) return;
+    const ok = await enviarCodigo();
+    if (ok) setError("Código reenviado.");
+  };
+
+  const submitLabel = sending ? "Enviando..." : !sent ? "Solicitar código" : code.length < 6 ? "Solicitar código" : "Ingresar";
 
   return (
     <div className="auth-container">
@@ -65,48 +89,56 @@ export default function LoginPage() {
         <div style={{ textAlign: "left", marginBottom: 8 }}><Link href="/" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 13 }}>← Volver al inicio</Link></div>
         <h2>Iniciar Sesión</h2>
         <p className="subtitle">Sistema de Logística</p>
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className={`alert ${error.includes("enviado") || error.includes("reenviado") ? "" : "alert-error"}`}>{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Teléfono / WhatsApp</label>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+              <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
               <input
-                value={phone}
-                onChange={(e) => setPhone(normalizePhone(e.target.value))}
-                placeholder="521234567890"
+                value={localPhone}
+                onChange={(e) => setLocalPhone(normalizePhone(e.target.value))}
+                placeholder="1234567890"
                 required
-                style={{ flex: 1 }}
+                disabled={sent}
+                style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
               />
+            </div>
+            <small style={{ color: "#6b7280", fontSize: 12 }}>Selecciona tu país e ingresa tu número sin código de país.</small>
+          </div>
+          <div className="form-group">
+            <label>Código de verificación</label>
+            {mocked && (
+              <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
+                Modo de prueba activo. Usa el código: <strong>{mockCode}</strong>
+              </div>
+            )}
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder={sent ? "000000" : "Solicita un código primero"}
+              maxLength={6}
+              required={sent}
+              disabled={!sent}
+              style={{ textAlign: "center", letterSpacing: 4, fontSize: 18 }}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={sending}>
+            {submitLabel}
+          </button>
+          {sent && (
+            <div style={{ marginTop: 12, textAlign: "center" }}>
               <button
                 type="button"
-                className="btn btn-secondary"
-                style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-                onClick={enviarCodigo}
-                disabled={sending || countdown > 0 || !isValidPhone(phone)}
+                className="btn btn-link"
+                style={{ fontSize: 13, padding: 0 }}
+                onClick={handleResend}
+                disabled={countdown > 0}
               >
-                {sending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : sent ? "Reenviar" : "Enviar código"}
+                {countdown > 0 ? `Reenviar código (${countdown}s)` : "¿No recibiste el código? Reenviar"}
               </button>
             </div>
-          </div>
-          {sent && (
-            <div className="form-group">
-              <label>Código de verificación</label>
-              {mocked && (
-                <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
-                  Modo de prueba activo. Usa el código: <strong>{mockCode}</strong>
-                </div>
-              )}
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="000000"
-                maxLength={6}
-                required
-                style={{ textAlign: "center", letterSpacing: 4, fontSize: 18 }}
-              />
-            </div>
           )}
-          <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={!sent}>Ingresar</button>
         </form>
         <div className="link">¿No tienes cuenta? <Link href="/register">Regístrate aquí</Link></div>
       </div>
