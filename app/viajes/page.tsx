@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import NavegacionViaje from "@/components/NavegacionViaje";
 
 export default function TripsPage() {
   const router = useRouter();
@@ -72,6 +73,9 @@ export default function TripsPage() {
                     <td><span className={statusBadge(t.estado)}>{t.estado}</span></td>
                     <td>
                       <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
+                      {(t.estado === "assigned" || t.estado === "in_transit") && t.transportista?.id === actor.id && (
+                        <NavegacionViaje origen={t.almacen} destino={t.centroAyuda} />
+                      )}
                       {t.estado === "assigned" && t.transportista?.id === actor.id && (
                         <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12, marginLeft: 4 }} onClick={() => updateStatus(t.id, "in_transit")}>Iniciar</button>
                       )}

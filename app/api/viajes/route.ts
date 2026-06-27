@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
   const shipments = await prisma.shipment.findMany({
     where: filter,
     include: {
-      warehouseActor: { select: { id: true, name: true, address: true, whatsapp: true } },
-      reliefActor: { select: { id: true, name: true, address: true, whatsapp: true } },
+      warehouseActor: { select: { id: true, name: true, address: true, whatsapp: true, lat: true, lng: true } },
+      reliefActor: { select: { id: true, name: true, address: true, whatsapp: true, lat: true, lng: true } },
       transporterActor: { select: { id: true, name: true, whatsapp: true } },
       shipmentItem: true,
     },

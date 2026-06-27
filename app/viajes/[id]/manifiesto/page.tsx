@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import NavegacionViaje from "@/components/NavegacionViaje";
 
 export default function ManifiestoPage() {
   const { id } = useParams();
@@ -53,6 +54,13 @@ export default function ManifiestoPage() {
               <p style={{ color: "#6b7280", fontSize: 14 }}>{data.puntoDescarga.contacto}</p>
             </div>
           </div>
+          {(data.estado === "assigned" || data.estado === "in_transit") && (
+            <div style={{ marginBottom: 24, padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
+              <h4 style={{ marginBottom: 8, color: "#92400e" }}>Ruta sugerida</h4>
+              <p style={{ fontSize: 13, color: "#92400e", marginBottom: 8 }}>Tu ubicacion → {data.puntoCarga.nombre} → {data.puntoDescarga.nombre}</p>
+              <NavegacionViaje origen={data.puntoCarga} destino={data.puntoDescarga} />
+            </div>
+          )}
           <h3 style={{ marginBottom: 12 }}>Manifiesto de Carga</h3>
           <table>
             <thead><tr><th>#</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th></tr></thead>
