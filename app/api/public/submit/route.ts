@@ -55,14 +55,14 @@ export async function POST(req: NextRequest) {
 
     let resultPayload: any = { token, actor };
 
-    if (!itemName) {
-      return Response.json({ error: "Nombre del insumo es requerido." }, { status: 400 });
-    }
-    const normalizedItem = itemName.trim().toLowerCase();
-    const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
-
     // 3. Perform the specific action
     if (action === "request") {
+      if (!itemName) {
+        return Response.json({ error: "Nombre del insumo es requerido." }, { status: 400 });
+      }
+      const normalizedItem = itemName.trim().toLowerCase();
+      const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
+
       // Create supply request
       const requestRecord = await prisma.request.create({
         data: {
@@ -89,6 +89,12 @@ export async function POST(req: NextRequest) {
 
       resultPayload.request = requestRecord;
     } else if (action === "supply") {
+      if (!itemName) {
+        return Response.json({ error: "Nombre del insumo es requerido." }, { status: 400 });
+      }
+      const normalizedItem = itemName.trim().toLowerCase();
+      const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
+
       // Check for duplicate
       const existing = await prisma.supply.findFirst({
         where: { actorId: actor.id, name: { equals: normalizedItem, mode: "insensitive" } },
