@@ -12,7 +12,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .form-group label{display:block;margin-bottom:6px;font-weight:600;color:#374151}
 .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;transition:border-color .2s}
 .form-group input:focus,.form-group select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.navbar{background:#1e293b;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.navbar{background:#1e293b;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1000}
 .navbar h1{font-size:20px}
 .navbar-links{display:flex;align-items:center;gap:8px}
 .navbar-links a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;padding:6px 10px;border-radius:6px;transition:all .2s;white-space:nowrap}
@@ -372,9 +372,10 @@ table th{background:#f9fafb;font-weight:600;color:#374151;font-size:13px;text-tr
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
-  z-index: 100;
+  z-index: 1000;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
+  position: sticky;
+  top: 0;
 }
 
 .main-header .logo {
