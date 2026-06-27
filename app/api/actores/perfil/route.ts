@@ -30,3 +30,51 @@ export async function GET(req: NextRequest) {
     verified: actor.verified,
   });
 }
+
+export async function PUT(req: NextRequest) {
+  const auth = getAuthActor(req);
+  if (!auth) return jsonError(401, "Token requerido");
+
+  try {
+    const body = await req.json();
+    const { name, contactName, phone, whatsapp, address, city, vehicleType, capacityKg } = body;
+
+    const actor = await prisma.actor.findUnique({
+      where: { id: auth.actorId },
+    });
+    if (!actor) return jsonError(404, "Actor no encontrado");
+
+    if (actor.userId !== auth.userId) {
+      return jsonError(403, "No tienes permiso para editar este perfil");
+    }
+
+    const updated = await prisma.actor.update({
+      where: { id: auth.actorId },
+      data: {
+        name: name !== undefined ? name : undefined,
+        contactName: contactName !== undefined ? contactName : undefined,
+        phone: phone !== undefined ? phone : undefined,
+        whatsapp: whatsapp !== undefined ? whatsapp : undefined,
+        address: address !== undefined ? address : undefined,
+        city: city !== undefined ? city : undefined,
+        vehicleType: vehicleType !== undefined ? vehicleType : undefined,
+        capacityKg: capacityKg !== undefined ? (capacityKg ? Number(capacityKg) : null) : undefined,
+      },
+    });
+
+    return Response.json({
+      success: true,
+      actor: {
+        id: updated.id,
+        type: updated.type,
+        name: updated.name,
+        whatsapp: updated.whatsapp,
+        phone: updated.phone,
+        vehicleType: updated.vehicleType,
+        capacityKg: updated.capacityKg,
+      }
+    });
+  } catch (error: any) {
+    return jsonError(500, error.message);
+  }
+}

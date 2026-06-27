@@ -22,12 +22,38 @@ export default function DashboardPage() {
   const router = useRouter();
   const [actor, setActor] = useState<any>({});
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ insumos: 0, solicitudes: 0, viajes: 0, viajesActivos: 0 });
+  const [stats, setStats] = useState({ 
+    insumos: 0, 
+    solicitudes: 0, 
+    solicitudesAbiertas: 0,
+    solicitudesAbiertasGlobal: 0,
+    viajes: 0, 
+    viajesActivos: 0,
+    viajesCompletados: 0 
+  });
   const [qrData, setQrData] = useState<{ url: string; code: string; actorName: string } | null>(null);
   const [qError, setQError] = useState("");
   const [recentSupplies, setRecentSupplies] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [recentShipments, setRecentShipments] = useState<any[]>([]);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    vehicleType: "",
+    capacityKg: ""
+  });
+  const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
+  const [newProfileForm, setNewProfileForm] = useState({
+    type: "warehouse",
+    name: "",
+    contactName: "",
+    phone: "",
+    whatsapp: "",
+    address: "",
+    city: "",
+    vehicleType: "",
+    capacityKg: ""
+  });
 
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -56,8 +82,11 @@ export default function DashboardPage() {
         setStats({
           insumos: suppliesArr.length,
           solicitudes: requestsArr.length,
+          solicitudesAbiertas: requestsArr.filter((r: any) => r.status === "open").length,
+          solicitudesAbiertasGlobal: requestsArr.filter((r: any) => r.status === "open").length,
           viajes: shipmentsArr.length,
           viajesActivos: shipmentsArr.filter((v: any) => v.estado === "in_transit" || v.estado === "assigned").length,
+          viajesCompletados: shipmentsArr.filter((v: any) => v.estado === "completed").length,
         });
 
         // Slice for latest feeds (limit 5)
@@ -68,6 +97,38 @@ export default function DashboardPage() {
       .catch((e) => console.error("Error loading dashboard data", e))
       .finally(() => setLoading(false));
   }, [token, router]);
+
+  useEffect(() => {
+    if (actor) {
+      setProfileForm({
+        name: actor.name || "",
+        vehicleType: actor.vehicleType || "",
+        capacityKg: actor.capacityKg ? String(actor.capacityKg) : ""
+      });
+    }
+  }, [actor]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("create_profile") === "true") {
+        setShowCreateProfileModal(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (actor) {
+      setNewProfileForm((prev) => ({
+        ...prev,
+        contactName: actor.contactName || actor.name || "",
+        phone: actor.phone || "",
+        whatsapp: actor.whatsapp || "",
+        address: actor.address || "",
+        city: actor.city || ""
+      }));
+    }
+  }, [actor]);
 
   const generateQr = async () => {
     setQError("");
@@ -117,8 +178,24 @@ export default function DashboardPage() {
       <div className="container" style={{ paddingBottom: "40px" }}>
         {/* Header Greeting */}
         <div className="dashboard-header">
-          <h2>¡Hola, {actor.name || "Usuario"}! 👋</h2>
-          <p className="subtitle">
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
+            <h2 style={{ margin: 0 }}>¡Hola, {actor.name || "Usuario"}! 👋</h2>
+            <button 
+              onClick={() => setShowProfileModal(true)} 
+              className="btn btn-secondary" 
+              style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+            >
+              ✏️ Editar Perfil
+            </button>
+            <button 
+              onClick={() => setShowCreateProfileModal(true)} 
+              className="btn btn-success" 
+              style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+            >
+              ➕ Crear Perfil
+            </button>
+          </div>
+          <p className="subtitle" style={{ marginTop: 4 }}>
             {LABELS[actor.type] || "Portal de Logística"} &bull; Panel de Control Operativo
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -141,37 +218,116 @@ export default function DashboardPage() {
           <>
             {/* Visual Metric Grid */}
             <div className="dashboard-grid">
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-info">
-                  <span className="dashboard-stat-title">Mis Insumos</span>
-                  <span className="dashboard-stat-value">{stats.insumos}</span>
-                </div>
-                <div className="dashboard-stat-icon">📦</div>
-              </div>
+              {actor.type === "warehouse" && (
+                <>
+                  <Link href="/insumos" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Insumos en Almacén</span>
+                      <span className="dashboard-stat-value">{stats.insumos}</span>
+                    </div>
+                    <div className="dashboard-stat-icon">📦</div>
+                  </Link>
+                  <Link href="/matching" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Solicitudes Abiertas (Global)</span>
+                      <span className="dashboard-stat-value">{stats.solicitudesAbiertasGlobal}</span>
+                    </div>
+                    <div className="dashboard-stat-icon">📋</div>
+                  </Link>
+                  <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Envíos Totales</span>
+                      <span className="dashboard-stat-value">{stats.viajes}</span>
+                    </div>
+                    <div className="dashboard-stat-icon">🚚</div>
+                  </Link>
+                  <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Envíos en Tránsito</span>
+                      <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
+                    </div>
+                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff" }}>⚡</div>
+                  </Link>
+                </>
+              )}
 
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-info">
-                  <span className="dashboard-stat-title">Mis Solicitudes</span>
-                  <span className="dashboard-stat-value">{stats.solicitudes}</span>
-                </div>
-                <div className="dashboard-stat-icon">📋</div>
-              </div>
+              {actor.type === "relief" && (
+                <>
+                  <Link href="/solicitudes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Mis Solicitudes</span>
+                      <span className="dashboard-stat-value">{stats.solicitudes}</span>
+                    </div>
+                    <div className="dashboard-stat-icon">📋</div>
+                  </Link>
+                  <Link href="/solicitudes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Solicitudes Abiertas</span>
+                      <span className="dashboard-stat-value" style={{ color: "#ef4444" }}>{stats.solicitudesAbiertas}</span>
+                    </div>
+                    <div className="dashboard-stat-icon" style={{ background: "#fef2f2" }}>🚨</div>
+                  </Link>
+                  <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Envíos en Camino</span>
+                      <span className="dashboard-stat-value" style={{ color: "#f59e0b" }}>{stats.viajesActivos}</span>
+                    </div>
+                    <div className="dashboard-stat-icon" style={{ background: "#fffbeb" }}>🚚</div>
+                  </Link>
+                  <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Envíos Recibidos</span>
+                      <span className="dashboard-stat-value" style={{ color: "#10b981" }}>{stats.viajesCompletados}</span>
+                    </div>
+                    <div className="dashboard-stat-icon" style={{ background: "#ecfdf5" }}>✅</div>
+                  </Link>
+                </>
+              )}
 
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-info">
-                  <span className="dashboard-stat-title">Viajes Totales</span>
-                  <span className="dashboard-stat-value">{stats.viajes}</span>
-                </div>
-                <div className="dashboard-stat-icon">🚚</div>
-              </div>
-
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-info">
-                  <span className="dashboard-stat-title">Viajes Activos</span>
-                  <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
-                </div>
-                <div className="dashboard-stat-icon" style={{ background: "#eff6ff" }}>⚡</div>
-              </div>
+              {actor.type === "transporter" && (
+                <>
+                  <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Viajes Asignados</span>
+                      <span className="dashboard-stat-value">{stats.viajes}</span>
+                    </div>
+                    <div className="dashboard-stat-icon">🗺️</div>
+                  </Link>
+                  <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Viajes en Tránsito</span>
+                      <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
+                    </div>
+                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff" }}>⚡</div>
+                  </Link>
+                  <div className="dashboard-stat-card" onClick={() => setShowProfileModal(true)} style={{ cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Vehículo</span>
+                      {actor.vehicleType ? (
+                        <span className="dashboard-stat-value" style={{ fontSize: 16 }}>{actor.vehicleType}</span>
+                      ) : (
+                        <span className="btn btn-secondary" style={{ padding: "4px 8px", fontSize: 11, marginTop: 4, width: "fit-content", display: "inline-block" }}>
+                          ➕ Registrar
+                        </span>
+                      )}
+                    </div>
+                    <div className="dashboard-stat-icon">🚚</div>
+                  </div>
+                  <div className="dashboard-stat-card" onClick={() => setShowProfileModal(true)} style={{ cursor: "pointer" }}>
+                    <div className="dashboard-stat-info">
+                      <span className="dashboard-stat-title">Capacidad Carga</span>
+                      {actor.capacityKg ? (
+                        <span className="dashboard-stat-value" style={{ fontSize: 16 }}>{actor.capacityKg} kg</span>
+                      ) : (
+                        <span className="btn btn-secondary" style={{ padding: "4px 8px", fontSize: 11, marginTop: 4, width: "fit-content", display: "inline-block" }}>
+                          ➕ Registrar
+                        </span>
+                      )}
+                    </div>
+                    <div className="dashboard-stat-icon">⚖️</div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Double Column Layout */}
@@ -343,6 +499,381 @@ export default function DashboardPage() {
         )}
       </div>
       {qrData && <QrModal url={qrData.url} actorName={qrData.actorName} code={qrData.code} onClose={() => setQrData(null)} />}
+      {showProfileModal && (
+        <div className="modal-backdrop" style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div className="card" style={{
+            width: "90%",
+            maxWidth: "450px",
+            padding: "24px",
+            borderRadius: "12px",
+            backgroundColor: "#fff",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
+              Actualizar Perfil
+            </h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const res = await fetch("/api/actores/perfil", {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify(profileForm)
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  const updatedActor = { ...actor, ...data.actor };
+                  localStorage.setItem("actor", JSON.stringify(updatedActor));
+                  setActor(updatedActor);
+                  setShowProfileModal(false);
+                  window.location.reload();
+                }
+              } catch (err) {
+                console.error("Error updating profile:", err);
+              }
+            }}>
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                  Nombre
+                </label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+
+              {actor.type === "transporter" && (
+                <>
+                  <div className="form-group" style={{ marginBottom: 16 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                      Tipo de Vehículo
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Camión, Camioneta"
+                      value={profileForm.vehicleType}
+                      onChange={(e) => setProfileForm({ ...profileForm, vehicleType: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: 14
+                      }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 20 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                      Capacidad de Carga (kg)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Ej. 1500"
+                      value={profileForm.capacityKg}
+                      onChange={(e) => setProfileForm({ ...profileForm, capacityKg: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: 14
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowProfileModal(false)}
+                  style={{ padding: "8px 16px", fontSize: 13 }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ padding: "8px 16px", fontSize: 13 }}
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showCreateProfileModal && (
+        <div className="modal-backdrop" style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div className="card" style={{
+            width: "90%",
+            maxWidth: "500px",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "24px",
+            borderRadius: "12px",
+            backgroundColor: "#fff",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
+              Crear Nuevo Perfil / Rol
+            </h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const res = await fetch("/api/actores/create", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify(newProfileForm)
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  localStorage.setItem("token", data.token);
+                  localStorage.setItem("actor", JSON.stringify(data.actor));
+                  setShowCreateProfileModal(false);
+                  window.location.href = "/dashboard";
+                }
+              } catch (err) {
+                console.error("Error creating new profile:", err);
+              }
+            }}>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                  Tipo de Perfil / Rol *
+                </label>
+                <select
+                  value={newProfileForm.type}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, type: e.target.value })}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14,
+                    backgroundColor: "#fff"
+                  }}
+                >
+                  <option value="warehouse">Almacén / Centro de Acopio</option>
+                  <option value="relief">Centro de Ayuda Humanitaria</option>
+                  <option value="transporter">Transportista / Conductor</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                  Nombre del Perfil *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Almacén del Norte, Mi Camión"
+                  value={newProfileForm.name}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, name: e.target.value })}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                  Persona de Contacto
+                </label>
+                <input
+                  type="text"
+                  value={newProfileForm.contactName}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, contactName: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div className="form-group">
+                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                    Teléfono
+                  </label>
+                  <input
+                    type="text"
+                    value={newProfileForm.phone}
+                    onChange={(e) => setNewProfileForm({ ...newProfileForm, phone: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                    WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={newProfileForm.whatsapp}
+                    onChange={(e) => setNewProfileForm({ ...newProfileForm, whatsapp: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div className="form-group">
+                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    value={newProfileForm.address}
+                    onChange={(e) => setNewProfileForm({ ...newProfileForm, address: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                    Ciudad
+                  </label>
+                  <input
+                    type="text"
+                    value={newProfileForm.city}
+                    onChange={(e) => setNewProfileForm({ ...newProfileForm, city: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+              </div>
+
+              {newProfileForm.type === "transporter" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                  <div className="form-group">
+                    <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                      Tipo de Vehículo
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Camión, Camioneta"
+                      value={newProfileForm.vehicleType}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, vehicleType: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: 14
+                      }}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                      Capacidad Carga (kg)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Ej. 1500"
+                      value={newProfileForm.capacityKg}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, capacityKg: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: 14
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowCreateProfileModal(false)}
+                  style={{ padding: "8px 16px", fontSize: 13 }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ padding: "8px 16px", fontSize: 13 }}
+                >
+                  Crear Perfil
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

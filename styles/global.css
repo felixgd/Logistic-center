@@ -776,4 +776,9 @@ table th.sort-active{color:#2563eb}
     gap: 12px;
     margin-top: 10px;
   }
+
+  .sidebar-drag-handle,
+  .sidebar-expand-toggle {
+    display: none !important;
+  }
 }

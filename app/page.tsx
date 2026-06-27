@@ -183,6 +183,10 @@ export default function HomePage() {
   // Claim Trip specific
   const [activeClaimShipmentId, setActiveClaimShipmentId] = useState<string | null>(null);
 
+  const [availableActors, setAvailableActors] = useState<any[]>([]);
+  const [actor, setActor] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -204,6 +208,7 @@ export default function HomePage() {
 
   // Load identified actor from localStorage and start background polling
   useEffect(() => {
+    setMounted(true);
     fetchData();
 
     // Poll the public map API silently every 10 seconds
@@ -223,12 +228,23 @@ export default function HomePage() {
     const token = localStorage.getItem("token");
     if (token) {
       setIsAuthenticated(true);
+      fetch("/api/actores/list", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setAvailableActors(data);
+          }
+        })
+        .catch((e) => console.error("Error fetching available actors", e));
     }
 
     const storedActor = localStorage.getItem("actor");
     if (storedActor) {
       try {
         const actorObj = JSON.parse(storedActor);
+        setActor(actorObj);
         setFormName(actorObj.name || "");
         setFormWhatsapp(actorObj.whatsapp || "");
       } catch (e) {
@@ -443,11 +459,60 @@ export default function HomePage() {
         </button>
         <nav className={`header-nav ${headerMenuOpen ? "open" : ""}`}>
           <Link href="/" className="active" onClick={() => setHeaderMenuOpen(false)}>Mapa Central</Link>
-          {isAuthenticated && <Link href="/dashboard" onClick={() => setHeaderMenuOpen(false)}>Dashboard</Link>}
+          {mounted && isAuthenticated && <Link href="/dashboard" onClick={() => setHeaderMenuOpen(false)}>Dashboard</Link>}
           <div className="header-nav-auth">
-            {isAuthenticated ? (
+            {mounted && isAuthenticated ? (
               <>
                 <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
+                {actor && availableActors.length > 0 && (
+                  <select 
+                    value={actor.id} 
+                    onChange={async (e) => {
+                      const targetActorId = e.target.value;
+                      if (targetActorId === "create_new_profile") {
+                        window.location.href = "/dashboard?create_profile=true";
+                        return;
+                      }
+                      const token = localStorage.getItem("token");
+                      try {
+                        const res = await fetch("/api/actores/switch", {
+                          method: "POST",
+                          headers: { 
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}` 
+                          },
+                          body: JSON.stringify({ actorId: targetActorId }),
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          localStorage.setItem("token", data.token);
+                          localStorage.setItem("actor", JSON.stringify(data.actor));
+                          window.location.href = "/dashboard";
+                        }
+                      } catch (err) {
+                        console.error("Error switching actor:", err);
+                      }
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      backgroundColor: "#334155",
+                      color: "#fff",
+                      border: "1px solid #475569",
+                      cursor: "pointer",
+                      outline: "none",
+                      margin: "4px 8px"
+                    }}
+                  >
+                    {availableActors.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({a.type === "warehouse" ? "Almacén" : a.type === "relief" ? "Ayuda" : "Transporte"})
+                      </option>
+                    ))}
+                    <option value="create_new_profile">➕ Crear nuevo perfil...</option>
+                  </select>
+                )}
                 <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
                   Cerrar Sesión
                 </button>
@@ -465,9 +530,58 @@ export default function HomePage() {
           </div>
         </nav>
         <div className="auth-section header-auth-desktop">
-          {isAuthenticated ? (
+          {mounted && isAuthenticated ? (
             <>
               <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
+              {actor && availableActors.length > 0 && (
+                <select 
+                  value={actor.id} 
+                  onChange={async (e) => {
+                    const targetActorId = e.target.value;
+                    if (targetActorId === "create_new_profile") {
+                      window.location.href = "/dashboard?create_profile=true";
+                      return;
+                    }
+                    const token = localStorage.getItem("token");
+                    try {
+                      const res = await fetch("/api/actores/switch", {
+                        method: "POST",
+                        headers: { 
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}` 
+                        },
+                        body: JSON.stringify({ actorId: targetActorId }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        localStorage.setItem("token", data.token);
+                        localStorage.setItem("actor", JSON.stringify(data.actor));
+                        window.location.href = "/dashboard";
+                      }
+                    } catch (err) {
+                      console.error("Error switching actor:", err);
+                    }
+                  }}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    borderRadius: "4px",
+                    backgroundColor: "#334155",
+                    color: "#fff",
+                    border: "1px solid #475569",
+                    cursor: "pointer",
+                    outline: "none",
+                    margin: "0 8px"
+                  }}
+                >
+                  {availableActors.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({a.type === "warehouse" ? "Almacén" : a.type === "relief" ? "Ayuda" : "Transporte"})
+                    </option>
+                  ))}
+                  <option value="create_new_profile">➕ Crear nuevo perfil...</option>
+                </select>
+              )}
               <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
                 Cerrar Sesión
               </button>
