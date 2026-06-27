@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
-import { sendSms } from "@/lib/zavu";
+import { notifyBySms, formatTripCode, formatItems } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
   const auth = getAuthActor(req);
@@ -116,20 +116,18 @@ export async function POST(req: NextRequest) {
       userId: auth.userId,
     });
 
-    const itemsStr = items.map((i: any) => `${i.quantity} ${i.unit || "unidad"} de ${i.name}`).join(", ");
+    const itemsStr = formatItems(items);
     const wa = shipment.warehouseActor;
     const ra = shipment.reliefActor;
 
-    const msgViaje = `Nuevo envio ${codigo}\nInsumos: ${itemsStr}\n\nAlmacen: ${wa?.name} (${wa?.phone || wa?.whatsapp || "—"})\nCentro: ${ra?.name} (${ra?.phone || ra?.whatsapp || "—"})`;
+    const msgAlmacen = `Nuevo envio ${codigo} solicitado por ${ra?.name || "Centro de ayuda"}. Insumos: ${itemsStr}. Responde APROBAR para aceptar.`;
+    const msgCentro = `Envio ${codigo} coordinado con almacen ${wa?.name || "—"}. Insumos: ${itemsStr}.`;
 
-    if (wa?.phone || wa?.whatsapp) {
-      if (wa.whatsapp) await sendWhatsAppMessage(wa.whatsapp, `📦 Nuevo envio generado\nCodigo: ${codigo}\nCentro: ${ra?.name}\nInsumos: ${itemsStr}`);
-      await sendSms(`+${wa.phone || wa.whatsapp}`, msgViaje);
-    }
-    if (ra?.phone || ra?.whatsapp) {
-      if (ra.whatsapp) await sendWhatsAppMessage(ra.whatsapp, `✅ Envio coordinado\nCodigo: ${codigo}\nAlmacen: ${wa?.name}\nInsumos: ${itemsStr}`);
-      await sendSms(`+${ra.phone || ra.whatsapp}`, msgViaje);
-    }
+    if (wa?.whatsapp) await sendWhatsAppMessage(wa.whatsapp, `📦 Nuevo envio generado\nCodigo: ${codigo}\nCentro: ${ra?.name}\nInsumos: ${itemsStr}`);
+    await notifyBySms(wa?.phone || wa?.whatsapp, msgAlmacen);
+
+    if (ra?.whatsapp) await sendWhatsAppMessage(ra.whatsapp, `✅ Envio coordinado\nCodigo: ${codigo}\nAlmacen: ${wa?.name}\nInsumos: ${itemsStr}`);
+    await notifyBySms(ra?.phone || ra?.whatsapp, msgCentro);
 
     return Response.json({
       id: shipment.id,

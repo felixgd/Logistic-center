@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { notifyBySms, formatTripCode, formatItems } from "@/lib/notifications";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = getAuthActor(req);
@@ -13,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const shipment = await prisma.shipment.findUnique({
       where: { id: params.id },
-      include: { shipmentItem: true, reliefActor: true },
+      include: { shipmentItem: true, warehouseActor: true, reliefActor: true, transporterActor: true },
     });
     if (!shipment) return jsonError(404, "Envío no encontrado");
 
@@ -74,6 +75,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         }
       }
     }, { isolationLevel: "Serializable" });
+
+    const codigo = formatTripCode(shipment);
+    const itemsStr = formatItems(shipment.shipmentItem);
+    const wa = shipment.warehouseActor;
+    const ra = shipment.reliefActor;
+    const ta = shipment.transporterActor;
+
+    if (status === "approved") {
+      const msg = `El almacen ${wa?.name || "—"} aprobo el envio ${codigo}. Insumos: ${itemsStr}.`;
+      if (ra?.whatsapp) await sendWhatsAppMessage(ra.whatsapp, `✅ Envio Aprobado\nCodigo: ${codigo}\nAlmacen: ${wa?.name}`);
+      await notifyBySms(ra?.phone || ra?.whatsapp, msg);
+    }
+
+    if (status === "assigned") {
+      const msg = `Envio ${codigo} asignado a transportista ${ta?.name || "—"}. Insumos: ${itemsStr}.`;
+      if (wa?.whatsapp) await sendWhatsAppMessage(wa.whatsapp, `🚚 Envio Asignado\nCodigo: ${codigo}\nTransportista: ${ta?.name}`);
+      if (ra?.whatsapp) await sendWhatsAppMessage(ra.whatsapp, `🚚 Envio Asignado\nCodigo: ${codigo}\nTransportista: ${ta?.name}`);
+      if (ta?.whatsapp) await sendWhatsAppMessage(ta.whatsapp, `🚚 Envio Asignado\nCodigo: ${codigo}\nAlmacen: ${wa?.name}\nCentro: ${ra?.name}`);
+      await notifyBySms(wa?.phone || wa?.whatsapp, msg);
+      await notifyBySms(ra?.phone || ra?.whatsapp, msg);
+      await notifyBySms(ta?.phone || ta?.whatsapp, msg);
+    }
 
     if (status === "delivered") {
       await publishEvent("viaje.completado", {
