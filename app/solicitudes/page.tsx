@@ -16,7 +16,9 @@ export default function RequestsPage() {
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
-    setActor(JSON.parse(localStorage.getItem("actor") || "{}"));
+    const a = JSON.parse(localStorage.getItem("actor") || "{}");
+    setActor(a);
+    if (a.type === "transporter") { router.push("/dashboard"); return; }
     fetch("/api/solicitudes", { headers }).then((r) => r.json()).then(setRequests).catch(() => {});
   }, [token, router]);
 

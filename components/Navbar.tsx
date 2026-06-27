@@ -19,14 +19,16 @@ export default function Navbar() {
     router.push("/");
   };
 
-  const links = [
+  const allLinks = [
     { path: "/", label: "Mapa Central" },
     { path: "/dashboard", label: "Dashboard" },
-    { path: "/insumos", label: "Insumos" },
-    { path: "/solicitudes", label: "Solicitudes" },
+    { path: "/insumos", label: "Insumos", roles: ["warehouse", "relief"] },
+    { path: "/solicitudes", label: "Solicitudes", roles: ["warehouse", "relief"] },
     { path: "/viajes", label: "Viajes" },
-    { path: "/matching", label: "Matching" },
+    { path: "/matching", label: "Matching", roles: ["warehouse"] },
   ];
+
+  const links = allLinks.filter((l) => !l.roles || l.roles.includes(actor.type));
 
   if (actor.isOwner) {
     links.push({ path: "/afiliados", label: "Afiliados" });

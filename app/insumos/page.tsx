@@ -30,6 +30,7 @@ export default function SuppliesPage() {
     if (!token) { router.push("/login"); return; }
     const a = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(a);
+    if (a.type === "transporter") { router.push("/dashboard"); return; }
     load();
     if (a.type === "relief") {
       fetch("/api/actores/perfil", { headers }).then(r => r.json()).then(setPerfil);
