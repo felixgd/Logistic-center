@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       {
         mensaje: "Registro exitoso",
         token,
-        actor: { id: actor.id, type: actor.type, name: actor.name, email: user.email },
+        actor: { id: actor.id, type: actor.type, name: actor.name, email: user.email, isOwner: true },
       },
       { status: 201 }
     );

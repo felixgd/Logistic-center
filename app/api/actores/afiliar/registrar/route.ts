@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         actorId: parentActor.id,
         userId: user.id,
         role: "member",
+        phone,
       },
     });
 
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
         type: parentActor.type,
         name: parentActor.name,
         email: user.email,
+        isOwner: false,
       },
     }, { status: 201 });
   } catch (error: any) {

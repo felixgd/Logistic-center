@@ -75,8 +75,11 @@ export default function DashboardPage() {
             {actor.type === "warehouse" && <a href="/insumos" className="btn btn-primary">Gestionar Insumos</a>}
             {actor.type === "relief" && <a href="/solicitudes" className="btn btn-primary">Crear Solicitud</a>}
             {actor.type === "transporter" && <a href="/viajes" className="btn btn-primary">Ver Viajes</a>}
-            {["warehouse", "relief"].includes(actor.type) && (
-              <button className="btn btn-secondary" onClick={generateQr}>+ Afiliar Personal</button>
+            {actor.isOwner && ["warehouse", "relief"].includes(actor.type) && (
+              <>
+                <button className="btn btn-secondary" onClick={generateQr}>+ Afiliar Personal</button>
+                <a href="/afiliados" className="btn btn-secondary">Gestionar Afiliados</a>
+              </>
             )}
           </div>
           {qError && <p style={{ color: "#dc2626", marginTop: 8, fontSize: 13 }}>{qError}</p>}

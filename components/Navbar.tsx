@@ -25,6 +25,10 @@ export default function Navbar() {
     { path: "/matching", label: "Matching" },
   ];
 
+  if (actor.isOwner) {
+    links.push({ path: "/afiliados", label: "Afiliados" });
+  }
+
   return (
     <nav className="navbar">
       <h1>Logística</h1>
@@ -36,6 +40,7 @@ export default function Navbar() {
         ))}
         <span style={{ color: "#94a3b8", margin: "0 12px", fontSize: 13 }}>
           {actor.name} ({LABELS[actor.type as string] || actor.type})
+          {!actor.isOwner && <span style={{ color: "#f59e0b", marginLeft: 6 }}>(miembro)</span>}
         </span>
         <button className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }} onClick={logout}>
           Salir

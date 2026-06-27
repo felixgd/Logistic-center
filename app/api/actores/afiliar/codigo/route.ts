@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
   const actor = await prisma.actor.findUnique({ where: { id: auth.actorId } });
   if (!actor) return jsonError(404, "Actor no encontrado");
   if (!["warehouse", "relief"].includes(actor.type)) return jsonError(403, "Solo almacenes y centros de ayuda pueden generar códigos de afiliación");
+  if (actor.userId !== auth.userId) return jsonError(403, "Solo el administrador principal puede generar códigos de afiliación");
 
   const code = crypto.randomBytes(4).toString("hex").toUpperCase();
 

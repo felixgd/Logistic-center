@@ -54,13 +54,15 @@ model actor {
 }
 
 model actor_user {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   actorId   String
   userId    String
-  role      String   @default("member")
-  createdAt DateTime @default(now())
-  actor     actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String    @default("member")
+  phone     String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  actor     actor     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  user      user      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model affiliate_code {
