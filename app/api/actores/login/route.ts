@@ -15,8 +15,18 @@ export async function POST(req: NextRequest) {
     if (!account?.password || !(await comparePassword(password, account.password)))
       return jsonError(401, "Credenciales inválidas");
 
-    const actor = await prisma.actor.findFirst({ where: { userId: user.id } });
-    if (!actor) return jsonError(401, "Cuenta sin perfil de actor");
+    let actor = await prisma.actor.findFirst({ where: { userId: user.id } });
+    let isOwner = true;
+
+    if (!actor) {
+      const membership = await prisma.actor_user.findFirst({
+        where: { userId: user.id, deletedAt: null },
+        include: { actor: true },
+      });
+      if (!membership) return jsonError(401, "Cuenta sin perfil de actor");
+      actor = membership.actor;
+      isOwner = false;
+    }
 
     const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type });
 
@@ -29,6 +39,7 @@ export async function POST(req: NextRequest) {
         email: user.email,
         whatsapp: actor.whatsapp,
         phone: actor.phone,
+        isOwner,
       },
     });
   } catch (error: any) {

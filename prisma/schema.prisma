@@ -49,6 +49,32 @@ model actor {
   warehouseShipment    shipment[] @relation("warehouseActor")
   reliefShipment       shipment[] @relation("reliefActor")
   transporterShipment  shipment[] @relation("transporterActor")
+  members     actor_user[]
+  affiliateCodes affiliate_code[]
+}
+
+model actor_user {
+  id        String    @id @default(cuid())
+  actorId   String
+  userId    String
+  role      String    @default("member")
+  phone     String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  actor     actor     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  user      user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model affiliate_code {
+  id            String    @id @default(cuid())
+  actorId       String
+  code          String    @unique
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime?
+  usedAt        DateTime?
+  usedByUserId  String?
+  actor         actor     @relation(fields: [actorId], references: [id], onDelete: Cascade)
 }
 
 model event_log {
@@ -162,6 +188,7 @@ model user {
   request       request[]
   shipment      shipment[]
   eventLog      event_log[]
+  actorMemberships actor_user[]
 }
 
 model verification {
