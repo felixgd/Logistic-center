@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, signToken, jsonError } from "@/lib/auth";
+import { signToken, jsonError } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, name, phone, email, password, phoneVerificationToken } = await req.json();
+    const { code, name, phone, email, phoneVerificationToken } = await req.json();
 
     const cleanPhone = phone.replace(/\D/g, "");
     if (phoneVerificationToken) {
@@ -18,24 +18,25 @@ export async function POST(req: NextRequest) {
     if (!affiliateCode || !affiliateCode.active) return jsonError(400, "Código inválido o expirado");
     if (affiliateCode.usedAt) return jsonError(400, "Código ya utilizado");
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) return jsonError(400, "El email ya está registrado");
+    const existingPhone = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+    if (existingPhone) return jsonError(400, "El teléfono ya está registrado");
+    if (email) {
+      const existingEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingEmail) return jsonError(400, "El email ya está registrado");
+    }
 
     const parentActor = await prisma.actor.findUnique({ where: { id: affiliateCode.actorId } });
     if (!parentActor) return jsonError(404, "Cuenta principal no encontrada");
 
-    const hashed = await hashPassword(password);
-
     const user = await prisma.user.create({
-      data: { name, email },
+      data: { name, phone: cleanPhone, phoneVerified: true, email: email || null },
     });
 
     await prisma.account.create({
       data: {
         userId: user.id,
         providerId: "email",
-        accountId: email,
-        password: hashed,
+        accountId: email || cleanPhone,
       },
     });
 

@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, signToken, jsonError } from "@/lib/auth";
+import { signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, name, contactName, phone, whatsapp, address, city, email, password, vehicleType, capacityKg, lat, lng, phoneVerificationToken } = await req.json();
+    const { type, name, contactName, phone, whatsapp, address, city, email, vehicleType, capacityKg, lat, lng, phoneVerificationToken } = await req.json();
 
     const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
     if (targetPhone.length < 10) return jsonError(400, "Teléfono / WhatsApp inválido");
@@ -21,19 +21,15 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.user.findUnique({ where: { email: finalEmail } });
     if (existing) return jsonError(400, "El email o whatsapp ya está registrado");
 
-    const pwd = password || `password_${targetPhone}`;
-    const hashed = await hashPassword(pwd);
-
     const user = await prisma.user.create({
-      data: { name, email: finalEmail },
+      data: { name, phone: targetPhone, phoneVerified: true, email: finalEmail },
     });
 
     await prisma.account.create({
       data: {
         userId: user.id,
         providerId: "email",
-        accountId: email,
-        password: hashed,
+        accountId: finalEmail || targetPhone,
       },
     });
 

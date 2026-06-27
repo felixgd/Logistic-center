@@ -23,7 +23,6 @@ export default function RegisterPage() {
     phone: "",
     whatsapp: "",
     email: "",
-    password: "",
     vehicleType: "",
     capacityKg: 0,
     lat: null as number | null,
@@ -34,6 +33,8 @@ export default function RegisterPage() {
   const [verifToken, setVerifToken] = useState("");
   const [verifSending, setVerifSending] = useState(false);
   const [verifSent, setVerifSent] = useState(false);
+  const [verifMocked, setVerifMocked] = useState(false);
+  const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
   const router = useRouter();
 
@@ -63,6 +64,7 @@ export default function RegisterPage() {
     const data = await res.json();
     if (!res.ok) { setError(data.error); setVerifSending(false); return; }
     setVerifSent(true); setVerifSending(false); setCountdown(60);
+    if (data.mocked) { setVerifMocked(true); setVerifMockCode(data.code || ""); }
   };
 
   const verificarCodigo = async () => {
@@ -194,7 +196,6 @@ export default function RegisterPage() {
                   </div>
                 )}
                 <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
-                <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
                 {form.type === "transporter" && (
                   <>
                     <div className="form-group"><label>Tipo de vehículo</label><input value={form.vehicleType} onChange={(e) => update("vehicleType", e.target.value)} placeholder="Camión, camioneta, etc." /></div>
