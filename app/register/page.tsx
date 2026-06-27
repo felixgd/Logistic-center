@@ -2,10 +2,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
+  ssr: false,
+  loading: () => <p style={{ color: "#64748b", fontSize: 12, padding: 12 }}>Cargando mapa...</p>,
+});
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ type: "", name: "", address: "", city: "", phone: "", whatsapp: "", email: "", password: "", vehicleType: "", capacityKg: 0 });
+  const [form, setForm] = useState({
+    type: "",
+    name: "",
+    address: "",
+    city: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    password: "",
+    vehicleType: "",
+    capacityKg: 0,
+    lat: null as number | null,
+    lng: null as number | null,
+  });
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -54,6 +73,21 @@ export default function RegisterPage() {
             <div className="form-group"><label>Persona de contacto</label><input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="Nombre de contacto" /></div>
             <div className="form-group"><label>Dirección</label><input value={form.address} onChange={(e) => update("address", e.target.value)} required /></div>
             <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
+            
+            <div className="form-group">
+              <span className="map-instructions">📍 Ubicación en el mapa (haz clic para marcar):</span>
+              <div className="register-map-wrapper" style={{ height: "200px", marginBottom: "16px" }}>
+                <MapComponent
+                  actors={[]}
+                  interactive={true}
+                  onLocationSelected={(lat, lng) => {
+                    update("lat", lat);
+                    update("lng", lng);
+                  }}
+                />
+              </div>
+            </div>
+
             <div className="form-group"><label>WhatsApp</label><input value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} placeholder="521234567890" required /></div>
             <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
             <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
