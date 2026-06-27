@@ -17,6 +17,7 @@
     "@neondatabase/serverless": "^0.9.4",
     "@prisma/adapter-neon": "^5.19.0",
     "@prisma/client": "^5.19.0",
+    "@zavudev/sdk": "^0.46.0",
     "axios": "^1.7.5",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",

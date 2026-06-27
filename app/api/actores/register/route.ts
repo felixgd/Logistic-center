@@ -5,9 +5,17 @@ import { publishEvent } from "@/lib/pubsub";
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, name, contactName, phone, whatsapp, address, city, email, password, vehicleType, capacityKg, lat, lng } = await req.json();
+    const { type, name, contactName, phone, whatsapp, address, city, email, password, vehicleType, capacityKg, lat, lng, phoneVerificationToken } = await req.json();
 
     const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, "") : Date.now().toString();
+
+    if (phoneVerificationToken) {
+      const verif = await prisma.phone_verification.findFirst({
+        where: { phone: cleanWhatsapp, token: phoneVerificationToken, verified: true },
+      });
+      if (!verif) return jsonError(400, "Teléfono no verificado");
+    }
+
     const finalEmail = email || `wa_${cleanWhatsapp}@disaster.acopio`;
     const existing = await prisma.user.findUnique({ where: { email: finalEmail } });
     if (existing) return jsonError(400, "El email o whatsapp ya está registrado");

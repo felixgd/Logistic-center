@@ -6,8 +6,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const shipment = await prisma.shipment.findUnique({
     where: { id: params.id },
     include: {
-      warehouseActor: { select: { name: true, address: true, whatsapp: true } },
-      reliefActor: { select: { name: true, address: true, whatsapp: true } },
+      warehouseActor: { select: { id: true, name: true, address: true, whatsapp: true, lat: true, lng: true } },
+      reliefActor: { select: { id: true, name: true, address: true, whatsapp: true, lat: true, lng: true } },
       transporterActor: { select: { name: true, whatsapp: true } },
       shipmentItem: true,
     },
@@ -21,8 +21,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     codigoViaje: codigo,
     estado: shipment.status,
     transportista: shipment.transporterActor,
-    puntoCarga: { nombre: shipment.warehouseActor.name, direccion: shipment.warehouseActor.address, contacto: shipment.warehouseActor.whatsapp },
-    puntoDescarga: { nombre: shipment.reliefActor.name, direccion: shipment.reliefActor.address, contacto: shipment.reliefActor.whatsapp },
+    puntoCarga: { id: shipment.warehouseActor.id, nombre: shipment.warehouseActor.name, direccion: shipment.warehouseActor.address, contacto: shipment.warehouseActor.whatsapp, lat: shipment.warehouseActor.lat, lng: shipment.warehouseActor.lng },
+    puntoDescarga: { id: shipment.reliefActor.id, nombre: shipment.reliefActor.name, direccion: shipment.reliefActor.address, contacto: shipment.reliefActor.whatsapp, lat: shipment.reliefActor.lat, lng: shipment.reliefActor.lng },
     manifiesto: shipment.shipmentItem.map((i) => ({ insumo: i.name, cantidad: i.quantity, unidad: i.unit })),
     createdAt: shipment.createdAt,
   });

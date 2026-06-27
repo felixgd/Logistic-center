@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, requireTipo, jsonError } from "@/lib/auth";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { sendSms } from "@/lib/zavu";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = getAuthActor(req);
@@ -27,11 +28,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     const codigo = updated.notes?.startsWith("VIA-") ? updated.notes.split(" ")[0] : updated.id.slice(-8).toUpperCase();
+    const wa = updated.warehouseActor;
+    const ra = updated.reliefActor;
+    const ta = updated.transporterActor;
+    const itemsList = updated.shipmentItem.map((i: any) => `• ${i.quantity} ${i.unit} - ${i.name}`).join("\n");
 
-    if (updated.transporterActor?.whatsapp) {
-      const itemsList = updated.shipmentItem.map((i: any) => `• ${i.quantity} ${i.unit} - ${i.name}`).join("\n");
-      await sendWhatsAppMessage(updated.transporterActor.whatsapp,
-        `🚚 Envio Asignado\nCodigo: ${codigo}\n\n📥 CARGAR en: ${updated.warehouseActor.name}\n📍 ${updated.warehouseActor.address}\n\n📤 DESCARGAR en: ${updated.reliefActor.name}\n📍 ${updated.reliefActor.address}\n\n📋 Manifiesto:\n${itemsList}\n\nResponde: CONFIRMAR para aceptar el envio.`
+    const msgAsignado = `Viaje asignado ${codigo}\nInsumos:\n${itemsList}\n\nAlmacen: ${wa?.name} (${wa?.phone || wa?.whatsapp || "—"})\nCentro: ${ra?.name} (${ra?.phone || ra?.whatsapp || "—"})\nTransportista: ${ta?.name} (${ta?.phone || ta?.whatsapp || "—"})`;
+
+    const toNotify = [
+      ta?.phone || ta?.whatsapp,
+      wa?.phone || wa?.whatsapp,
+      ra?.phone || ra?.whatsapp,
+    ];
+
+    for (const phone of toNotify) {
+      if (phone) await sendSms(`+${phone}`, msgAsignado);
+    }
+
+    if (ta?.whatsapp) {
+      await sendWhatsAppMessage(ta.whatsapp,
+        `🚚 Envio Asignado\nCodigo: ${codigo}\n\n📥 CARGAR en: ${wa?.name}\n📍 ${wa?.address}\n\n📤 DESCARGAR en: ${ra?.name}\n📍 ${ra?.address}\n\n📋 Manifiesto:\n${itemsList}\n\nResponde: CONFIRMAR para aceptar el envio.`
       );
     }
 

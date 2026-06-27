@@ -32,13 +32,15 @@ export async function POST(req: NextRequest) {
 
   try {
     const { category, name, unit, quantity, urgency, notes } = await req.json();
+    const normalizedName = name.trim().toLowerCase();
+    const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
     const solicitud = await prisma.request.create({
       data: {
         userId: auth.userId,
         actorId: auth.actorId,
         category: category || "general",
-        name,
-        unit: unit || "unidad",
+        name: normalizedName,
+        unit: normalizedUnit,
         quantity,
         urgency: urgency || "media",
         status: "open",
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     await publishEvent("solicitud.creada", {
       userId: auth.userId, actorId: auth.actorId,
-      requestId: solicitud.id, name, quantity, urgency,
+      requestId: solicitud.id, name: normalizedName, quantity, urgency,
     });
 
     return Response.json(solicitud, { status: 201 });

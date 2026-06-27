@@ -14,7 +14,7 @@ export default function Navbar() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("actor");
-    router.push("/login");
+    router.push("/");
   };
 
   const links = [

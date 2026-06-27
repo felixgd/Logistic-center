@@ -15,6 +15,11 @@ function RegisterFormInner() {
     email: "", password: "", vehicleType: "", capacityKg: 0,
   });
   const [error, setError] = useState("");
+  const [verifCode, setVerifCode] = useState("");
+  const [verifToken, setVerifToken] = useState("");
+  const [verifSending, setVerifSending] = useState(false);
+  const [verifSent, setVerifSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   useEffect(() => {
     if (affiliateCode) {
@@ -33,14 +38,42 @@ function RegisterFormInner() {
 
   const selectTipo = (tipo: string) => { update("type", tipo); setStep(2); };
 
+  const enviarCodigo = async () => {
+    const target = form.whatsapp || form.phone;
+    if (!target) { setError("Ingresa un teléfono primero"); return; }
+    setVerifSending(true); setError("");
+    const res = await fetch("/api/verificar/enviar", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: target }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setError(data.error); setVerifSending(false); return; }
+    setVerifSent(true); setVerifSending(false); setCountdown(60);
+    const timer = setInterval(() => setCountdown((c) => { if (c <= 1) clearInterval(timer); return c - 1; }), 1000);
+  };
+
+  const verificarCodigo = async () => {
+    if (!verifCode) return;
+    setError("");
+    const target = form.whatsapp || form.phone;
+    const res = await fetch("/api/verificar/codigo", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: target, code: verifCode }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setError(data.error); return; }
+    setVerifToken(data.token);
+    setVerifCode("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     const endpoint = affiliateCode ? "/api/actores/afiliar/registrar" : "/api/actores/register";
     const body = affiliateCode
-      ? { code: affiliateCode, name: form.name, phone: form.phone || form.whatsapp, email: form.email, password: form.password }
-      : form;
+      ? { code: affiliateCode, name: form.name, phone: form.phone || form.whatsapp, email: form.email, password: form.password, phoneVerificationToken: verifToken || undefined }
+      : { ...form, phoneVerificationToken: verifToken || undefined };
 
     try {
       const res = await fetch(endpoint, {
@@ -67,7 +100,31 @@ function RegisterFormInner() {
           {error && <div className="alert alert-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group"><label>Nombre completo</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
-            <div className="form-group"><label>Teléfono / WhatsApp</label><input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="521234567890" required /></div>
+            <div className="form-group">
+              <label>Teléfono / WhatsApp</label>
+              <div style={{ display: "flex", gap: 4 }}>
+                <input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="521234567890" required style={{ flex: 1 }} />
+                {verifToken ? (
+                  <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
+                ) : (
+                  <button type="button" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                    onClick={enviarCodigo} disabled={verifSending || countdown > 0}>
+                    {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {verifSent && !verifToken && (
+              <div className="form-group">
+                <label>Código de verificación</label>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <input value={verifCode} onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000" maxLength={6} style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }} />
+                  <button type="button" className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }}
+                    onClick={verificarCodigo} disabled={verifCode.length < 6}>Confirmar</button>
+                </div>
+              </div>
+            )}
             <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
             <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
             <div className="form-group" style={{ background: "#f1f5f9", padding: 12, borderRadius: 6, fontSize: 13, color: "#475569" }}>
@@ -113,7 +170,31 @@ function RegisterFormInner() {
             <div className="form-group"><label>Persona de contacto</label><input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="Nombre de contacto" /></div>
             <div className="form-group"><label>Dirección</label><input value={form.address} onChange={(e) => update("address", e.target.value)} required /></div>
             <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
-            <div className="form-group"><label>WhatsApp</label><input value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} placeholder="521234567890" required /></div>
+            <div className="form-group">
+              <label>WhatsApp</label>
+              <div style={{ display: "flex", gap: 4 }}>
+                <input value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} placeholder="521234567890" required style={{ flex: 1 }} />
+                {verifToken ? (
+                  <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
+                ) : (
+                  <button type="button" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                    onClick={enviarCodigo} disabled={verifSending || countdown > 0}>
+                    {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {verifSent && !verifToken && (
+              <div className="form-group">
+                <label>Código de verificación</label>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <input value={verifCode} onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000" maxLength={6} style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }} />
+                  <button type="button" className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }}
+                    onClick={verificarCodigo} disabled={verifCode.length < 6}>Confirmar</button>
+                </div>
+              </div>
+            )}
             <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
             <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
             {form.type === "transporter" && (

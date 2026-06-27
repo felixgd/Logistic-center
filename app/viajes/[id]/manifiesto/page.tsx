@@ -2,14 +2,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import NavegacionViaje from "@/components/NavegacionViaje";
 
 export default function ManifiestoPage() {
   const { id } = useParams();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [actor, setActor] = useState<any>({});
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
   useEffect(() => {
+    setActor(JSON.parse(localStorage.getItem("actor") || "{}"));
     if (!id) return;
     fetch(`/api/viajes/${id}/manifiesto`)
       .then((r) => r.json())
@@ -17,6 +23,13 @@ export default function ManifiestoPage() {
       .catch(() => alert("Error al cargar manifiesto"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleCancel = async () => {
+    if (!confirm("¿Cancelar este viaje?")) return;
+    const res = await fetch(`/api/viajes/${id}/estado`, { method: "PATCH", headers, body: JSON.stringify({ status: "cancelled" }) });
+    if (!res.ok) { alert((await res.json()).error); return; }
+    router.push("/viajes");
+  };
 
   if (loading) return <div><Navbar /><div className="container"><p>Cargando...</p></div></div>;
   if (!data) return <div><Navbar /><div className="container"><p>No encontrado</p></div></div>;
@@ -27,7 +40,12 @@ export default function ManifiestoPage() {
       <div className="container">
         <div className="page-header">
           <h2>Manifiesto de Viaje</h2>
-          <button className="btn btn-secondary" onClick={() => router.push("/viajes")}>Volver</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {data.estado === "proposed" && (actor.id === data.puntoCarga?.id || actor.id === data.puntoDescarga?.id) && (
+              <button className="btn btn-danger" onClick={handleCancel}>Cancelar Viaje</button>
+            )}
+            <button className="btn btn-secondary" onClick={() => router.push("/viajes")}>Volver</button>
+          </div>
         </div>
         <div className="card" style={{ maxWidth: 700, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
@@ -53,6 +71,13 @@ export default function ManifiestoPage() {
               <p style={{ color: "#6b7280", fontSize: 14 }}>{data.puntoDescarga.contacto}</p>
             </div>
           </div>
+          {(data.estado === "assigned" || data.estado === "in_transit") && (
+            <div style={{ marginBottom: 24, padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
+              <h4 style={{ marginBottom: 8, color: "#92400e" }}>Ruta sugerida</h4>
+              <p style={{ fontSize: 13, color: "#92400e", marginBottom: 8 }}>Tu ubicacion → {data.puntoCarga.nombre} → {data.puntoDescarga.nombre}</p>
+              <NavegacionViaje origen={data.puntoCarga} destino={data.puntoDescarga} />
+            </div>
+          )}
           <h3 style={{ marginBottom: 12 }}>Manifiesto de Carga</h3>
           <table>
             <thead><tr><th>#</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th></tr></thead>

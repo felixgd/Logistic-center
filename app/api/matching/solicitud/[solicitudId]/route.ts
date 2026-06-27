@@ -25,8 +25,9 @@ export async function GET(_req: NextRequest, { params }: { params: { solicitudId
     const supplies = await prisma.supply.findMany({
       where: {
         status: "available",
-        quantity: { gte: solicitud.quantity },
+        quantity: { gt: 0 },
         name: { contains: solicitud.name, mode: "insensitive" },
+        unit: { equals: solicitud.unit, mode: "insensitive" },
       },
       include: { actor: { select: { id: true, name: true, address: true, whatsapp: true, city: true, lat: true, lng: true } } },
     });
@@ -42,6 +43,7 @@ export async function GET(_req: NextRequest, { params }: { params: { solicitudId
       cantidadRequerida: solicitud.quantity,
       unidad: s.unit,
       distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, solicitud.actor.lat || 0, solicitud.actor.lng || 0),
+      reliefActorId: solicitud.actorId,
     }));
 
     await publishEvent("matching.realizado", { requestId: params.solicitudId, matchesCount: matches.length });
