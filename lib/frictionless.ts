@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
+import { sanitizeText } from "@/lib/validation";
 
 interface FrictionlessInput {
   name: string;
@@ -14,7 +15,15 @@ interface FrictionlessInput {
 }
 
 export async function findOrCreateActor(input: FrictionlessInput) {
-  const { name, whatsapp, type, address, city, lat, lng, vehicleType, capacityKg } = input;
+  const name = sanitizeText(input.name);
+  const whatsapp = sanitizeText(input.whatsapp);
+  const type = input.type;
+  const address = sanitizeText(input.address);
+  const city = sanitizeText(input.city);
+  const lat = input.lat;
+  const lng = input.lng;
+  const vehicleType = sanitizeText(input.vehicleType || "");
+  const capacityKg = input.capacityKg;
 
   // Clean the whatsapp number (remove non-digits or spaces)
   const cleanWhatsapp = whatsapp.replace(/\D/g, "");

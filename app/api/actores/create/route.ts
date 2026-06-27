@@ -2,13 +2,26 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
+import { sanitizeText } from "@/lib/validation";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: NextRequest) {
   const auth = getAuthActor(req);
   if (!auth) return jsonError(401, "Token requerido");
 
   try {
-    const { type, name, contactName, phone, whatsapp, address, city, lat, lng, vehicleType, capacityKg } = await req.json();
+    const body = await req.json();
+    const type = sanitizeText(body.type);
+    const name = sanitizeText(body.name);
+    const contactName = sanitizeText(body.contactName || body.name);
+    const phone = sanitizeText(body.phone);
+    const whatsapp = sanitizeText(body.whatsapp);
+    const address = sanitizeText(body.address);
+    const city = sanitizeText(body.city);
+    const lat = body.lat ? Number(body.lat) : null;
+    const lng = body.lng ? Number(body.lng) : null;
+    const vehicleType = sanitizeText(body.vehicleType);
+    const capacityKg = body.capacityKg ? Number(body.capacityKg) : null;
 
     if (!type || !name) {
       return jsonError(400, "Tipo de actor y nombre son requeridos");
@@ -48,11 +61,13 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { id: auth.userId } });
 
     // Switch context automatically to the newly created actor
-    const token = signToken({ userId: auth.userId, actorId: actor.id, actorType: actor.type });
+    const csrfToken = generateCsrfToken();
+    const token = signToken({ userId: auth.userId, actorId: actor.id, actorType: actor.type, csrfToken });
 
     return Response.json({
       mensaje: "Perfil creado exitosamente",
       token,
+      csrfToken,
       actor: {
         id: actor.id,
         type: actor.type,

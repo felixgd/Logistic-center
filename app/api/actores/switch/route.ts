@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, signToken, jsonError } from "@/lib/auth";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: NextRequest) {
   const auth = getAuthActor(req);
@@ -38,14 +39,17 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { id: auth.userId } });
 
     // Sign a new token with the new actor ID and type
+    const csrfToken = generateCsrfToken();
     const token = signToken({ 
       userId: auth.userId, 
       actorId: actor.id, 
-      actorType: actor.type 
+      actorType: actor.type,
+      csrfToken,
     });
 
     return Response.json({
       token,
+      csrfToken,
       actor: {
         id: actor.id,
         type: actor.type,

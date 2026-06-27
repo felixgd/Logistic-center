@@ -5,6 +5,8 @@ import Navbar from "@/components/Navbar";
 import TableSearch from "@/components/TableSearch";
 import { useSort } from "@/hooks/useSort";
 import { useSearch } from "@/hooks/useSearch";
+import { useApi, invalidateCache } from "@/lib/swr";
+import { getAuthHeaders } from "@/lib/api-client";
 
 export default function MatchingPage() {
   const router = useRouter();
@@ -17,13 +19,18 @@ export default function MatchingPage() {
   const [searchPendientes, setSearchPendientes] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = getAuthHeaders();
+
+  const { data: pendientesData } = useApi<any[]>(token ? "/api/solicitudes/pendientes" : null);
+
+  useEffect(() => {
+    if (pendientesData) setPendientes(pendientesData);
+  }, [pendientesData]);
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
     const actor = JSON.parse(localStorage.getItem("actor") || "{}");
     if (actor.type !== "warehouse") { router.push("/dashboard"); return; }
-    fetch("/api/solicitudes/pendientes").then((r) => r.json()).then(setPendientes).catch(() => {});
   }, [token, router]);
 
   const buscarMatches = async (solicitudId: string) => {
@@ -31,9 +38,16 @@ export default function MatchingPage() {
     const res = await fetch(`/api/matching/solicitud/${solicitudId}`, { headers });
     const data = await res.json();
     if (!res.ok) { setError(data.error); return; }
+    const matchesList = data.matches || [];
+    if (matchesList.length === 0) {
+      setError("No se encontraron almacenes con disponibilidad para esta solicitud.");
+      setSelectedSolicitud(null);
+      setMatches([]);
+      return;
+    }
     const sol = pendientes.find((p) => p.id === solicitudId);
     setSelectedSolicitud(sol);
-    setMatches(data.matches || []);
+    setMatches(matchesList);
   };
 
   const crearViaje = async () => {
@@ -66,7 +80,36 @@ export default function MatchingPage() {
       }
       setSuccess("Viaje(s) creado(s) exitosamente!");
       setSelectedSolicitud(null); setMatches([]);
-      const r = await fetch("/api/solicitudes/pendientes"); setPendientes(await r.json());
+      invalidateCache("/api/solicitudes/pendientes");
+      invalidateCache("/api/viajes");
+      invalidateCache("/api/solicitudes");
+    } catch { setError("Error al crear viaje"); }
+  };
+
+  const crearViajeIndividual = async (m: any) => {
+    setError(""); setSuccess("");
+    const requestId = m.requestId || selectedSolicitud?.id;
+    const reliefActorId = m.reliefActorId || selectedSolicitud?.actorId;
+    if (!requestId || requestId === "auto" || !reliefActorId) {
+      setError("No se puede crear el viaje: falta información de la solicitud o centro de ayuda.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/viajes", {
+        method: "POST", headers,
+        body: JSON.stringify({
+          warehouseActorId: m.almacenId,
+          reliefActorId,
+          requestId,
+          items: [{ name: m.insumo, quantity: Math.min(m.cantidadDisponible, m.cantidadRequerida), unit: m.unidad, supplyId: m.supplyId }],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setSuccess(`Viaje creado con ${m.almacenNombre} para ${m.insumo}.`);
+      invalidateCache("/api/solicitudes/pendientes");
+      invalidateCache("/api/viajes");
+      invalidateCache("/api/solicitudes");
     } catch { setError("Error al crear viaje"); }
   };
 
@@ -118,7 +161,7 @@ export default function MatchingPage() {
     );
     setMatches(flat);
     setSelectedSolicitud({ id: "auto", actor: { name: "Múltiples centros" } });
-    const r = await fetch("/api/solicitudes/pendientes"); setPendientes(await r.json());
+    invalidateCache("/api/solicitudes/pendientes");
   };
 
   return (
@@ -141,13 +184,14 @@ export default function MatchingPage() {
             ) : (
             <div className="table-wrapper">
               <table>
-                <thead><tr>{matches[0]?.centroAyuda && <SortHeaderM label="Centro" sortKey="centroAyuda" />}<SortHeaderM label="Almacén" sortKey="almacenNombre" /><SortHeaderM label="Insumo" sortKey="insumo" /><SortHeaderM label="Disponible" sortKey="cantidadDisponible" /><SortHeaderM label="Requerido" sortKey="cantidadRequerida" /><SortHeaderM label="Distancia" sortKey="distancia" /></tr></thead>
+                <thead><tr>{matches[0]?.centroAyuda && <SortHeaderM label="Centro" sortKey="centroAyuda" />}<SortHeaderM label="Almacén" sortKey="almacenNombre" /><SortHeaderM label="Insumo" sortKey="insumo" /><SortHeaderM label="Disponible" sortKey="cantidadDisponible" /><SortHeaderM label="Requerido" sortKey="cantidadRequerida" /><SortHeaderM label="Distancia" sortKey="distancia" /><th>Acción</th></tr></thead>
                 <tbody>
                   {sortedMatches.map((m: any, i: number) => (
                     <tr key={i}>
                       {m.centroAyuda && <td>{m.centroAyuda}</td>}
                       <td>{m.almacenNombre}</td><td>{m.insumo}</td><td>{m.cantidadDisponible} {m.unidad}</td><td>{m.cantidadRequerida} {m.unidad}</td>
                       <td>{m.distancia > 0 ? `${m.distancia} km` : "N/A"}</td>
+                      <td><button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => crearViajeIndividual(m)}>Crear viaje</button></td>
                     </tr>
                   ))}
                 </tbody>

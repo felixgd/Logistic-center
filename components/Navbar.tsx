@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import NotificationBell from "@/components/NotificationBell";
+import { getAuthHeaders, clearCsrfToken } from "@/lib/api-client";
 
 const LABELS: Record<string, string> = {
   warehouse: "Almacén", relief: "Centro Ayuda", transporter: "Transportista",
@@ -29,7 +31,7 @@ export default function Navbar() {
     const token = localStorage.getItem("token");
     if (!token) return;
     fetch("/api/actores/list", {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: getAuthHeaders()
     })
       .then((r) => r.json())
       .then((data) => {
@@ -43,6 +45,7 @@ export default function Navbar() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("actor");
+    clearCsrfToken();
     router.push("/");
   };
 
@@ -65,7 +68,7 @@ export default function Navbar() {
 
   const links = allLinks.filter((l) => !l.roles || l.roles.includes(actor.type));
 
-  if (actor.isOwner) {
+  if (actor.isOwner && actor.type !== "transporter") {
     links.push({ path: "/afiliados", label: "Afiliados" });
   }
 
@@ -88,6 +91,7 @@ export default function Navbar() {
           {actor.name} ({LABELS[actor.type as string] || actor.type})
           {!actor.isOwner && <span className="navbar-member">(miembro)</span>}
         </span>
+        <NotificationBell />
         {availableActors.length > 0 && (
           <select 
             value={actor.id} 
@@ -97,19 +101,18 @@ export default function Navbar() {
                 window.location.href = "/dashboard?create_profile=true";
                 return;
               }
-              const token = localStorage.getItem("token");
               try {
                 const res = await fetch("/api/actores/switch", {
                   method: "POST",
-                  headers: { 
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}` 
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify({ actorId: targetActorId }),
                 });
                 if (res.ok) {
                   const data = await res.json();
                   localStorage.setItem("token", data.token);
+                  if (data.csrfToken) {
+                    import("@/lib/api-client").then((m) => m.setCsrfToken(data.csrfToken));
+                  }
                   localStorage.setItem("actor", JSON.stringify(data.actor));
                   window.location.href = "/dashboard";
                 }

@@ -1,10 +1,17 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken, jsonError } from "@/lib/auth";
+import { sanitizeText } from "@/lib/validation";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, name, phone, email, phoneVerificationToken } = await req.json();
+    const body = await req.json();
+    const code = sanitizeText(body.code);
+    const name = sanitizeText(body.name);
+    const phone = sanitizeText(body.phone);
+    const email = sanitizeText(body.email);
+    const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
 
     const cleanPhone = phone.replace(/\D/g, "");
     if (phoneVerificationToken) {
@@ -54,11 +61,13 @@ export async function POST(req: NextRequest) {
       data: { active: false, usedAt: new Date(), usedByUserId: user.id },
     });
 
-    const token = signToken({ userId: user.id, actorId: parentActor.id, actorType: parentActor.type });
+    const csrfToken = generateCsrfToken();
+    const token = signToken({ userId: user.id, actorId: parentActor.id, actorType: parentActor.type, csrfToken });
 
     return Response.json({
       mensaje: "Registro exitoso como afiliado",
       token,
+      csrfToken,
       actor: {
         id: parentActor.id,
         type: parentActor.type,

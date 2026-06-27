@@ -2,6 +2,21 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
+import CountryCodeSelect, { COUNTRY_CODES } from "@/components/CountryCodeSelect";
+
+const normalizePhone = (value: string) => value.replace(/\D/g, "");
+
+function splitCountryCode(phone: string): { countryCode: string; local: string } {
+  const digits = normalizePhone(phone);
+  for (const c of COUNTRY_CODES) {
+    const codeDigits = normalizePhone(c.code);
+    if (digits.startsWith(codeDigits)) {
+      return { countryCode: c.code, local: digits.slice(codeDigits.length) };
+    }
+  }
+  return { countryCode: "+52", local: digits };
+}
 
 // Dynamically import the map component with SSR disabled
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -163,6 +178,7 @@ export default function HomePage() {
   // Common form fields (Pre-filled from localStorage)
   const [formName, setFormName] = useState("");
   const [formWhatsapp, setFormWhatsapp] = useState("");
+  const [formCountryCode, setFormCountryCode] = useState("+52");
   const [formAddress, setFormAddress] = useState("");
   const [formCity, setFormCity] = useState("");
   const [formLat, setFormLat] = useState<number | null>(null);
@@ -229,7 +245,7 @@ export default function HomePage() {
     if (token) {
       setIsAuthenticated(true);
       fetch("/api/actores/list", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders()
       })
         .then((r) => r.json())
         .then((data) => {
@@ -246,7 +262,9 @@ export default function HomePage() {
         const actorObj = JSON.parse(storedActor);
         setActor(actorObj);
         setFormName(actorObj.name || "");
-        setFormWhatsapp(actorObj.whatsapp || "");
+        const { countryCode, local } = splitCountryCode(actorObj.whatsapp || "");
+        setFormCountryCode(countryCode);
+        setFormWhatsapp(local);
       } catch (e) {
         console.error("Error parsing stored actor", e);
       }
@@ -258,10 +276,14 @@ export default function HomePage() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("actor");
+    clearCsrfToken();
     setIsAuthenticated(false);
     setFormName("");
     setFormWhatsapp("");
+    setFormCountryCode("+52");
   };
+
+  const fullFormPhone = () => normalizePhone(formCountryCode) + normalizePhone(formWhatsapp);
 
   const handleCardClick = (actorId: string) => {
     setSelectedActorId(null);
@@ -305,7 +327,7 @@ export default function HomePage() {
       const payload = {
         action: activeModal,
         name: formName,
-        whatsapp: formWhatsapp,
+        whatsapp: fullFormPhone(),
         address: formAddress || "Sin dirección",
         city: formCity || "Sin ciudad",
         lat: formLat,
@@ -334,6 +356,7 @@ export default function HomePage() {
 
       // Save credentials in browser
       localStorage.setItem("token", json.token);
+      if (json.csrfToken) setCsrfToken(json.csrfToken);
       localStorage.setItem("actor", JSON.stringify(json.actor));
 
       setSubmitSuccess("¡Registro exitoso y publicado con éxito!");
@@ -366,7 +389,7 @@ export default function HomePage() {
         body: JSON.stringify({
           shipmentId: activeClaimShipmentId,
           name: formName,
-          whatsapp: formWhatsapp,
+          whatsapp: fullFormPhone(),
         }),
       });
 
@@ -376,6 +399,7 @@ export default function HomePage() {
         return;
       }
 
+      if (json.csrfToken) setCsrfToken(json.csrfToken);
       setSubmitSuccess("¡Viaje asignado con éxito! Revisa tus mensajes de WhatsApp para coordinar.");
       setTimeout(() => {
         setActiveModal(null);
@@ -473,19 +497,16 @@ export default function HomePage() {
                         window.location.href = "/dashboard?create_profile=true";
                         return;
                       }
-                      const token = localStorage.getItem("token");
                       try {
                         const res = await fetch("/api/actores/switch", {
                           method: "POST",
-                          headers: { 
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}` 
-                          },
+                          headers: getAuthHeaders(),
                           body: JSON.stringify({ actorId: targetActorId }),
                         });
                         if (res.ok) {
                           const data = await res.json();
                           localStorage.setItem("token", data.token);
+                          if (data.csrfToken) setCsrfToken(data.csrfToken);
                           localStorage.setItem("actor", JSON.stringify(data.actor));
                           window.location.href = "/dashboard";
                         }
@@ -742,10 +763,10 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="activity-card-footer" style={{ marginTop: 10 }}>
-                  <span className="badge badge-proceso" style={{ padding: "2px 8px" }}>
-                    {ship.estado === "proposed" ? "Por Transportar" : ship.estado === "assigned" ? "Conductor Asignado" : ship.estado === "in_transit" ? "En Tránsito" : "Entregado"}
+                  <span className={`badge ${ship.estado === "approved" ? "badge-pendiente" : ship.estado === "assigned" ? "badge-proceso" : ship.estado === "in_transit" ? "badge-proceso" : "badge-completado"}`} style={{ padding: "2px 8px" }}>
+                    {ship.estado === "approved" ? "Por Transportar" : ship.estado === "assigned" ? "Conductor Asignado" : ship.estado === "in_transit" ? "En Tránsito" : ship.estado === "delivered" ? "Entregado" : ship.estado}
                   </span>
-                  {ship.estado === "proposed" ? (
+                  {ship.estado === "approved" ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -818,7 +839,16 @@ export default function HomePage() {
                 </div>
                 <div className="form-group">
                   <label>Tu WhatsApp</label>
-                  <input value={formWhatsapp} onChange={(e) => setFormWhatsapp(e.target.value)} required placeholder="Ej: 573001234567" />
+                  <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+                    <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
+                    <input
+                      value={formWhatsapp}
+                      onChange={(e) => setFormWhatsapp(normalizePhone(e.target.value))}
+                      required
+                      placeholder="1234567890"
+                      style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -953,7 +983,16 @@ export default function HomePage() {
               </div>
               <div className="form-group">
                 <label>Tu WhatsApp</label>
-                <input value={formWhatsapp} onChange={(e) => setFormWhatsapp(e.target.value)} required placeholder="Ej: 573001234567" />
+                <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+                  <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
+                  <input
+                    value={formWhatsapp}
+                    onChange={(e) => setFormWhatsapp(normalizePhone(e.target.value))}
+                    required
+                    placeholder="1234567890"
+                    style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>

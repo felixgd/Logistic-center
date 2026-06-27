@@ -3,19 +3,26 @@ import { NextRequest } from "next/server";
 
 const SECRET = () => process.env.JWT_SECRET || "secret";
 
-export function signToken(payload: { userId: string; actorId: string; actorType: string }): string {
+export type TokenPayload = {
+  userId: string;
+  actorId: string;
+  actorType: string;
+  csrfToken?: string;
+};
+
+export function signToken(payload: TokenPayload): string {
   return jwt.sign(payload, SECRET(), { expiresIn: "7d" });
 }
 
-export function verifyToken(token: string): { userId: string; actorId: string; actorType: string } | null {
+export function verifyToken(token: string): TokenPayload | null {
   try {
-    return jwt.verify(token, SECRET()) as { userId: string; actorId: string; actorType: string };
+    return jwt.verify(token, SECRET()) as TokenPayload;
   } catch {
     return null;
   }
 }
 
-export function getAuthActor(req: NextRequest): { userId: string; actorId: string; actorType: string } | null {
+export function getAuthActor(req: NextRequest): TokenPayload | null {
   const auth = req.headers.get("authorization");
   if (!auth?.startsWith("Bearer ")) return null;
   return verifyToken(auth.slice(7));

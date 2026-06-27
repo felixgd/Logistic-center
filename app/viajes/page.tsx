@@ -6,6 +6,8 @@ import NavegacionViaje from "@/components/NavegacionViaje";
 import TableSearch from "@/components/TableSearch";
 import { useSort } from "@/hooks/useSort";
 import { useSearch } from "@/hooks/useSearch";
+import { useApi, invalidateCache } from "@/lib/swr";
+import { getAuthHeaders } from "@/lib/api-client";
 
 export default function TripsPage() {
   const router = useRouter();
@@ -29,33 +31,37 @@ export default function TripsPage() {
   ];
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = getAuthHeaders();
 
-  const load = async () => {
-    const [r1, r2] = await Promise.all([
-      fetch("/api/viajes", { headers }).then((r) => r.json()),
-      fetch("/api/viajes/disponibles").then((r) => r.json()),
-    ]);
-    setTrips(Array.isArray(r1) ? r1 : []);
-    setDisponibles(Array.isArray(r2) ? r2 : []);
-  };
+  const { data: tripsData } = useApi<any[]>(token ? "/api/viajes" : null);
+  const { data: disponiblesData } = useApi<any[]>(token ? "/api/viajes/disponibles" : null);
+
+  useEffect(() => {
+    if (tripsData) setTrips(tripsData);
+  }, [tripsData]);
+
+  useEffect(() => {
+    if (disponiblesData) setDisponibles(disponiblesData);
+  }, [disponiblesData]);
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
     setActor(JSON.parse(localStorage.getItem("actor") || "{}"));
-    load();
   }, [token, router]);
 
   const assignTrip = async (id: string) => {
     setError("");
     const res = await fetch(`/api/viajes/${id}/asignar`, { method: "POST", headers, body: JSON.stringify({}) });
     if (!res.ok) { const d = await res.json(); setError(d.error); return; }
-    alert("Viaje asignado exitosamente!"); load();
+    alert("Viaje asignado exitosamente!");
+    invalidateCache("/api/viajes");
+    invalidateCache("/api/viajes/disponibles");
   };
 
   const updateStatus = async (id: string, estado: string) => {
     await fetch(`/api/viajes/${id}/estado`, { method: "PATCH", headers, body: JSON.stringify({ status: estado }) });
-    load();
+    invalidateCache("/api/viajes");
+    invalidateCache("/api/viajes/disponibles");
   };
 
   const statusBadge = (s: string) => `badge ${({ proposed: "badge-pendiente", approved: "badge-pendiente", assigned: "badge-proceso", in_transit: "badge-proceso", delivered: "badge-completado", cancelled: "badge-cancelado" } as any)[s] || ""}`;

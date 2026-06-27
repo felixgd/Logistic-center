@@ -5,6 +5,8 @@ import Navbar from "@/components/Navbar";
 import TableSearch from "@/components/TableSearch";
 import { useSort } from "@/hooks/useSort";
 import { useSearch } from "@/hooks/useSearch";
+import { useApi, invalidateCache } from "@/lib/swr";
+import { getAuthHeaders } from "@/lib/api-client";
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -16,14 +18,19 @@ export default function RequestsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = getAuthHeaders();
+
+  const { data: requestsData } = useApi<any[]>(token ? "/api/solicitudes" : null);
+
+  useEffect(() => {
+    if (requestsData) setRequests(requestsData);
+  }, [requestsData]);
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
     const a = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(a);
     if (a.type === "transporter") { router.push("/dashboard"); return; }
-    fetch("/api/solicitudes", { headers }).then((r) => r.json()).then(setRequests).catch(() => {});
   }, [token, router]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -33,7 +40,7 @@ export default function RequestsPage() {
     if (!res.ok) { setError(data.error); return; }
     setForm({ category: "general", name: "", unit: "unidades", quantity: "", urgency: "media", notes: "" });
     setShowForm(false);
-    const r = await fetch("/api/solicitudes", { headers }); setRequests(await r.json());
+    invalidateCache("/api/solicitudes");
   };
 
   const statusBadge = (status: string) => `badge ${({ open: "badge-pendiente", in_progress: "badge-proceso", fulfilled: "badge-completado", cancelled: "badge-cancelado" } as any)[status] || ""}`;
@@ -61,7 +68,7 @@ export default function RequestsPage() {
     if (!confirm("¿Cancelar esta solicitud?")) return;
     const res = await fetch(`/api/solicitudes/${id}/estado`, { method: "PATCH", headers, body: JSON.stringify({ status: "cancelled" }) });
     if (!res.ok) { setError((await res.json()).error); return; }
-    const r = await fetch("/api/solicitudes", { headers }); setRequests(await r.json());
+    invalidateCache("/api/solicitudes");
   };
 
   return (
@@ -123,7 +130,7 @@ export default function RequestsPage() {
                     <tr key={r.id}>
                       <td>{r.actor?.name || "N/A"}</td>
                       <td>{r.name}</td>
-                      <td>{r.quantity} {r.unit}</td>
+                      <td>{r.quantityOriginal || r.quantity} {r.unit} <span style={{ color: "#6b7280", fontSize: 12 }}>({r.quantityFulfilled || 0} entregados)</span></td>
                       <td><span className={`badge ${r.urgency === "critica" ? "badge-critica" : r.urgency === "alta" ? "badge-pendiente" : ""}`}>{r.urgency}</span></td>
                       <td><span className={statusBadge(r.status)}>{r.status}</span></td>
                       <td>{new Date(r.createdAt).toLocaleDateString()}</td>

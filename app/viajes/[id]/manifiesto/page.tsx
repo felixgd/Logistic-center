@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { getAuthHeaders } from "@/lib/api-client";
 import Navbar from "@/components/Navbar";
 import NavegacionViaje from "@/components/NavegacionViaje";
 import TableSearch from "@/components/TableSearch";
@@ -16,7 +17,7 @@ export default function ManifiestoPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = getAuthHeaders();
 
   useEffect(() => {
     setActor(JSON.parse(localStorage.getItem("actor") || "{}"));

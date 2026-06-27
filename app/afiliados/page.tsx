@@ -2,10 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { getAuthHeaders } from "@/lib/api-client";
 import QrModal from "@/components/QrModal";
 import TableSearch from "@/components/TableSearch";
 import { useSort } from "@/hooks/useSort";
 import { useSearch } from "@/hooks/useSearch";
+import { useApi, invalidateCache } from "@/lib/swr";
 
 export default function AfiliadosPage() {
   const router = useRouter();
@@ -18,21 +20,29 @@ export default function AfiliadosPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const headers = getAuthHeaders();
 
-  const load = async () => {
-    const res = await fetch("/api/actores/afiliar/miembros", { headers });
-    if (res.status === 403) { setError("Solo el administrador principal puede gestionar afiliados"); return; }
-    if (!res.ok) { router.push("/login"); return; }
-    setMembers(await res.json());
-  };
+  const { data: membersData, error: membersError } = useApi<any[]>(token ? "/api/actores/afiliar/miembros" : null);
+
+  useEffect(() => {
+    if (membersData) setMembers(membersData);
+  }, [membersData]);
+
+  useEffect(() => {
+    if (membersError) {
+      if ((membersError as Error).message.includes("403")) {
+        setError("Solo el administrador principal puede gestionar afiliados");
+      } else {
+        router.push("/login");
+      }
+    }
+  }, [membersError, router]);
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
     const a = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(a);
     if (a.type === "transporter") { router.push("/dashboard"); return; }
-    load();
   }, [token, router]);
 
   const openEdit = (m: any) => {
@@ -48,7 +58,7 @@ export default function AfiliadosPage() {
       method: "PATCH", headers, body: JSON.stringify(form),
     });
     if (!res.ok) { setError((await res.json()).error); return; }
-    setEditMember(null); load();
+    setEditMember(null); invalidateCache("/api/actores/afiliar/miembros");
   };
 
   const generarCodigo = async () => {
@@ -66,7 +76,7 @@ export default function AfiliadosPage() {
     setError("");
     const res = await fetch(`/api/actores/afiliar/miembros/${id}`, { method: "DELETE", headers });
     if (!res.ok) { setError((await res.json()).error); return; }
-    load();
+    invalidateCache("/api/actores/afiliar/miembros");
   };
 
   return (

@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import QrModal from "@/components/QrModal";
+import { useApi, invalidateCache } from "@/lib/swr";
+import { getAuthHeaders, setCsrfToken } from "@/lib/api-client";
 
 // Dynamically import the map component with SSR disabled
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -51,52 +53,49 @@ export default function DashboardPage() {
     whatsapp: "",
     address: "",
     city: "",
+    lat: null as number | null,
+    lng: null as number | null,
     vehicleType: "",
     capacityKg: ""
   });
 
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = token ? getAuthHeaders() : {};
+
+  const { data: insumosData, error: insumosError } = useApi<any[]>(token ? "/api/insumos" : null);
+  const { data: solicitudesData, error: solicitudesError } = useApi<any[]>(token ? "/api/solicitudes" : null);
+  const { data: viajesData, error: viajesError } = useApi<any[]>(token ? "/api/viajes" : null);
 
   useEffect(() => {
     if (!token) {
       router.push("/login");
       return;
     }
-
     const storedActorObj = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(storedActorObj);
-
-    setLoading(true);
-    Promise.all([
-      fetch("/api/insumos", { headers }).then((r) => r.json()).catch(() => []),
-      fetch("/api/solicitudes", { headers }).then((r) => r.json()).catch(() => []),
-      fetch("/api/viajes", { headers }).then((r) => r.json()).catch(() => []),
-    ])
-      .then(([ins, sol, via]) => {
-        const suppliesArr = Array.isArray(ins) ? ins : [];
-        const requestsArr = Array.isArray(sol) ? sol : [];
-        const shipmentsArr = Array.isArray(via) ? via : [];
-
-        setStats({
-          insumos: suppliesArr.length,
-          solicitudes: requestsArr.length,
-          solicitudesAbiertas: requestsArr.filter((r: any) => r.status === "open").length,
-          solicitudesAbiertasGlobal: requestsArr.filter((r: any) => r.status === "open").length,
-          viajes: shipmentsArr.length,
-          viajesActivos: shipmentsArr.filter((v: any) => v.estado === "in_transit" || v.estado === "assigned").length,
-          viajesCompletados: shipmentsArr.filter((v: any) => v.estado === "completed").length,
-        });
-
-        // Slice for latest feeds (limit 5)
-        setRecentSupplies(suppliesArr.slice(0, 5));
-        setRecentRequests(requestsArr.slice(0, 5));
-        setRecentShipments(shipmentsArr.slice(0, 5));
-      })
-      .catch((e) => console.error("Error loading dashboard data", e))
-      .finally(() => setLoading(false));
   }, [token, router]);
+
+  useEffect(() => {
+    const suppliesArr = Array.isArray(insumosData) ? insumosData : [];
+    const requestsArr = Array.isArray(solicitudesData) ? solicitudesData : [];
+    const shipmentsArr = Array.isArray(viajesData) ? viajesData : [];
+
+    setStats({
+      insumos: suppliesArr.length,
+      solicitudes: requestsArr.length,
+      solicitudesAbiertas: requestsArr.filter((r: any) => r.status === "open").length,
+      solicitudesAbiertasGlobal: requestsArr.filter((r: any) => r.status === "open").length,
+      viajes: shipmentsArr.length,
+      viajesActivos: shipmentsArr.filter((v: any) => v.estado === "in_transit" || v.estado === "assigned").length,
+      viajesCompletados: shipmentsArr.filter((v: any) => v.estado === "completed").length,
+    });
+
+    setRecentSupplies(suppliesArr.slice(0, 5));
+    setRecentRequests(requestsArr.slice(0, 5));
+    setRecentShipments(shipmentsArr.slice(0, 5));
+    setLoading(false);
+  }, [insumosData, solicitudesData, viajesData]);
 
   useEffect(() => {
     if (actor) {
@@ -118,17 +117,23 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (actor) {
-      setNewProfileForm((prev) => ({
-        ...prev,
-        contactName: actor.contactName || actor.name || "",
-        phone: actor.phone || "",
-        whatsapp: actor.whatsapp || "",
-        address: actor.address || "",
-        city: actor.city || ""
-      }));
-    }
-  }, [actor]);
+    if (!showCreateProfileModal || !token) return;
+    fetch("/api/actores/perfil", { headers })
+      .then((r) => r.json())
+      .then((data) => {
+        const phone = data.phone || data.whatsapp || data.userPhone || "";
+        const whatsapp = data.whatsapp || data.phone || data.userPhone || "";
+        setNewProfileForm((prev) => ({
+          ...prev,
+          contactName: data.contactName || data.name || "",
+          phone,
+          whatsapp,
+          address: data.address || "",
+          city: data.city || ""
+        }));
+      })
+      .catch((err) => console.error("Error cargando perfil para nuevo actor:", err));
+  }, [showCreateProfileModal, token, headers]);
 
   const generateQr = async () => {
     setQError("");
@@ -447,7 +452,7 @@ export default function DashboardPage() {
                         <div key={req.id} className="feed-item">
                           <div className="feed-item-left">
                             <span className="feed-item-name">{req.name}</span>
-                            <span className="feed-item-sub">Requerido: {req.quantity} {req.unit}</span>
+                            <span className="feed-item-sub">Requerido: {req.quantityOriginal || req.quantity} {req.unit} ({req.quantityFulfilled || 0} entregados)</span>
                           </div>
                           {getUrgencyBadge(req.urgency)}
                         </div>
@@ -669,6 +674,7 @@ export default function DashboardPage() {
                 if (res.ok) {
                   const data = await res.json();
                   localStorage.setItem("token", data.token);
+                  if (data.csrfToken) setCsrfToken(data.csrfToken);
                   localStorage.setItem("actor", JSON.stringify(data.actor));
                   setShowCreateProfileModal(false);
                   window.location.href = "/dashboard";
@@ -727,12 +733,14 @@ export default function DashboardPage() {
                 <input
                   type="text"
                   value={newProfileForm.contactName}
-                  onChange={(e) => setNewProfileForm({ ...newProfileForm, contactName: e.target.value })}
+                  readOnly
                   style={{
                     width: "100%",
                     padding: "10px 12px",
                     borderRadius: "6px",
-                    border: "1px solid #cbd5e1",
+                    border: "1px solid #e2e8f0",
+                    backgroundColor: "#f1f5f9",
+                    color: "#64748b",
                     fontSize: 14
                   }}
                 />
@@ -746,12 +754,14 @@ export default function DashboardPage() {
                   <input
                     type="text"
                     value={newProfileForm.phone}
-                    onChange={(e) => setNewProfileForm({ ...newProfileForm, phone: e.target.value })}
+                    readOnly
                     style={{
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "6px",
-                      border: "1px solid #cbd5e1",
+                      border: "1px solid #e2e8f0",
+                      backgroundColor: "#f1f5f9",
+                      color: "#64748b",
                       fontSize: 14
                     }}
                   />
@@ -763,13 +773,34 @@ export default function DashboardPage() {
                   <input
                     type="text"
                     value={newProfileForm.whatsapp}
-                    onChange={(e) => setNewProfileForm({ ...newProfileForm, whatsapp: e.target.value })}
+                    readOnly
                     style={{
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "6px",
-                      border: "1px solid #cbd5e1",
+                      border: "1px solid #e2e8f0",
+                      backgroundColor: "#f1f5f9",
+                      color: "#64748b",
                       fontSize: 14
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                  📍 Ubicación en el mapa (haz clic para marcar)
+                </label>
+                <div style={{ height: "200px", borderRadius: "6px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
+                  <MapComponent
+                    containerId="create-profile-map"
+                    actors={[]}
+                    interactive={true}
+                    onLocationSelected={(lat, lng) => {
+                      setNewProfileForm((prev) => ({ ...prev, lat, lng }));
+                    }}
+                    onAddressFound={(address, city) => {
+                      setNewProfileForm((prev) => ({ ...prev, address, city }));
                     }}
                   />
                 </div>

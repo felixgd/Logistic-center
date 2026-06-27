@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
+import { sanitizeText } from "@/lib/validation";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = getAuthActor(req);
@@ -16,7 +17,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
   if (!membership) return jsonError(404, "Afiliado no encontrado");
 
-  const { name, email, phone } = await req.json();
+  const body = await req.json();
+  const name = body.name !== undefined ? sanitizeText(body.name) : undefined;
+  const email = body.email !== undefined ? sanitizeText(body.email) : undefined;
+  const phone = body.phone !== undefined ? sanitizeText(body.phone) : undefined;
 
   const updateUser: any = {};
   if (name !== undefined) updateUser.name = name;
