@@ -73,20 +73,22 @@ export default function TripsPage() {
                       <td style={{ fontSize: 13 }}>{(t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
                       <td>{t.transportista?.name || "—"}</td>
                       <td><span className={statusBadge(t.estado)}>{t.estado}</span></td>
-                      <td style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-                        <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
-                        {(t.estado === "assigned" || t.estado === "in_transit") && t.transportista?.id === actor.id && (
-                          <NavegacionViaje origen={t.almacen} destino={t.centroAyuda} />
-                        )}
-                        {t.estado === "assigned" && t.transportista?.id === actor.id && (
-                          <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "in_transit")}>Iniciar</button>
-                        )}
-                        {t.estado === "in_transit" && (
-                          <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "delivered")}>Completar</button>
-                        )}
-                        {t.estado === "proposed" && (actor.id === t.almacen?.id || actor.id === t.centroAyuda?.id) && (
-                          <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={async () => { if (confirm("¿Cancelar este viaje?")) { await updateStatus(t.id, "cancelled"); } }}>Cancelar</button>
-                        )}
+                      <td>
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                          <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
+                          {(t.estado === "assigned" || t.estado === "in_transit") && t.transportista?.id === actor.id && (
+                            <NavegacionViaje origen={t.almacen} destino={t.centroAyuda} />
+                          )}
+                          {t.estado === "assigned" && t.transportista?.id === actor.id && (
+                            <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "in_transit")}>Iniciar</button>
+                          )}
+                          {t.estado === "in_transit" && (
+                            <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "delivered")}>Completar</button>
+                          )}
+                          {t.estado === "proposed" && (actor.id === t.almacen?.id || actor.id === t.centroAyuda?.id) && (
+                            <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={async () => { if (confirm("¿Cancelar este viaje?")) { await updateStatus(t.id, "cancelled"); } }}>Cancelar</button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
