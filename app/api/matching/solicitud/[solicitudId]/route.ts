@@ -25,14 +25,19 @@ export async function GET(req: NextRequest, { params }: { params: { solicitudId:
     if (!solicitud) return jsonError(404, "Solicitud no encontrada");
     if (solicitud.status !== "open") return jsonError(400, "La solicitud ya está siendo procesada");
 
+    const supplyWhere: any = {
+      status: "available",
+      quantity: { gt: 0 },
+      name: { contains: solicitud.name, mode: "insensitive" },
+      unit: { equals: solicitud.unit, mode: "insensitive" },
+    };
+    if (auth.actorType === "warehouse") {
+      supplyWhere.actorId = auth.actorId;
+    } else {
+      supplyWhere.actorId = { not: solicitud.actorId };
+    }
     const supplies = await prisma.supply.findMany({
-      where: {
-        status: "available",
-        quantity: { gt: 0 },
-        actorId: auth.actorId,
-        name: { contains: solicitud.name, mode: "insensitive" },
-        unit: { equals: solicitud.unit, mode: "insensitive" },
-      },
+      where: supplyWhere,
       include: { actor: { select: { id: true, name: true, address: true, whatsapp: true, city: true, lat: true, lng: true } } },
     });
 

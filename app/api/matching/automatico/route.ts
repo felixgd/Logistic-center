@@ -17,58 +17,86 @@ export async function POST(req: NextRequest) {
   if (!auth) return jsonError(401, "Token requerido");
 
   try {
-    // Only match using this warehouse's own supplies
-    const supplies = await prisma.supply.findMany({
-      where: {
-        status: "available",
-        quantity: { gt: 0 },
-        actorId: auth.actorId,
-      },
-      include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
-    });
-
-    if (supplies.length === 0) {
-      return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes insumos disponibles para match." });
-    }
-
-    const supplyNames = supplies.map((s) => s.name.toLowerCase());
-    const supplyUnits = supplies.map((s) => s.unit.toLowerCase());
-
-    const pendientes = await prisma.request.findMany({
-      where: {
-        status: "open",
-        OR: supplyNames.map((name) => ({ name: { contains: name, mode: "insensitive" } })),
-      },
-      include: { actor: { select: { name: true, lat: true, lng: true } } },
-      orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
-    });
-
     const resultados: any[] = [];
 
-    for (const r of pendientes) {
-      const matchingSupplies = supplies.filter(
-        (s) =>
-          s.unit.toLowerCase() === r.unit.toLowerCase() &&
-          (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))
-      );
+    if (auth.actorType === "warehouse") {
+      // Warehouse: match own supplies against open requests
+      const supplies = await prisma.supply.findMany({
+        where: { status: "available", quantity: { gt: 0 }, actorId: auth.actorId },
+        include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
+      });
+      if (supplies.length === 0) {
+        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes insumos disponibles para match." });
+      }
 
-      if (matchingSupplies.length > 0) {
-        resultados.push({
-          requestId: r.id,
-          reliefActorId: r.actorId,
-          centroAyuda: r.actor.name,
-          urgencia: r.urgency,
-          categoria: r.category,
-          insumo: r.name,
-          cantidad: r.quantity,
-          almacenes: matchingSupplies.map((s) => ({
-            almacenId: s.actor.id,
-            nombre: s.actor.name,
-            supplyId: s.id,
-            cantidadDisponible: s.quantity,
-            distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
-          })),
+      const pendientes = await prisma.request.findMany({
+        where: { status: "open" },
+        include: { actor: { select: { name: true, lat: true, lng: true } } },
+        orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
+      });
+
+      for (const r of pendientes) {
+        const matchingSupplies = supplies.filter(
+          (s) =>
+            s.unit.toLowerCase() === r.unit.toLowerCase() &&
+            (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))
+        );
+        if (matchingSupplies.length > 0) {
+          resultados.push({
+            requestId: r.id,
+            reliefActorId: r.actorId,
+            centroAyuda: r.actor.name,
+            urgencia: r.urgency,
+            categoria: r.category,
+            insumo: r.name,
+            cantidad: r.quantity,
+            almacenes: matchingSupplies.map((s) => ({
+              almacenId: s.actor.id,
+              nombre: s.actor.name,
+              supplyId: s.id,
+              cantidadDisponible: s.quantity,
+              distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
+            })),
+          });
+        }
+      }
+    } else if (auth.actorType === "relief") {
+      // Relief center: match own requests against available supplies from warehouses
+      const pendientes = await prisma.request.findMany({
+        where: { status: "open", actorId: auth.actorId },
+        include: { actor: { select: { name: true, lat: true, lng: true } } },
+        orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
+      });
+
+      for (const r of pendientes) {
+        const supplies = await prisma.supply.findMany({
+          where: {
+            status: "available",
+            quantity: { gt: 0 },
+            actorId: { not: r.actorId },
+            name: { contains: r.name, mode: "insensitive" },
+            unit: { equals: r.unit, mode: "insensitive" },
+          },
+          include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
         });
+        if (supplies.length > 0) {
+          resultados.push({
+            requestId: r.id,
+            reliefActorId: r.actorId,
+            centroAyuda: r.actor.name,
+            urgencia: r.urgency,
+            categoria: r.category,
+            insumo: r.name,
+            cantidad: r.quantity,
+            almacenes: supplies.map((s) => ({
+              almacenId: s.actor.id,
+              nombre: s.actor.name,
+              supplyId: s.id,
+              cantidadDisponible: s.quantity,
+              distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
+            })),
+          });
+        }
       }
     }
 
