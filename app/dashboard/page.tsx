@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import QrModal from "@/components/QrModal";
 
 const LABELS: Record<string, string> = {
   warehouse: "Almacén", relief: "Centro de Ayuda", transporter: "Transportista",
@@ -11,6 +12,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [actor, setActor] = useState<any>({});
   const [stats, setStats] = useState({ insumos: 0, solicitudes: 0, viajes: 0, viajesActivos: 0 });
+  const [qrData, setQrData] = useState<{ url: string; code: string; actorName: string } | null>(null);
+  const [qError, setQError] = useState("");
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -30,6 +33,18 @@ export default function DashboardPage() {
       });
     });
   }, [token, router]);
+
+  const generateQr = async () => {
+    setQError("");
+    try {
+      const res = await fetch("/api/actores/afiliar/codigo", { method: "POST", headers });
+      const data = await res.json();
+      if (!res.ok) { setQError(data.error); return; }
+      setQrData(data);
+    } catch {
+      setQError("Error al generar código");
+    }
+  };
 
   if (!token) return null;
 
@@ -56,11 +71,18 @@ export default function DashboardPage() {
             {actor.type === "relief" && "Crea solicitudes de insumos para recibir ayuda de los almacenes registrados."}
             {actor.type === "transporter" && "Revisa los viajes disponibles y comienza a transportar insumos."}
           </p>
-          {actor.type === "warehouse" && <a href="/insumos" className="btn btn-primary">Gestionar Insumos</a>}
-          {actor.type === "relief" && <a href="/solicitudes" className="btn btn-primary">Crear Solicitud</a>}
-          {actor.type === "transporter" && <a href="/viajes" className="btn btn-primary">Ver Viajes</a>}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {actor.type === "warehouse" && <a href="/insumos" className="btn btn-primary">Gestionar Insumos</a>}
+            {actor.type === "relief" && <a href="/solicitudes" className="btn btn-primary">Crear Solicitud</a>}
+            {actor.type === "transporter" && <a href="/viajes" className="btn btn-primary">Ver Viajes</a>}
+            {["warehouse", "relief"].includes(actor.type) && (
+              <button className="btn btn-secondary" onClick={generateQr}>+ Afiliar Personal</button>
+            )}
+          </div>
+          {qError && <p style={{ color: "#dc2626", marginTop: 8, fontSize: 13 }}>{qError}</p>}
         </div>
       </div>
+      {qrData && <QrModal url={qrData.url} actorName={qrData.actorName} code={qrData.code} onClose={() => setQrData(null)} />}
     </div>
   );
 }
