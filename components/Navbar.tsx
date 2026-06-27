@@ -18,6 +18,7 @@ export default function Navbar() {
   };
 
   const links = [
+    { path: "/", label: "Mapa Central" },
     { path: "/dashboard", label: "Dashboard" },
     { path: "/insumos", label: "Insumos" },
     { path: "/solicitudes", label: "Solicitudes" },
