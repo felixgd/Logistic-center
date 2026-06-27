@@ -224,6 +224,7 @@ table th.sort-active{color:#2563eb}
 .map-container-wrapper {
   flex: 1;
   position: relative;
+  z-index: 1;
 }
 
 /* Custom Marker Pins */
@@ -470,14 +471,14 @@ table th.sort-active{color:#2563eb}
 
 @media(max-width:768px){
   .header-hamburger{display:flex}
-  .header-nav{display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;flex-direction:column;padding:16px 24px;gap:12px;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 10px 20px rgba(0,0,0,.3);z-index:100;align-items:stretch}
-  .header-nav.open{display:flex}
+  .main-header .header-nav{display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;flex-direction:column;padding:16px 24px;gap:12px;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 10px 20px rgba(0,0,0,.3);z-index:100;align-items:stretch}
+  .main-header .header-nav.open{display:flex}
   .header-nav a{padding:10px 12px;border-radius:6px;color:#94a3b8;text-decoration:none;font-size:14px;font-weight:600}
   .header-nav a:hover,.header-nav a.active{color:#fff;background:rgba(255,255,255,.1)}
   .header-nav .header-nav-auth{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.1)}
   .header-auth-desktop{display:none !important}
-  .homepage-sidebar{position:fixed;top:64px;left:0;bottom:0;z-index:40;transform:translateX(-100%);transition:transform .3s ease;width:85vw;max-width:380px}
-  .homepage-sidebar.open{transform:translateX(0)}
+  .homepage-sidebar{position:fixed;top:64px;left:0;bottom:0;z-index:40;transform:translateX(-100%);transition:transform .3s ease, visibility .3s ease;width:85vw;max-width:380px;visibility:hidden}
+  .homepage-sidebar.open{transform:translateX(0);visibility:visible}
   .sidebar-toggle{display:block}
   .map-container-wrapper{margin-left:0}
 }

@@ -85,7 +85,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"requests" | "shipments">("requests");
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   // Modals state
