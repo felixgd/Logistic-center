@@ -40,6 +40,7 @@ export default function Navbar() {
         <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
         <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
       </button>
+      <div className={`navbar-overlay ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(false)} />
       <div className={`navbar-links ${menuOpen ? "open" : ""}`}>
         {links.map((l) => (
           <Link key={l.path} href={l.path} className={pathname === l.path ? "active" : ""} onClick={() => setMenuOpen(false)}>
