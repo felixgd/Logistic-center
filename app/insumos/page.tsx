@@ -2,7 +2,10 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import TableSearch from "@/components/TableSearch";
 import { distancia } from "@/lib/distancia";
+import { useSort } from "@/hooks/useSort";
+import { useSearch } from "@/hooks/useSearch";
 
 export default function SuppliesPage() {
   const router = useRouter();
@@ -18,6 +21,7 @@ export default function SuppliesPage() {
   const [detalleId, setDetalleId] = useState<string | null>(null);
   const [solicitarId, setSolicitarId] = useState<string | null>(null);
   const [solicitarForm, setSolicitarForm] = useState({ quantity: "" });
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -93,6 +97,38 @@ export default function SuppliesPage() {
 
   const isRelief = actor.type === "relief";
 
+  const supplyRows = isRelief
+    ? Object.entries(
+        supplies.reduce((acc: any, s: any) => {
+          const key = s.name.toLowerCase();
+          if (!acc[key]) acc[key] = { name: s.name, unit: s.unit, items: [] };
+          acc[key].items.push(s);
+          return acc;
+        }, {})
+      ).map(([_, g]: any) => ({
+        name: g.name,
+        unit: g.unit,
+        totalQuantity: g.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0),
+        totalReserved: g.items.reduce((sum: number, i: any) => sum + (i.quantityReserved || 0), 0),
+        items: g.items,
+        _estado: g.totalQuantity > 0 ? "Disponible" : g.totalReserved > 0 ? "Reservado" : "Agotado",
+      }))
+    : supplies.map((s: any) => ({
+        name: s.name,
+        unit: s.unit,
+        totalQuantity: s.quantity,
+        totalReserved: s.quantityReserved || 0,
+        items: [s],
+        supplyId: s.id,
+        version: s.version,
+        _estado: s.quantity > 0 ? "Disponible" : (s.quantityReserved || 0) > 0 ? "Reservado" : "Agotado",
+      }));
+
+  const filteredSupplyRows = useSearch(supplyRows, searchTerm, [
+    "name", "totalQuantity", "totalReserved", "unit", "_estado",
+  ]);
+  const { sortedData: sortedSupplyRows, SortHeader } = useSort(filteredSupplyRows, "name");
+
   return (
     <div>
       <Navbar />
@@ -149,46 +185,24 @@ export default function SuppliesPage() {
           <div className="card empty-state"><h3>No hay insumos registrados</h3><p>Los almacenes pueden registrar insumos disponibles.</p></div>
         ) : (
           <div className="card">
+            <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar insumo..." />
+            {sortedSupplyRows.length === 0 ? (
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron insumos con "{searchTerm}".</p>
+            ) : (
             <div className="table-wrapper">
               <table>
                 <thead>
                   <tr>
-                    <th>Insumo</th>
-                    <th>Disponible</th>
-                    <th>Reservado</th>
-                    <th>Unidad</th>
-                    <th>Estado</th>
+                    <SortHeader label="Insumo" sortKey="name" />
+                    <SortHeader label="Disponible" sortKey="totalQuantity" />
+                    <SortHeader label="Reservado" sortKey="totalReserved" />
+                    <SortHeader label="Unidad" sortKey="unit" />
+                    <SortHeader label="Estado" sortKey="_estado" />
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(() => {
-                  const rows = isRelief
-                    ? Object.entries(
-                        supplies.reduce((acc: any, s: any) => {
-                          const key = s.name.toLowerCase();
-                          if (!acc[key]) acc[key] = { name: s.name, unit: s.unit, items: [] };
-                          acc[key].items.push(s);
-                          return acc;
-                        }, {})
-                      ).map(([_, g]: any) => ({
-                        name: g.name,
-                        unit: g.unit,
-                        totalQuantity: g.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0),
-                        totalReserved: g.items.reduce((sum: number, i: any) => sum + (i.quantityReserved || 0), 0),
-                        items: g.items,
-                      }))
-                    : supplies.map((s: any) => ({
-                        name: s.name,
-                        unit: s.unit,
-                        totalQuantity: s.quantity,
-                        totalReserved: s.quantityReserved || 0,
-                        items: [s],
-                        supplyId: s.id,
-                        version: s.version,
-                      }));
-
-                  return rows.map((g: any) => {
+                  {sortedSupplyRows.map((g: any) => {
                     const badgeClass = g.totalQuantity > 0 ? "badge-completado" : g.totalReserved > 0 ? "badge-pendiente" : "badge-cancelado";
                     const badgeLabel = g.totalQuantity > 0 ? "Disponible" : g.totalReserved > 0 ? "Reservado" : "Agotado";
                     const groupKey = isRelief ? g.name : g.supplyId;
@@ -276,11 +290,11 @@ export default function SuppliesPage() {
                     )}
                     </Fragment>
                     );
-                  });
-                })()}
+                  })}
               </tbody>
             </table>
             </div>
+            )}
           </div>
         )}
       </div>

@@ -2,6 +2,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import TableSearch from "@/components/TableSearch";
+import { useSort } from "@/hooks/useSort";
+import { useSearch } from "@/hooks/useSearch";
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -10,6 +13,7 @@ export default function RequestsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ category: "general", name: "", unit: "unidades", quantity: "", urgency: "media", notes: "" });
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -33,6 +37,12 @@ export default function RequestsPage() {
   };
 
   const statusBadge = (status: string) => `badge ${({ open: "badge-pendiente", in_progress: "badge-proceso", fulfilled: "badge-completado", cancelled: "badge-cancelado" } as any)[status] || ""}`;
+
+  const requestsMapped = requests.map((r: any) => ({ ...r, _centro: r.actor?.name || "" }));
+  const filteredRequests = useSearch(requestsMapped, searchTerm, [
+    "_centro", "name", "quantity", "urgency", "status", "createdAt",
+  ]);
+  const { sortedData: sortedRequests, SortHeader } = useSort(filteredRequests, "createdAt");
 
   const handleCancel = async (id: string) => {
     if (!confirm("¿Cancelar esta solicitud?")) return;
@@ -88,11 +98,15 @@ export default function RequestsPage() {
           <div className="card empty-state"><h3>No hay solicitudes</h3><p>Los centros de ayuda pueden crear solicitudes.</p></div>
         ) : (
           <div className="card">
+            <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar solicitud..." />
+            {sortedRequests.length === 0 ? (
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron solicitudes con "{searchTerm}".</p>
+            ) : (
             <div className="table-wrapper">
               <table>
-                <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <thead><tr><SortHeader label="Centro" sortKey="_centro" /><SortHeader label="Insumo" sortKey="name" /><SortHeader label="Cantidad" sortKey="quantity" /><SortHeader label="Urgencia" sortKey="urgency" /><SortHeader label="Estado" sortKey="status" /><SortHeader label="Fecha" sortKey="createdAt" /><th>Acciones</th></tr></thead>
                 <tbody>
-                  {requests.map((r: any) => (
+                  {sortedRequests.map((r: any) => (
                     <tr key={r.id}>
                       <td>{r.actor?.name || "N/A"}</td>
                       <td>{r.name}</td>
@@ -110,6 +124,7 @@ export default function RequestsPage() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}
       </div>

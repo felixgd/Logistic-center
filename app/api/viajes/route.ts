@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
     insumos: s.shipmentItem,
     estado: s.status,
     createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
   }));
 
   return Response.json(mapped);

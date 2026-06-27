@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
               nombre: s.actor.name,
               supplyId: s.id,
               cantidadDisponible: s.quantity,
+              unidad: s.unit,
               distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
             })),
           });
@@ -68,18 +69,26 @@ export async function POST(req: NextRequest) {
         orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
       });
 
+      if (pendientes.length === 0) {
+        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes solicitudes abiertas para match." });
+      }
+
+      const supplies = await prisma.supply.findMany({
+        where: {
+          status: "available",
+          quantity: { gt: 0 },
+          actorId: { not: auth.actorId },
+        },
+        include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
+      });
+
       for (const r of pendientes) {
-        const supplies = await prisma.supply.findMany({
-          where: {
-            status: "available",
-            quantity: { gt: 0 },
-            actorId: { not: r.actorId },
-            name: { contains: r.name, mode: "insensitive" },
-            unit: { equals: r.unit, mode: "insensitive" },
-          },
-          include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
-        });
-        if (supplies.length > 0) {
+        const matchingSupplies = supplies.filter(
+          (s) =>
+            s.unit.toLowerCase() === r.unit.toLowerCase() &&
+            (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))
+        );
+        if (matchingSupplies.length > 0) {
           resultados.push({
             requestId: r.id,
             reliefActorId: r.actorId,
@@ -88,11 +97,12 @@ export async function POST(req: NextRequest) {
             categoria: r.category,
             insumo: r.name,
             cantidad: r.quantity,
-            almacenes: supplies.map((s) => ({
+            almacenes: matchingSupplies.map((s) => ({
               almacenId: s.actor.id,
               nombre: s.actor.name,
               supplyId: s.id,
               cantidadDisponible: s.quantity,
+              unidad: s.unit,
               distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
             })),
           });
@@ -104,6 +114,10 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
       solicitudesMatch: resultados.length,
     });
+
+    if (resultados.length === 0) {
+      return Response.json({ totalMatches: 0, matches: [], mensaje: "No se encontraron almacenes con insumos que coincidan con tus solicitudes abiertas." });
+    }
 
     return Response.json({ totalMatches: resultados.length, matches: resultados });
   } catch (error: any) {
