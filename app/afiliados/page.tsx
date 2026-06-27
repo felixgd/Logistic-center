@@ -80,26 +80,28 @@ export default function AfiliadosPage() {
           </div>
         ) : (
           <div className="card">
-            <table>
-              <thead>
-                <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Desde</th><th>Acciones</th></tr>
-              </thead>
-              <tbody>
-                {members.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.name}</td>
-                    <td>{m.email}</td>
-                    <td>{m.phone || "—"}</td>
-                    <td><span className="badge badge-proceso">{m.role}</span></td>
-                    <td style={{ fontSize: 13, color: "#6b7280" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button className="btn btn-secondary" style={{ padding: "4px 10px", fontSize: 12, marginRight: 4 }} onClick={() => openEdit(m)}>Editar</button>
-                      <button className="btn btn-danger" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => handleDelete(m.id, m.name)}>Eliminar</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Desde</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {members.map((m) => (
+                    <tr key={m.id}>
+                      <td>{m.name}</td>
+                      <td>{m.email}</td>
+                      <td>{m.phone || "—"}</td>
+                      <td><span className="badge badge-proceso">{m.role}</span></td>
+                      <td style={{ fontSize: 13, color: "#6b7280" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button className="btn btn-secondary" style={{ padding: "4px 10px", fontSize: 12, marginRight: 4 }} onClick={() => openEdit(m)}>Editar</button>
+                        <button className="btn btn-danger" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => handleDelete(m.id, m.name)}>Eliminar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

@@ -86,26 +86,28 @@ export default function RequestsPage() {
           <div className="card empty-state"><h3>No hay solicitudes</h3><p>Los centros de ayuda pueden crear solicitudes.</p></div>
         ) : (
           <div className="card">
-            <table>
-              <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
-              <tbody>
-                {requests.map((r: any) => (
-                  <tr key={r.id}>
-                    <td>{r.actor?.name || "N/A"}</td>
-                    <td>{r.name}</td>
-                    <td>{r.quantity} {r.unit}</td>
-                    <td><span className={`badge ${r.urgency === "critica" ? "badge-critica" : r.urgency === "alta" ? "badge-pendiente" : ""}`}>{r.urgency}</span></td>
-                    <td><span className={statusBadge(r.status)}>{r.status}</span></td>
-                    <td>{new Date(r.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      {r.status === "open" && r.actorId === actor.id && (
-                        <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => handleCancel(r.id)}>Cancelar</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrapper">
+              <table>
+                <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <tbody>
+                  {requests.map((r: any) => (
+                    <tr key={r.id}>
+                      <td>{r.actor?.name || "N/A"}</td>
+                      <td>{r.name}</td>
+                      <td>{r.quantity} {r.unit}</td>
+                      <td><span className={`badge ${r.urgency === "critica" ? "badge-critica" : r.urgency === "alta" ? "badge-pendiente" : ""}`}>{r.urgency}</span></td>
+                      <td><span className={statusBadge(r.status)}>{r.status}</span></td>
+                      <td>{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        {r.status === "open" && r.actorId === actor.id && (
+                          <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => handleCancel(r.id)}>Cancelar</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

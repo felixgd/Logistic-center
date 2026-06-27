@@ -148,19 +148,20 @@ export default function SuppliesPage() {
           <div className="card empty-state"><h3>No hay insumos registrados</h3><p>Los almacenes pueden registrar insumos disponibles.</p></div>
         ) : (
           <div className="card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Insumo</th>
-                  <th>Disponible</th>
-                  <th>Reservado</th>
-                  <th>Unidad</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Insumo</th>
+                    <th>Disponible</th>
+                    <th>Reservado</th>
+                    <th>Unidad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
                   const rows = isRelief
                     ? Object.entries(
                         supplies.reduce((acc: any, s: any) => {
@@ -278,6 +279,7 @@ export default function SuppliesPage() {
                 })()}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

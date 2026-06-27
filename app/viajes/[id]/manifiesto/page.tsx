@@ -79,14 +79,16 @@ export default function ManifiestoPage() {
             </div>
           )}
           <h3 style={{ marginBottom: 12 }}>Manifiesto de Carga</h3>
-          <table>
-            <thead><tr><th>#</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th></tr></thead>
-            <tbody>
-              {data.manifiesto.map((item: any, i: number) => (
-                <tr key={i}><td>{i + 1}</td><td>{item.insumo}</td><td>{item.cantidad}</td><td>{item.unidad}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th></tr></thead>
+              <tbody>
+                {data.manifiesto.map((item: any, i: number) => (
+                  <tr key={i}><td>{i + 1}</td><td>{item.insumo}</td><td>{item.cantidad}</td><td>{item.unidad}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div style={{ marginTop: 24, padding: 16, background: "#f9fafb", borderRadius: 6, border: "1px dashed #d1d5db" }}>
             <p style={{ textAlign: "center", color: "#6b7280", fontSize: 13 }}>Fecha: {new Date(data.createdAt).toLocaleString()}</p>
           </div>

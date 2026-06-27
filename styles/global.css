@@ -615,7 +615,10 @@ table th{background:#f9fafb;font-weight:600;color:#374151;font-size:13px;text-tr
   border: 1px solid #cbd5e1;
 }
 
-/* Responsive Dashboard */
+.table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px}
+.table-wrapper table{min-width:640px}
+
+/* Responsive */
 @media(max-width:1024px){
   .dashboard-grid{grid-template-columns:repeat(2,1fr)}
   .dashboard-columns{grid-template-columns:1fr}

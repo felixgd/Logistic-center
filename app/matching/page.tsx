@@ -97,18 +97,20 @@ export default function MatchingPage() {
           <div className="card">
             <h3>Matches Encontrados</h3>
             <p style={{ color: "#6b7280", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
-            <table>
-              <thead><tr>{matches[0]?.centroAyuda && <th>Centro</th>}<th>Almacén</th><th>Insumo</th><th>Disponible</th><th>Requerido</th><th>Distancia</th></tr></thead>
-              <tbody>
-                {matches.map((m: any, i: number) => (
-                  <tr key={i}>
-                    {m.centroAyuda && <td>{m.centroAyuda}</td>}
-                    <td>{m.almacenNombre}</td><td>{m.insumo}</td><td>{m.cantidadDisponible} {m.unidad}</td><td>{m.cantidadRequerida} {m.unidad}</td>
-                    <td>{m.distancia > 0 ? `${m.distancia} km` : "N/A"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrapper">
+              <table>
+                <thead><tr>{matches[0]?.centroAyuda && <th>Centro</th>}<th>Almacén</th><th>Insumo</th><th>Disponible</th><th>Requerido</th><th>Distancia</th></tr></thead>
+                <tbody>
+                  {matches.map((m: any, i: number) => (
+                    <tr key={i}>
+                      {m.centroAyuda && <td>{m.centroAyuda}</td>}
+                      <td>{m.almacenNombre}</td><td>{m.insumo}</td><td>{m.cantidadDisponible} {m.unidad}</td><td>{m.cantidadRequerida} {m.unidad}</td>
+                      <td>{m.distancia > 0 ? `${m.distancia} km` : "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <button className="btn btn-success" style={{ marginTop: 16 }} onClick={crearViaje}>Crear Viaje(s)</button>
           </div>
         )}
@@ -117,20 +119,22 @@ export default function MatchingPage() {
           {pendientes.length === 0 ? (
             <p style={{ color: "#9ca3af", marginTop: 12 }}>No hay solicitudes pendientes.</p>
           ) : (
-            <table>
-              <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Acción</th></tr></thead>
-              <tbody>
-                {pendientes.map((p: any) => (
-                  <tr key={p.id}>
-                    <td>{p.actor?.name || "N/A"}</td>
-                    <td>{p.name}</td>
-                    <td>{p.quantity} {p.unit}</td>
-                    <td><span className={`badge ${p.urgency === "critica" ? "badge-critica" : p.urgency === "alta" ? "badge-pendiente" : ""}`}>{p.urgency}</span></td>
-                    <td><button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => buscarMatches(p.id)}>Buscar Match</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrapper">
+              <table>
+                <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Acción</th></tr></thead>
+                <tbody>
+                  {pendientes.map((p: any) => (
+                    <tr key={p.id}>
+                      <td>{p.actor?.name || "N/A"}</td>
+                      <td>{p.name}</td>
+                      <td>{p.quantity} {p.unit}</td>
+                      <td><span className={`badge ${p.urgency === "critica" ? "badge-critica" : p.urgency === "alta" ? "badge-pendiente" : ""}`}>{p.urgency}</span></td>
+                      <td><button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => buscarMatches(p.id)}>Buscar Match</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
