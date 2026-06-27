@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
         where: {
           status: "available",
           quantity: { gt: 0 },
+          actorId: { not: r.actorId },
           name: { contains: r.name, mode: "insensitive" },
           unit: { equals: r.unit, mode: "insensitive" },
         },

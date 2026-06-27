@@ -26,6 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: { solicitudId
       where: {
         status: "available",
         quantity: { gt: 0 },
+        actorId: { not: solicitud.actorId },
         name: { contains: solicitud.name, mode: "insensitive" },
         unit: { equals: solicitud.unit, mode: "insensitive" },
       },

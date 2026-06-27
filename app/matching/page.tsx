@@ -93,6 +93,25 @@ export default function MatchingPage() {
         </div>
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
+        {matches.length > 0 && (
+          <div className="card">
+            <h3>Matches Encontrados</h3>
+            <p style={{ color: "#6b7280", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
+            <table>
+              <thead><tr>{matches[0]?.centroAyuda && <th>Centro</th>}<th>Almacén</th><th>Insumo</th><th>Disponible</th><th>Requerido</th><th>Distancia</th></tr></thead>
+              <tbody>
+                {matches.map((m: any, i: number) => (
+                  <tr key={i}>
+                    {m.centroAyuda && <td>{m.centroAyuda}</td>}
+                    <td>{m.almacenNombre}</td><td>{m.insumo}</td><td>{m.cantidadDisponible} {m.unidad}</td><td>{m.cantidadRequerida} {m.unidad}</td>
+                    <td>{m.distancia > 0 ? `${m.distancia} km` : "N/A"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button className="btn btn-success" style={{ marginTop: 16 }} onClick={crearViaje}>Crear Viaje(s)</button>
+          </div>
+        )}
         <div className="card">
           <h3>Solicitudes Pendientes ({pendientes.length})</h3>
           {pendientes.length === 0 ? (
@@ -114,25 +133,6 @@ export default function MatchingPage() {
             </table>
           )}
         </div>
-        {matches.length > 0 && (
-          <div className="card">
-            <h3>Matches Encontrados</h3>
-            <p style={{ color: "#6b7280", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
-            <table>
-              <thead><tr>{matches[0]?.centroAyuda && <th>Centro</th>}<th>Almacén</th><th>Insumo</th><th>Disponible</th><th>Requerido</th><th>Distancia</th></tr></thead>
-              <tbody>
-                {matches.map((m: any, i: number) => (
-                  <tr key={i}>
-                    {m.centroAyuda && <td>{m.centroAyuda}</td>}
-                    <td>{m.almacenNombre}</td><td>{m.insumo}</td><td>{m.cantidadDisponible} {m.unidad}</td><td>{m.cantidadRequerida} {m.unidad}</td>
-                    <td>{m.distancia > 0 ? `${m.distancia} km` : "N/A"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button className="btn btn-success" style={{ marginTop: 16 }} onClick={crearViaje}>Crear Viaje(s)</button>
-          </div>
-        )}
       </div>
     </div>
   );

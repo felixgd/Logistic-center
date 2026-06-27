@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -7,6 +8,7 @@ const LABELS: Record<string, string> = {
 };
 
 export default function Navbar() {
+  const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const actor = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("actor") || "{}") : {};
@@ -33,20 +35,25 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <h1>Logística</h1>
-      <nav>
+      <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú">
+        <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+        <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+        <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+      </button>
+      <div className={`navbar-links ${menuOpen ? "open" : ""}`}>
         {links.map((l) => (
-          <Link key={l.path} href={l.path} className={pathname === l.path ? "active" : ""}>
+          <Link key={l.path} href={l.path} className={pathname === l.path ? "active" : ""} onClick={() => setMenuOpen(false)}>
             {l.label}
           </Link>
         ))}
-        <span style={{ color: "#94a3b8", margin: "0 12px", fontSize: 13 }}>
+        <span className="navbar-user">
           {actor.name} ({LABELS[actor.type as string] || actor.type})
-          {!actor.isOwner && <span style={{ color: "#f59e0b", marginLeft: 6 }}>(miembro)</span>}
+          {!actor.isOwner && <span className="navbar-member">(miembro)</span>}
         </span>
-        <button className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }} onClick={logout}>
+        <button className="btn btn-secondary navbar-logout" onClick={logout}>
           Salir
         </button>
-      </nav>
+      </div>
     </nav>
   );
 }
