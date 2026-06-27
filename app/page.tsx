@@ -85,6 +85,8 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"requests" | "shipments">("requests");
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   // Modals state
   const [activeModal, setActiveModal] = useState<"request" | "supply" | "driver" | "claim" | null>(null);
@@ -352,11 +354,35 @@ export default function HomePage() {
         <Link href="/" className="logo">
           <span>📦 Logística Central</span>
         </Link>
-        <nav>
-          <Link href="/" className="active">Mapa Central</Link>
-          {isAuthenticated && <Link href="/dashboard">Dashboard</Link>}
+        <button className="header-hamburger" onClick={() => setHeaderMenuOpen(!headerMenuOpen)} aria-label="Menú">
+          <span className={`hamburger-line ${headerMenuOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${headerMenuOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${headerMenuOpen ? "open" : ""}`} />
+        </button>
+        <nav className={`header-nav ${headerMenuOpen ? "open" : ""}`}>
+          <Link href="/" className="active" onClick={() => setHeaderMenuOpen(false)}>Mapa Central</Link>
+          {isAuthenticated && <Link href="/dashboard" onClick={() => setHeaderMenuOpen(false)}>Dashboard</Link>}
+          <div className="header-nav-auth">
+            {isAuthenticated ? (
+              <>
+                <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
+                <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
+                  Cerrar Sesión
+                </button>
+              </>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <Link href="/login" className="btn btn-primary" style={{ padding: "6px 14px", fontSize: 12 }} onClick={() => setHeaderMenuOpen(false)}>
+                  Ingresar
+                </Link>
+                <Link href="/register" className="btn btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }} onClick={() => setHeaderMenuOpen(false)}>
+                  Registrarse
+                </Link>
+              </div>
+            )}
+          </div>
         </nav>
-        <div className="auth-section">
+        <div className="auth-section header-auth-desktop">
           {isAuthenticated ? (
             <>
               <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
@@ -378,8 +404,12 @@ export default function HomePage() {
       </header>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* Mobile sidebar toggle */}
+        <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+          {sidebarOpen ? "✕" : "☰ Acciones"}
+        </button>
         {/* Sidebar Section */}
-        <aside className="homepage-sidebar">
+        <aside className={`homepage-sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sidebar-header" style={{ padding: "20px" }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#fff" }}>Acciones Rápidas</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
