@@ -15,6 +15,7 @@ function distancia(lat1: number, lon1: number, lat2: number, lon2: number): numb
 export async function GET(req: NextRequest, { params }: { params: { solicitudId: string } }) {
   const auth = getAuthActor(req);
   if (!auth) return jsonError(401, "Token requerido");
+  if (auth.actorType !== "warehouse") return jsonError(403, "Solo los almacenes pueden usar el matching");
 
   try {
     const solicitud = await prisma.request.findUnique({

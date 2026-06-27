@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   const members = await prisma.actor_user.findMany({
     where: { actorId: auth.actorId, deletedAt: null },
-    include: { user: { select: { id: true, name: true, email: true } } },
+    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
     orderBy: { createdAt: "asc" },
   });
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     userId: m.userId,
     name: m.user.name,
     email: m.user.email,
-    phone: m.phone,
+    phone: m.user.phone || m.phone,
     role: m.role,
     createdAt: m.createdAt,
   }));

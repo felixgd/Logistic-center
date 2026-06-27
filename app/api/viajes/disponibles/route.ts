@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const shipments = await prisma.shipment.findMany({
-    where: { status: "proposed", transporterActorId: null },
+    where: { status: "approved", transporterActorId: null },
     include: {
       warehouseActor: { select: { id: true, name: true, address: true, whatsapp: true, city: true, lat: true, lng: true } },
       reliefActor: { select: { id: true, name: true, address: true, whatsapp: true, city: true, lat: true, lng: true } },

@@ -24,10 +24,16 @@ export async function POST(req: NextRequest) {
 
     const token = crypto.randomBytes(32).toString("hex");
 
-    await prisma.phone_verification.update({
-      where: { id: record.id },
-      data: { verified: true, token },
-    });
+    await prisma.$transaction([
+      prisma.phone_verification.update({
+        where: { id: record.id },
+        data: { verified: true, token },
+      }),
+      prisma.user.updateMany({
+        where: { phone: cleanPhone },
+        data: { phoneVerified: true },
+      }),
+    ]);
 
     return Response.json({ mensaje: "Teléfono verificado", token });
   } catch (error: any) {

@@ -54,7 +54,7 @@ export default function ManifiestoPage() {
         <div className="page-header">
           <h2>Manifiesto de Viaje</h2>
           <div style={{ display: "flex", gap: 8 }}>
-            {data.estado === "proposed" && (actor.id === data.puntoCarga?.id || actor.id === data.puntoDescarga?.id) && (
+            {(data.estado === "proposed" || data.estado === "approved") && (actor.id === data.puntoCarga?.id || actor.id === data.puntoDescarga?.id) && (
               <button className="btn btn-danger" onClick={handleCancel}>Cancelar Viaje</button>
             )}
             <button className="btn btn-secondary" onClick={() => router.push("/viajes")}>Volver</button>

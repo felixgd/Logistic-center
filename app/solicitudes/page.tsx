@@ -38,11 +38,24 @@ export default function RequestsPage() {
 
   const statusBadge = (status: string) => `badge ${({ open: "badge-pendiente", in_progress: "badge-proceso", fulfilled: "badge-completado", cancelled: "badge-cancelado" } as any)[status] || ""}`;
 
-  const requestsMapped = requests.map((r: any) => ({ ...r, _centro: r.actor?.name || "" }));
+  const urgencyOrder: Record<string, number> = { critica: 0, alta: 1, media: 2, baja: 3 };
+  const statusOrder: Record<string, number> = { open: 0, in_progress: 1, fulfilled: 2, cancelled: 3 };
+
+  const requestsMapped = requests.map((r: any) => {
+    const uo = String(urgencyOrder[r.urgency] ?? 4).padStart(2, "0");
+    const so = String(statusOrder[r.status] ?? 4).padStart(2, "0");
+    return {
+      ...r,
+      _centro: r.actor?.name || "",
+      _urgenciaOrden: uo,
+      _estadoOrden: so,
+      _sortKey: `${uo}_${so}_${r.createdAt}`,
+    };
+  });
   const filteredRequests = useSearch(requestsMapped, searchTerm, [
     "_centro", "name", "quantity", "urgency", "status", "createdAt",
   ]);
-  const { sortedData: sortedRequests, SortHeader } = useSort(filteredRequests, "createdAt");
+  const { sortedData: sortedRequests, SortHeader } = useSort(filteredRequests, "_sortKey");
 
   const handleCancel = async (id: string) => {
     if (!confirm("¿Cancelar esta solicitud?")) return;
