@@ -224,6 +224,7 @@ table th.sort-active{color:#2563eb}
 .map-container-wrapper {
   flex: 1;
   position: relative;
+  z-index: 1;
 }
 
 /* Custom Marker Pins */
@@ -468,17 +469,23 @@ table th.sort-active{color:#2563eb}
   box-shadow: 0 4px 15px rgba(0,0,0,.3);
 }
 
+.sidebar-expand-toggle, .sidebar-drag-handle {
+  display: none;
+}
+
 @media(max-width:768px){
   .header-hamburger{display:flex}
-  .header-nav{display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;flex-direction:column;padding:16px 24px;gap:12px;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 10px 20px rgba(0,0,0,.3);z-index:100;align-items:stretch}
-  .header-nav.open{display:flex}
+  .main-header .header-nav{display:none;position:absolute;top:100%;left:0;right:0;background:#1e293b;flex-direction:column;padding:16px 24px;gap:12px;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 10px 20px rgba(0,0,0,.3);z-index:100;align-items:stretch}
+  .main-header .header-nav.open{display:flex}
   .header-nav a{padding:10px 12px;border-radius:6px;color:#94a3b8;text-decoration:none;font-size:14px;font-weight:600}
   .header-nav a:hover,.header-nav a.active{color:#fff;background:rgba(255,255,255,.1)}
   .header-nav .header-nav-auth{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.1)}
   .header-auth-desktop{display:none !important}
-  .homepage-sidebar{position:fixed;top:64px;left:0;bottom:0;z-index:40;transform:translateX(-100%);transition:transform .3s ease;width:85vw;max-width:380px}
-  .homepage-sidebar.open{transform:translateX(0)}
-  .sidebar-toggle{display:block}
+  .homepage-sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;width:100vw;max-width:none;height:75vh;z-index:40;border-top:1px solid #e2e8f0;border-radius:20px 20px 0 0;box-shadow:0 -10px 25px rgba(0,0,0,0.15);transform:translateY(calc(100% - 182px));transition:transform .4s cubic-bezier(0.16, 1, 0.3, 1);visibility:visible;display:flex;flex-direction:column}
+  .homepage-sidebar.open{transform:translateY(0)}
+  .sidebar-toggle{display:none !important}
+  .sidebar-expand-toggle{display:inline-flex}
+  .sidebar-drag-handle{display:flex !important}
   .map-container-wrapper{margin-left:0}
 }
 
@@ -698,4 +705,75 @@ table th.sort-active{color:#2563eb}
   .dashboard-stat-card{padding:16px}
   .dashboard-feed-card,.dashboard-left-col .card,.dashboard-map-panel{padding:16px}
   .container{padding:12px}
+}
+
+/* Sign Up / Register 2-Column Desktop Layout */
+.auth-card.register-step-2 {
+  max-width: 980px;
+  width: 95%;
+  transition: max-width 0.3s ease;
+}
+
+.register-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.register-map-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.register-map-field .register-map-wrapper {
+  height: 250px;
+}
+
+@media(min-width:769px) {
+  .register-form-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 20px 40px;
+    align-items: start;
+  }
+  
+  .register-left-fields {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  .register-bottom-fields {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  .register-map-field {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .register-map-field .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .register-map-field .register-map-wrapper {
+    flex: 1;
+    min-height: 420px !important;
+    height: 100% !important;
+  }
+  
+  .register-buttons-field {
+    grid-column: 1;
+    grid-row: 3;
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+  }
 }

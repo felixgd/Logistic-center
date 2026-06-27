@@ -33,6 +33,8 @@ interface MapComponentProps {
   initialLng?: number;
   onLocationSelected?: (lat: number, lng: number) => void;
   onAddressFound?: (address: string, city: string) => void;
+  onMapClick?: () => void;
+  sidebarOpen?: boolean;
 }
 
 export default function MapComponent({
@@ -44,6 +46,8 @@ export default function MapComponent({
   initialLng = -74.072,
   onLocationSelected,
   onAddressFound,
+  onMapClick,
+  sidebarOpen = false,
 }: MapComponentProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -59,6 +63,11 @@ export default function MapComponent({
   useEffect(() => {
     onAddressFoundRef.current = onAddressFound;
   }, [onAddressFound]);
+
+  const onMapClickRef = useRef(onMapClick);
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     // 1. Initialize map if not initialized
@@ -137,6 +146,12 @@ export default function MapComponent({
               }
             })
             .catch((err) => console.error("Error in reverse geocoding:", err));
+        });
+      } else {
+        map.on("click", () => {
+          if (onMapClickRef.current) {
+            onMapClickRef.current();
+          }
         });
       }
     }
@@ -228,10 +243,29 @@ export default function MapComponent({
     const marker = markersRef.current[selectedActorId];
     if (marker) {
       const position = marker.getLatLng();
-      map.setView(position, 15, { animate: true, duration: 1 });
+      
+      const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+      if (isMobile) {
+        // Offset the map center so the marker is centered in the visible top area
+        const targetZoom = 15;
+        const projectedPoint = map.project(position, targetZoom);
+        const mapHeight = map.getSize().y;
+        
+        // When expanded, the sidebar takes up 75% height. Visually center at top 25% (offset by 37.5%).
+        // When collapsed, the sidebar takes up 182px. Visually center above 182px (offset by 91px).
+        const pixelOffset = sidebarOpen ? (mapHeight * 0.375) : 91;
+        
+        const projectedPointWithOffset = L.point(projectedPoint.x, projectedPoint.y + pixelOffset);
+        const targetLatLngWithOffset = map.unproject(projectedPointWithOffset, targetZoom);
+        
+        map.setView(targetLatLngWithOffset, targetZoom, { animate: true, duration: 1 });
+      } else {
+        map.setView(position, 15, { animate: true, duration: 1 });
+      }
+      
       marker.openPopup();
     }
-  }, [selectedActorId]);
+  }, [selectedActorId, sidebarOpen]);
 
   return <div id={containerId} style={{ width: "100%", height: "100%" }} />;
 }

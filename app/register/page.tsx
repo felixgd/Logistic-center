@@ -104,7 +104,7 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
+      <div className={`auth-card ${step === 2 ? "register-step-2" : ""}`}>
         <div style={{ textAlign: "left", marginBottom: 8 }}><Link href="/" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 13 }}>← Volver al inicio</Link></div>
         <h2>Registro</h2>
         <p className="subtitle">Crea tu cuenta en el sistema</p>
@@ -122,87 +122,94 @@ export default function RegisterPage() {
         )}
         {step === 2 && (
           <form onSubmit={handleSubmit}>
-            <div className="form-group"><label>Nombre de la organización</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
-            <div className="form-group"><label>Persona de contacto</label><input value={form.contactName} onChange={(e) => update("contactName", e.target.value)} placeholder="Nombre de contacto" /></div>
-            <div className="form-group"><label>Dirección</label><input value={form.address} onChange={(e) => update("address", e.target.value)} required /></div>
-            <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
-            
-            <div className="form-group">
-              <span className="map-instructions">📍 Ubicación en el mapa (haz clic para marcar):</span>
-              <div className="register-map-wrapper" style={{ height: "200px", marginBottom: "16px" }}>
-                <MapComponent
-                  containerId="register-map"
-                  actors={[]}
-                  interactive={true}
-                  onLocationSelected={(lat, lng) => {
-                    update("lat", lat);
-                    update("lng", lng);
-                  }}
-                  onAddressFound={(address, city) => {
-                    update("address", address);
-                    update("city", city);
-                  }}
-                />
+            <div className="register-form-grid">
+              
+              <div className="register-left-fields">
+                <div className="form-group"><label>Nombre de la organización</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
+                <div className="form-group"><label>Persona de contacto</label><input value={form.contactName} onChange={(e) => update("contactName", e.target.value)} placeholder="Nombre de contacto" /></div>
+                <div className="form-group"><label>Dirección</label><input value={form.address} onChange={(e) => update("address", e.target.value)} required /></div>
+                <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label>Teléfono / WhatsApp *</label>
-              <div style={{ display: "flex", gap: 4 }}>
-                <input
-                  value={form.phone}
-                  onChange={(e) => update("phone", normalizePhone(e.target.value))}
-                  placeholder="521234567890"
-                  required
-                  style={{ flex: 1 }}
-                />
-                {verifToken ? (
-                  <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-                    onClick={enviarCodigo}
-                    disabled={verifSending || countdown > 0 || !isValidPhone(targetPhone)}
-                  >
-                    {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
-                  </button>
-                )}
-              </div>
-              <small style={{ color: "#6b7280", fontSize: 12 }}>Ingresa tu número con código de país. Te enviaremos un código de verificación.</small>
-            </div>
-            {verifSent && !verifToken && (
-              <div className="form-group">
-                <label>Código de verificación</label>
-                {verifMocked && (
-                  <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
-                    Modo de prueba activo. Usa el código: <strong>{verifMockCode}</strong>
+              <div className="register-map-field">
+                <div className="form-group">
+                  <span className="map-instructions">📍 Ubicación en el mapa (haz clic para marcar):</span>
+                  <div className="register-map-wrapper" style={{ marginBottom: "16px" }}>
+                    <MapComponent
+                      containerId="register-map"
+                      actors={[]}
+                      interactive={true}
+                      onLocationSelected={(lat, lng) => {
+                        update("lat", lat);
+                        update("lng", lng);
+                      }}
+                      onAddressFound={(address, city) => {
+                        update("address", address);
+                        update("city", city);
+                      }}
+                    />
                   </div>
-                )}
-                <div style={{ display: "flex", gap: 4 }}>
-                  <input
-                    value={verifCode}
-                    onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="000000"
-                    maxLength={6}
-                    style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }}
-                  />
-                  <button type="button" className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }}
-                    onClick={verificarCodigo} disabled={verifCode.length < 6}>Confirmar</button>
                 </div>
               </div>
-            )}
-            <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
-            {form.type === "transporter" && (
-              <>
-                <div className="form-group"><label>Tipo de vehículo</label><input value={form.vehicleType} onChange={(e) => update("vehicleType", e.target.value)} placeholder="Camión, camioneta, etc." /></div>
-                <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
-              </>
-            )}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Atrás</button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={!verifToken}>Crear cuenta</button>
+
+              <div className="register-bottom-fields">
+                <div className="form-group">
+                  <label>Teléfono / WhatsApp *</label>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <input
+                      value={form.phone}
+                      onChange={(e) => update("phone", normalizePhone(e.target.value))}
+                      placeholder="521234567890"
+                      required
+                      style={{ flex: 1 }}
+                    />
+                    {verifToken ? (
+                      <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                        onClick={enviarCodigo}
+                        disabled={verifSending || countdown > 0 || !isValidPhone(targetPhone)}
+                      >
+                        {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
+                      </button>
+                    )}
+                  </div>
+                  <small style={{ color: "#6b7280", fontSize: 12 }}>Ingresa tu número con código de país. Te enviaremos un código de verificación.</small>
+                </div>
+                {verifSent && !verifToken && (
+                  <div className="form-group">
+                    <label>Código de verificación</label>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <input
+                        value={verifCode}
+                        onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="000000"
+                        maxLength={6}
+                        style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }}
+                      />
+                      <button type="button" className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }}
+                        onClick={verificarCodigo} disabled={verifCode.length < 6}>Confirmar</button>
+                    </div>
+                  </div>
+                )}
+                <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
+                <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
+                {form.type === "transporter" && (
+                  <>
+                    <div className="form-group"><label>Tipo de vehículo</label><input value={form.vehicleType} onChange={(e) => update("vehicleType", e.target.value)} placeholder="Camión, camioneta, etc." /></div>
+                    <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
+                  </>
+                )}
+              </div>
+
+              <div className="register-buttons-field">
+                <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Atrás</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={!verifToken}>Crear cuenta</button>
+              </div>
+
             </div>
           </form>
         )}

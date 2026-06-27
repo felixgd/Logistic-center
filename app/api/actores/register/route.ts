@@ -17,13 +17,12 @@ export async function POST(req: NextRequest) {
     });
     if (!verif) return jsonError(400, "Teléfono no verificado. Solicita un nuevo código.");
 
-    const finalEmail = email || null;
-    const existingPhone = await prisma.user.findUnique({ where: { phone: targetPhone } });
-    if (existingPhone) return jsonError(400, "El teléfono ya está registrado");
-    if (finalEmail) {
-      const existingEmail = await prisma.user.findUnique({ where: { email: finalEmail } });
-      if (existingEmail) return jsonError(400, "El email ya está registrado");
-    }
+    const finalEmail = email || `wa_${targetPhone}@disaster.acopio`;
+    const existing = await prisma.user.findUnique({ where: { email: finalEmail } });
+    if (existing) return jsonError(400, "El email o whatsapp ya está registrado");
+
+    const pwd = password || `password_${targetPhone}`;
+    const hashed = await hashPassword(pwd);
 
     const user = await prisma.user.create({
       data: { name, phone: targetPhone, phoneVerified: true, email: finalEmail },
