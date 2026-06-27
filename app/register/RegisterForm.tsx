@@ -12,13 +12,15 @@ function RegisterFormInner() {
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
   const [form, setForm] = useState({
     type: "", name: "", address: "", city: "", phone: "", whatsapp: "",
-    email: "", password: "", vehicleType: "", capacityKg: 0,
+    email: "", vehicleType: "", capacityKg: 0,
   });
   const [error, setError] = useState("");
   const [verifCode, setVerifCode] = useState("");
   const [verifToken, setVerifToken] = useState("");
   const [verifSending, setVerifSending] = useState(false);
   const [verifSent, setVerifSent] = useState(false);
+  const [verifMocked, setVerifMocked] = useState(false);
+  const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
 
   useEffect(() => {
@@ -49,6 +51,7 @@ function RegisterFormInner() {
     const data = await res.json();
     if (!res.ok) { setError(data.error); setVerifSending(false); return; }
     setVerifSent(true); setVerifSending(false); setCountdown(60);
+    if (data.mocked) { setVerifMocked(true); setVerifMockCode(data.code || ""); }
     const timer = setInterval(() => setCountdown((c) => { if (c <= 1) clearInterval(timer); return c - 1; }), 1000);
   };
 
@@ -72,7 +75,7 @@ function RegisterFormInner() {
 
     const endpoint = affiliateCode ? "/api/actores/afiliar/registrar" : "/api/actores/register";
     const body = affiliateCode
-      ? { code: affiliateCode, name: form.name, phone: form.phone || form.whatsapp, email: form.email, password: form.password, phoneVerificationToken: verifToken || undefined }
+      ? { code: affiliateCode, name: form.name, phone: form.phone || form.whatsapp, email: form.email, phoneVerificationToken: verifToken || undefined }
       : { ...form, phoneVerificationToken: verifToken || undefined };
 
     try {
@@ -117,6 +120,11 @@ function RegisterFormInner() {
             {verifSent && !verifToken && (
               <div className="form-group">
                 <label>Código de verificación</label>
+                {verifMocked && (
+                  <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
+                    Modo de prueba activo. Usa el código: <strong>{verifMockCode}</strong>
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 4 }}>
                   <input value={verifCode} onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     placeholder="000000" maxLength={6} style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }} />
@@ -126,7 +134,6 @@ function RegisterFormInner() {
               </div>
             )}
             <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
-            <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
             <div className="form-group" style={{ background: "#f1f5f9", padding: 12, borderRadius: 6, fontSize: 13, color: "#475569" }}>
               <strong>Dirección:</strong> {affiliateInfo.address || "No registrada"}<br />
               <strong>Ciudad:</strong> {affiliateInfo.city || "No registrada"}
@@ -187,6 +194,11 @@ function RegisterFormInner() {
             {verifSent && !verifToken && (
               <div className="form-group">
                 <label>Código de verificación</label>
+                {verifMocked && (
+                  <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
+                    Modo de prueba activo. Usa el código: <strong>{verifMockCode}</strong>
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 4 }}>
                   <input value={verifCode} onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     placeholder="000000" maxLength={6} style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }} />
@@ -196,7 +208,6 @@ function RegisterFormInner() {
               </div>
             )}
             <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
-            <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required minLength={6} /></div>
             {form.type === "transporter" && (
               <>
                 <div className="form-group"><label>Tipo de vehículo</label><input value={form.vehicleType} onChange={(e) => update("vehicleType", e.target.value)} placeholder="Camión, camioneta, etc." /></div>

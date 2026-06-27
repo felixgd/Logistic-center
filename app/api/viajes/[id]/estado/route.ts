@@ -17,9 +17,34 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
     if (!shipment) return jsonError(404, "Envío no encontrado");
 
-    if (status === "cancelled" && shipment.status === "proposed") {
+    const validTransitions: Record<string, string[]> = {
+      proposed: ["approved", "cancelled"],
+      approved: ["assigned", "cancelled"],
+      assigned: ["in_transit", "cancelled"],
+      in_transit: ["delivered", "cancelled"],
+      delivered: [],
+      cancelled: [],
+    };
+
+    if (!validTransitions[shipment.status]?.includes(status)) {
+      return jsonError(400, `No se puede cambiar el estado de ${shipment.status} a ${status}`);
+    }
+
+    if (status === "approved") {
+      if (auth.actorId !== shipment.warehouseActorId) {
+        return jsonError(403, "Solo el almacén puede aprobar este viaje");
+      }
+    }
+
+    if (status === "cancelled") {
       if (auth.actorId !== shipment.warehouseActorId && auth.actorId !== shipment.reliefActorId) {
-        return jsonError(403, "Solo el almacén o el centro de ayuda puede cancelar este viaje");
+        return jsonError(403, "Solo el almacén o el centro de ayuda pueden cancelar este viaje");
+      }
+    }
+
+    if (status === "in_transit" || status === "delivered") {
+      if (auth.actorId !== shipment.transporterActorId) {
+        return jsonError(403, "Solo el transportista asignado puede actualizar este viaje");
       }
     }
 

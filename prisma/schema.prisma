@@ -177,7 +177,9 @@ model supply {
 model user {
   id            String    @id @default(cuid())
   name          String
-  email         String    @unique
+  phone         String?   @unique
+  phoneVerified Boolean   @default(false)
+  email         String?   @unique
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now()) @db.Timestamp(6)

@@ -21,6 +21,8 @@ export default function MatchingPage() {
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }
+    const actor = JSON.parse(localStorage.getItem("actor") || "{}");
+    if (actor.type !== "warehouse") { router.push("/dashboard"); return; }
     fetch("/api/solicitudes/pendientes").then((r) => r.json()).then(setPendientes).catch(() => {});
   }, [token, router]);
 

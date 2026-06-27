@@ -25,7 +25,7 @@ export default function Navbar() {
     { path: "/insumos", label: "Insumos", roles: ["warehouse", "relief"] },
     { path: "/solicitudes", label: "Solicitudes", roles: ["warehouse", "relief"] },
     { path: "/viajes", label: "Viajes" },
-    { path: "/matching", label: "Matching", roles: ["warehouse", "relief"] },
+    { path: "/matching", label: "Matching", roles: ["warehouse"] },
   ];
 
   const links = allLinks.filter((l) => !l.roles || l.roles.includes(actor.type));

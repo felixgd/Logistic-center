@@ -16,8 +16,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       include: { shipmentItem: true, warehouseActor: true, reliefActor: true },
     });
     if (!shipment) return jsonError(404, "Envío no encontrado");
-    if (shipment.status !== "proposed" || shipment.transporterActorId)
-      return jsonError(400, "El envío no está disponible");
+    if (shipment.status !== "approved" || shipment.transporterActorId)
+      return jsonError(400, "El envío no está disponible para asignación");
 
     const { transporterActorId } = await req.json();
 

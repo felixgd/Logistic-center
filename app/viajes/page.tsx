@@ -16,6 +16,17 @@ export default function TripsPage() {
   const [error, setError] = useState("");
   const [searchTrips, setSearchTrips] = useState("");
   const [searchDisponibles, setSearchDisponibles] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
+
+  const statusOptions = [
+    { key: "todos", label: "Todos" },
+    { key: "proposed", label: "Propuestos" },
+    { key: "approved", label: "Aprobados" },
+    { key: "assigned", label: "Asignados" },
+    { key: "in_transit", label: "En tránsito" },
+    { key: "delivered", label: "Completados" },
+    { key: "cancelled", label: "Cancelados" },
+  ];
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -47,7 +58,7 @@ export default function TripsPage() {
     load();
   };
 
-  const statusBadge = (s: string) => `badge ${({ proposed: "badge-pendiente", assigned: "badge-proceso", in_transit: "badge-proceso", delivered: "badge-completado", cancelled: "badge-cancelado" } as any)[s] || ""}`;
+  const statusBadge = (s: string) => `badge ${({ proposed: "badge-pendiente", approved: "badge-pendiente", assigned: "badge-proceso", in_transit: "badge-proceso", delivered: "badge-completado", cancelled: "badge-cancelado" } as any)[s] || ""}`;
 
   const formatDate = (d: string | Date | null | undefined) =>
     d ? new Date(d).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : "—";
@@ -66,6 +77,8 @@ export default function TripsPage() {
     "codigoViaje", "_almacen", "_centro", "_insumosText", "_transportista", "estado",
   ]);
   const { sortedData: sortedTrips, SortHeader: SortHeader1 } = useSort(filteredTrips, "codigoViaje");
+
+  const displayedTrips = statusFilter === "todos" ? sortedTrips : sortedTrips.filter((t: any) => t.estado === statusFilter);
 
   const disponiblesMapped = disponibles.map((t: any) => ({
     ...t,
@@ -91,19 +104,37 @@ export default function TripsPage() {
         </div>
         {error && <div className="alert alert-error">{error}</div>}
 
+        {tab === "mis-viajes" && trips.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+            {statusOptions.map((opt) => {
+              const count = opt.key === "todos" ? trips.length : trips.filter((t: any) => t.estado === opt.key).length;
+              return (
+                <button
+                  key={opt.key}
+                  className={`btn ${statusFilter === opt.key ? "btn-primary" : "btn-secondary"}`}
+                  style={{ padding: "6px 12px", fontSize: 13 }}
+                  onClick={() => setStatusFilter(opt.key)}
+                >
+                  {opt.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {tab === "mis-viajes" && (trips.length === 0 ? (
           <div className="card empty-state"><h3>No hay viajes</h3><p>Aparecerán cuando se coordinen envíos.</p></div>
         ) : (
           <div className="card">
             <TableSearch value={searchTrips} onChange={setSearchTrips} placeholder="Buscar viaje..." />
-            {sortedTrips.length === 0 ? (
-              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron viajes con "{searchTrips}".</p>
+            {displayedTrips.length === 0 ? (
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron viajes{statusFilter !== "todos" ? ` en estado "${statusOptions.find(o => o.key === statusFilter)?.label}"` : searchTrips ? ` con "${searchTrips}"` : ""}.</p>
             ) : (
             <div className="table-wrapper">
               <table>
                 <thead><tr><SortHeader1 label="Código" sortKey="codigoViaje" /><SortHeader1 label="Almacén" sortKey="_almacen" /><SortHeader1 label="Centro" sortKey="_centro" /><SortHeader1 label="Insumos" sortKey="_insumosText" /><SortHeader1 label="Transportista" sortKey="_transportista" /><SortHeader1 label="Estado" sortKey="estado" /><SortHeader1 label="Creado" sortKey="createdAt" /><SortHeader1 label="Actualizado" sortKey="updatedAt" /><th>Acciones</th></tr></thead>
                 <tbody>
-                  {sortedTrips.map((t: any) => (
+                  {displayedTrips.map((t: any) => (
                     <tr key={t.id}>
                       <td><strong>{t.codigoViaje}</strong></td>
                       <td>{t.almacen?.name || "N/A"}</td>
@@ -116,16 +147,19 @@ export default function TripsPage() {
                       <td>
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
                           <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
+                          {t.estado === "proposed" && actor.id === t.almacen?.id && (
+                            <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "approved")}>Aprobar</button>
+                          )}
                           {(t.estado === "assigned" || t.estado === "in_transit") && t.transportista?.id === actor.id && (
                             <NavegacionViaje origen={t.almacen} destino={t.centroAyuda} />
                           )}
                           {t.estado === "assigned" && t.transportista?.id === actor.id && (
                             <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "in_transit")}>Iniciar</button>
                           )}
-                          {t.estado === "in_transit" && (
+                          {t.estado === "in_transit" && t.transportista?.id === actor.id && (
                             <button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => updateStatus(t.id, "delivered")}>Completar</button>
                           )}
-                          {t.estado === "proposed" && (actor.id === t.almacen?.id || actor.id === t.centroAyuda?.id) && (
+                          {(t.estado === "proposed" || t.estado === "approved") && (actor.id === t.almacen?.id || actor.id === t.centroAyuda?.id) && (
                             <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={async () => { if (confirm("¿Cancelar este viaje?")) { await updateStatus(t.id, "cancelled"); } }}>Cancelar</button>
                           )}
                         </div>
