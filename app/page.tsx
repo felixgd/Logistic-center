@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -85,8 +85,74 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"requests" | "shipments">("requests");
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+
+  // Mobile bottom-sheet drag states
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.innerWidth > 768) return;
+    if ((e.target as HTMLElement).closest(".btn") || (e.target as HTMLElement).closest(".sidebar-expand-toggle")) return;
+    setIsDragging(true);
+    dragStartY.current = e.touches[0].clientY;
+    setDragOffsetY(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentY = e.touches[0].clientY;
+    setDragOffsetY(currentY - dragStartY.current);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    const travelDistance = window.innerHeight * 0.75 - 182;
+    const finalTranslation = sidebarOpen ? dragOffsetY : travelDistance + dragOffsetY;
+
+    if (finalTranslation < travelDistance / 2) {
+      setSidebarOpen(true);
+    } else {
+      setSidebarOpen(false);
+    }
+    setDragOffsetY(0);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (window.innerWidth > 768) return;
+    if ((e.target as HTMLElement).closest(".btn") || (e.target as HTMLElement).closest(".sidebar-expand-toggle")) return;
+    setIsDragging(true);
+    dragStartY.current = e.clientY;
+    setDragOffsetY(0);
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      setDragOffsetY(moveEvent.clientY - dragStartY.current);
+    };
+
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      setIsDragging(false);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      
+      const travelDistance = window.innerHeight * 0.75 - 182;
+      const dy = upEvent.clientY - dragStartY.current;
+      const finalTranslation = sidebarOpen ? dy : travelDistance + dy;
+
+      if (finalTranslation < travelDistance / 2) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+      setDragOffsetY(0);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
 
   // Modals state
   const [activeModal, setActiveModal] = useState<"request" | "supply" | "driver" | "claim" | null>(null);
@@ -347,6 +413,22 @@ export default function HomePage() {
     }
   };
 
+  // Dynamic bottom sheet drag styles
+  const travelDistance = typeof window !== "undefined" ? window.innerHeight * 0.75 - 182 : 0;
+  const translation = isDragging
+    ? (sidebarOpen 
+        ? Math.max(0, Math.min(travelDistance, dragOffsetY))
+        : Math.max(0, Math.min(travelDistance, travelDistance + dragOffsetY))
+      )
+    : null;
+
+  const sidebarStyle: React.CSSProperties = translation !== null
+    ? {
+        transform: `translateY(${translation}px)`,
+        transition: "none",
+      }
+    : {};
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden" }}>
       {/* Top Header Navigation */}
@@ -409,9 +491,50 @@ export default function HomePage() {
           {sidebarOpen ? "✕" : "☰ Acciones"}
         </button>
         {/* Sidebar Section */}
-        <aside className={`homepage-sidebar ${sidebarOpen ? "open" : ""}`}>
-          <div className="sidebar-header" style={{ padding: "20px" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#fff" }}>Acciones Rápidas</h3>
+        <aside 
+          className={`homepage-sidebar ${sidebarOpen ? "open" : ""}`}
+          style={sidebarStyle}
+        >
+          <div 
+            className="sidebar-header" 
+            style={{ padding: "12px 20px 20px 20px", cursor: "ns-resize" }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onClick={(e) => {
+              // On mobile, clicking the header background toggles the expand/collapse of the sheet
+              if ((e.target as HTMLElement).closest(".btn") || (e.target as HTMLElement).closest(".sidebar-expand-toggle")) return;
+              setSidebarOpen(!sidebarOpen);
+            }}
+          >
+            {/* Visual drag handle pill */}
+            <div className="sidebar-drag-handle" style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
+              <div style={{ width: "40px", height: "4px", backgroundColor: "rgba(255, 255, 255, 0.3)", borderRadius: "2px" }}></div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#fff" }}>Acciones Rápidas</h3>
+              <button 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.15)", 
+                  border: "none", 
+                  color: "#fff", 
+                  cursor: "pointer", 
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  transition: "background 0.2s"
+                }}
+                className="sidebar-expand-toggle"
+              >
+                {sidebarOpen ? "▼ Minimizar" : "▲ Ver Actividad"}
+              </button>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => openModal("request")} className="btn btn-danger" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
@@ -542,7 +665,17 @@ export default function HomePage() {
 
       {/* Map Section */}
       <main className="map-container-wrapper">
-        <MapComponent containerId="main-map" actors={data.actors} selectedActorId={selectedActorId} />
+        <MapComponent 
+          containerId="main-map" 
+          actors={data.actors} 
+          selectedActorId={selectedActorId} 
+          sidebarOpen={sidebarOpen}
+          onMapClick={() => {
+            if (sidebarOpen) {
+              setSidebarOpen(false);
+            }
+          }}
+        />
 
         {/* Floating refresh button */}
         <button className="floating-refresh" onClick={fetchData} title="Actualizar datos">
