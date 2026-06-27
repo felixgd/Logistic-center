@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   const supplies = await prisma.supply.findMany({
     where: filter,
-    include: { actor: { select: { id: true, name: true, address: true, whatsapp: true } } },
+    include: { actor: { select: { id: true, name: true, address: true, city: true, lat: true, lng: true, whatsapp: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -33,13 +33,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const { category, name, unit, quantity, notes } = await req.json();
+    const normalizedName = name.trim().toLowerCase();
+    const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
+
+    const existing = await prisma.supply.findFirst({
+      where: { actorId: auth.actorId, name: { equals: normalizedName, mode: "insensitive" } },
+    });
+    if (existing) return jsonError(400, "Ya tienes registrado este insumo");
+
     const supply = await prisma.supply.create({
       data: {
         userId: auth.userId,
         actorId: auth.actorId,
         category: category || "general",
-        name,
-        unit: unit || "unidad",
+        name: normalizedName,
+        unit: normalizedUnit,
         quantity,
         status: "available",
         notes,
@@ -48,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     await publishEvent("insumo.registrado", {
       userId: auth.userId, actorId: auth.actorId,
-      supplyId: supply.id, name, quantity, unit,
+      supplyId: supply.id, name: normalizedName, quantity, unit,
     });
 
     return Response.json(supply, { status: 201 });

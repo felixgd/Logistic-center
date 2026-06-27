@@ -29,6 +29,7 @@ export default function LoginPage() {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div style={{ textAlign: "left", marginBottom: 8 }}><Link href="/" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 13 }}>← Volver al inicio</Link></div>
         <h2>Iniciar Sesión</h2>
         <p className="subtitle">Sistema de Logística</p>
         {error && <div className="alert alert-error">{error}</div>}

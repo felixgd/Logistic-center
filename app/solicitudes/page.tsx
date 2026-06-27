@@ -32,6 +32,13 @@ export default function RequestsPage() {
 
   const statusBadge = (status: string) => `badge ${({ open: "badge-pendiente", in_progress: "badge-proceso", fulfilled: "badge-completado", cancelled: "badge-cancelado" } as any)[status] || ""}`;
 
+  const handleCancel = async (id: string) => {
+    if (!confirm("¿Cancelar esta solicitud?")) return;
+    const res = await fetch(`/api/solicitudes/${id}/estado`, { method: "PATCH", headers, body: JSON.stringify({ status: "cancelled" }) });
+    if (!res.ok) { setError((await res.json()).error); return; }
+    const r = await fetch("/api/solicitudes", { headers }); setRequests(await r.json());
+  };
+
   return (
     <div>
       <Navbar />
@@ -80,7 +87,7 @@ export default function RequestsPage() {
         ) : (
           <div className="card">
             <table>
-              <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Estado</th><th>Fecha</th></tr></thead>
+              <thead><tr><th>Centro</th><th>Insumo</th><th>Cantidad</th><th>Urgencia</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
               <tbody>
                 {requests.map((r: any) => (
                   <tr key={r.id}>
@@ -90,6 +97,11 @@ export default function RequestsPage() {
                     <td><span className={`badge ${r.urgency === "critica" ? "badge-critica" : r.urgency === "alta" ? "badge-pendiente" : ""}`}>{r.urgency}</span></td>
                     <td><span className={statusBadge(r.status)}>{r.status}</span></td>
                     <td>{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      {r.status === "open" && r.actorId === actor.id && (
+                        <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => handleCancel(r.id)}>Cancelar</button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

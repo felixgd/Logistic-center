@@ -55,6 +55,12 @@ export async function POST(req: NextRequest) {
 
     let resultPayload: any = { token, actor };
 
+    if (!itemName) {
+      return Response.json({ error: "Nombre del insumo es requerido." }, { status: 400 });
+    }
+    const normalizedItem = itemName.trim().toLowerCase();
+    const normalizedUnit = ({ unidad: "unidad", unidades: "unidad", kg: "kg", kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", litro: "litro", litros: "litro", caja: "caja", cajas: "caja", palet: "palet", palets: "palet" } as any)[unit?.trim().toLowerCase()] || unit || "unidad";
+
     // 3. Perform the specific action
     if (action === "request") {
       // Create supply request
@@ -63,8 +69,8 @@ export async function POST(req: NextRequest) {
           actorId: actor.id,
           userId: (await prisma.actor.findUnique({ where: { id: actor.id } }))?.userId || actor.id,
           category: category || "general",
-          name: itemName,
-          unit: unit || "unidades",
+          name: normalizedItem,
+          unit: normalizedUnit,
           quantity: Number(quantity),
           urgency: urgency || "media",
           status: "open",
@@ -76,21 +82,29 @@ export async function POST(req: NextRequest) {
         userId: requestRecord.userId,
         actorId: actor.id,
         requestId: requestRecord.id,
-        name: itemName,
+        name: normalizedItem,
         quantity: Number(quantity),
         urgency: urgency || "media",
       });
 
       resultPayload.request = requestRecord;
     } else if (action === "supply") {
+      // Check for duplicate
+      const existing = await prisma.supply.findFirst({
+        where: { actorId: actor.id, name: { equals: normalizedItem, mode: "insensitive" } },
+      });
+      if (existing) {
+        return Response.json({ error: "Este almacén ya tiene registrado este insumo." }, { status: 400 });
+      }
+
       // Create supply entry
       const supplyRecord = await prisma.supply.create({
         data: {
           userId: (await prisma.actor.findUnique({ where: { id: actor.id } }))?.userId || actor.id,
           actorId: actor.id,
           category: category || "general",
-          name: itemName,
-          unit: unit || "unidades",
+          name: normalizedItem,
+          unit: normalizedUnit,
           quantity: Number(quantity),
           status: "available",
           notes: notes || "",
@@ -101,7 +115,7 @@ export async function POST(req: NextRequest) {
         userId: supplyRecord.userId,
         actorId: actor.id,
         supplyId: supplyRecord.id,
-        name: itemName,
+        name: normalizedItem,
         quantity: Number(quantity),
         unit: unit || "unidades",
       });

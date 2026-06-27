@@ -3,6 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 
+function distancia(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return -1;
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 100) / 100;
+}
+
 export async function POST(req: NextRequest) {
   const auth = getAuthActor(req);
   if (!auth) return jsonError(401, "Token requerido");
@@ -10,7 +19,7 @@ export async function POST(req: NextRequest) {
   try {
     const pendientes = await prisma.request.findMany({
       where: { status: "open" },
-      include: { actor: { select: { name: true } } },
+      include: { actor: { select: { name: true, lat: true, lng: true } } },
       orderBy: [{ urgency: "asc" }, { createdAt: "asc" }],
     });
 
@@ -20,15 +29,17 @@ export async function POST(req: NextRequest) {
       const supplies = await prisma.supply.findMany({
         where: {
           status: "available",
-          quantity: { gte: r.quantity },
+          quantity: { gt: 0 },
           name: { contains: r.name, mode: "insensitive" },
+          unit: { equals: r.unit, mode: "insensitive" },
         },
-        include: { actor: { select: { id: true, name: true } } },
+        include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
       });
 
       if (supplies.length > 0) {
         resultados.push({
           requestId: r.id,
+          reliefActorId: r.actorId,
           centroAyuda: r.actor.name,
           urgencia: r.urgency,
           categoria: r.category,
@@ -39,6 +50,7 @@ export async function POST(req: NextRequest) {
             nombre: s.actor.name,
             supplyId: s.id,
             cantidadDisponible: s.quantity,
+            distancia: distancia(s.actor.lat || 0, s.actor.lng || 0, r.actor.lat || 0, r.actor.lng || 0),
           })),
         });
       }

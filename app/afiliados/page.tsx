@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import QrModal from "@/components/QrModal";
 
 export default function AfiliadosPage() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function AfiliadosPage() {
   const [editMember, setEditMember] = useState<any>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [error, setError] = useState("");
+  const [qrData, setQrData] = useState<{ url: string; code: string; actorName: string } | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -43,6 +45,13 @@ export default function AfiliadosPage() {
     setEditMember(null); load();
   };
 
+  const generarCodigo = async () => {
+    setError("");
+    const res = await fetch("/api/actores/afiliar/codigo", { method: "POST", headers });
+    if (!res.ok) { setError((await res.json()).error); return; }
+    setQrData(await res.json());
+  };
+
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`¿Eliminar a "${name}"? Esta acción no se puede deshacer.`)) return;
     setError("");
@@ -57,8 +66,12 @@ export default function AfiliadosPage() {
       <div className="container">
         <div className="page-header">
           <h2>Afiliados</h2>
-          <span style={{ color: "#6b7280", fontSize: 14 }}>{members.length} miembros</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ color: "#6b7280", fontSize: 14 }}>{members.length} miembros</span>
+            <button className="btn btn-primary" onClick={generarCodigo}>+ Código QR</button>
+          </div>
         </div>
+        {qrData && <QrModal url={qrData.url} actorName={qrData.actorName} code={qrData.code} onClose={() => setQrData(null)} />}
         {error && <div className="alert alert-error">{error}</div>}
         {members.length === 0 ? (
           <div className="card empty-state">

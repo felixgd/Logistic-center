@@ -32,21 +32,21 @@ export default function MatchingPage() {
   const crearViaje = async () => {
     if (!selectedSolicitud || matches.length === 0) return;
     setError("");
-    const map = new Map<string, any[]>();
+    const porAlmacen = new Map<string, { items: any[]; requestId: string; reliefActorId: string }>();
     for (const m of matches) {
       const id = m.almacenId;
-      if (!map.has(id)) map.set(id, []);
-      map.get(id)!.push(m);
+      if (!porAlmacen.has(id)) porAlmacen.set(id, { items: [], requestId: m.requestId || selectedSolicitud.id, reliefActorId: m.reliefActorId || selectedSolicitud.actorId || "" });
+      porAlmacen.get(id)!.items.push(m);
     }
     try {
-      for (const [almacenId, items] of map) {
+      for (const [almacenId, grupo] of porAlmacen) {
         const res = await fetch("/api/viajes", {
           method: "POST", headers,
           body: JSON.stringify({
             warehouseActorId: almacenId,
-            reliefActorId: selectedSolicitud.actorId,
-            requestId: selectedSolicitud.id,
-            items: items.map((m: any) => ({ name: m.insumo, quantity: m.cantidadRequerida, unit: m.unidad, supplyId: m.supplyId })),
+            reliefActorId: grupo.reliefActorId,
+            requestId: grupo.requestId,
+            items: grupo.items.map((m: any) => ({ name: m.insumo, quantity: Math.min(m.cantidadDisponible, m.cantidadRequerida), unit: m.unidad, supplyId: m.supplyId })),
           }),
         });
         if (!res.ok) { setError((await res.json()).error); return; }
@@ -63,6 +63,23 @@ export default function MatchingPage() {
     const data = await res.json();
     if (!res.ok) { setError(data.error); return; }
     setSuccess(`Matching automático completado. ${data.totalMatches} solicitudes con match.`);
+    const flat = data.matches.flatMap((m: any) =>
+      (m.almacenes || []).map((a: any) => ({
+        almacenId: a.almacenId,
+        almacenNombre: a.nombre,
+        supplyId: a.supplyId,
+        insumo: m.insumo,
+        cantidadDisponible: a.cantidadDisponible,
+        cantidadRequerida: m.cantidad,
+        unidad: a.unidad || "unidad",
+        distancia: a.distancia || 0,
+        requestId: m.requestId,
+        reliefActorId: m.reliefActorId,
+        centroAyuda: m.centroAyuda,
+      }))
+    );
+    setMatches(flat);
+    setSelectedSolicitud({ id: "auto", actor: { name: "Múltiples centros" } });
     const r = await fetch("/api/solicitudes/pendientes"); setPendientes(await r.json());
   };
 
@@ -102,10 +119,11 @@ export default function MatchingPage() {
             <h3>Matches Encontrados</h3>
             <p style={{ color: "#6b7280", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
             <table>
-              <thead><tr><th>Almacén</th><th>Insumo</th><th>Disponible</th><th>Requerido</th><th>Distancia</th></tr></thead>
+              <thead><tr>{matches[0]?.centroAyuda && <th>Centro</th>}<th>Almacén</th><th>Insumo</th><th>Disponible</th><th>Requerido</th><th>Distancia</th></tr></thead>
               <tbody>
                 {matches.map((m: any, i: number) => (
                   <tr key={i}>
+                    {m.centroAyuda && <td>{m.centroAyuda}</td>}
                     <td>{m.almacenNombre}</td><td>{m.insumo}</td><td>{m.cantidadDisponible} {m.unidad}</td><td>{m.cantidadRequerida} {m.unidad}</td>
                     <td>{m.distancia > 0 ? `${m.distancia} km` : "N/A"}</td>
                   </tr>

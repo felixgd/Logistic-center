@@ -4,7 +4,15 @@ import { hashPassword, signToken, jsonError } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, name, phone, email, password } = await req.json();
+    const { code, name, phone, email, password, phoneVerificationToken } = await req.json();
+
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (phoneVerificationToken) {
+      const verif = await prisma.phone_verification.findFirst({
+        where: { phone: cleanPhone, token: phoneVerificationToken, verified: true },
+      });
+      if (!verif) return jsonError(400, "Teléfono no verificado");
+    }
 
     const affiliateCode = await prisma.affiliate_code.findUnique({ where: { code } });
     if (!affiliateCode || !affiliateCode.active) return jsonError(400, "Código inválido o expirado");

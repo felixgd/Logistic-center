@@ -53,6 +53,7 @@ export default function RegisterPage() {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div style={{ textAlign: "left", marginBottom: 8 }}><Link href="/" className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 13 }}>← Volver al inicio</Link></div>
         <h2>Registro</h2>
         <p className="subtitle">Crea tu cuenta en el sistema</p>
         {error && <div className="alert alert-error">{error}</div>}

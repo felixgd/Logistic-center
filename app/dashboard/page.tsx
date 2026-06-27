@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [recentShipments, setRecentShipments] = useState<any[]>([]);
 
+
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 

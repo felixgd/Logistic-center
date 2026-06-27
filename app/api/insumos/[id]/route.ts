@@ -11,19 +11,39 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const supply = await prisma.supply.findFirst({ where: { id: params.id, actorId: auth.actorId } });
   if (!supply) return jsonError(404, "Insumo no encontrado o no autorizado");
 
-  const { category, name, unit, quantity, status, notes } = await req.json();
-  const updated = await prisma.supply.update({
-    where: { id: params.id },
-    data: {
-      ...(category !== undefined && { category }),
-      ...(name !== undefined && { name }),
-      ...(unit !== undefined && { unit }),
-      ...(quantity !== undefined && { quantity }),
-      ...(status !== undefined && { status }),
-      ...(notes !== undefined && { notes }),
-    },
+  const body = await req.json();
+
+  if (body.mode === "add") {
+    const delta = Number(body.delta);
+    if (isNaN(delta) || delta === 0) return jsonError(400, "Delta inválido");
+    const updated = await prisma.supply.update({
+      where: { id: params.id },
+      data: { quantity: { increment: delta } },
+    });
+    if (updated.quantity < 0) {
+      await prisma.supply.update({ where: { id: params.id }, data: { quantity: supply.quantity } });
+      return jsonError(409, "Cantidad insuficiente");
+    }
+    return Response.json(updated);
+  }
+
+  const expectedVersion = Number(body.version);
+  if (isNaN(expectedVersion)) return jsonError(400, "version requerido para asignación directa");
+
+  const quantity = Number(body.quantity);
+  if (isNaN(quantity) || quantity < 0) return jsonError(400, "Cantidad inválida");
+
+  const result = await prisma.supply.updateMany({
+    where: { id: params.id, version: expectedVersion },
+    data: { quantity, version: { increment: 1 } },
   });
-  return Response.json(updated);
+  if (result.count === 0) {
+    const current = await prisma.supply.findUnique({ where: { id: params.id } });
+    if (!current) return jsonError(404, "Insumo no encontrado");
+    return jsonError(409, `Conflicto: otro usuario modificó este insumo (versión actual: ${current.version}, esperada: ${expectedVersion})`);
+  }
+
+  return Response.json(await prisma.supply.findUnique({ where: { id: params.id } }));
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
