@@ -124,12 +124,6 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
         <strong style={{ letterSpacing: "-0.015em", fontSize: 16 }}>Logística en Crisis</strong>
       </Link>
       
-      <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú">
-        <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
-        <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
-        <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
-      </button>
-
       <div className={`navbar-overlay ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(false)} />
       
       <div className={`navbar-links ${menuOpen ? "open" : ""}`}>
@@ -145,7 +139,9 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
             <span>{l.label}</span>
           </Link>
         ))}
+      </div>
 
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", zIndex: 1001 }}>
         {isAuthenticated ? (
           <>
             <NotificationBell />
@@ -159,7 +155,7 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
             )}
           </>
         ) : (
-          <div className="auth-buttons-header" style={{ display: "flex", gap: 8, marginLeft: 12 }}>
+          <div className="auth-buttons-header" style={{ display: "flex", gap: 8 }}>
             <Link href="/login" className="btn btn-primary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={() => setMenuOpen(false)}>
               Ingresar
             </Link>
@@ -168,6 +164,12 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
             </Link>
           </div>
         )}
+
+        <button className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú">
+          <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
+        </button>
       </div>
     </nav>
   );
