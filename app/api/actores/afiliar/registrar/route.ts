@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const token = signToken({ userId: user.id, actorId: parentActor.id, actorType: parentActor.type, csrfToken });
 
     return Response.json({
-      mensaje: "Registro exitoso como afiliado",
+      mensaje: "Registro exitoso como voluntario",
       token,
       csrfToken,
       actor: {
