@@ -87,7 +87,7 @@ export default function Navbar() {
     { path: "/insumos", label: "Insumos", roles: ["warehouse", "relief"], requireAuth: true, icon: <Package size={16} /> },
     { path: "/solicitudes", label: "Solicitudes", roles: ["warehouse", "relief"], requireAuth: true, icon: <ClipboardText size={16} /> },
     { path: "/viajes", label: "Viajes", requireAuth: true, icon: <Truck size={16} /> },
-    { path: "/matching", label: "Coordinación", roles: ["warehouse", "relief"], requireAuth: true, icon: <Handshake size={16} /> },
+    { path: "/matching", label: "Coordinación", roles: ["warehouse"], requireAuth: true, icon: <Handshake size={16} /> },
   ];
 
   const filteredLinks = allLinks.filter((l) => {
