@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const uniqueName = `documentos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    const blob = await put(uniqueName, file, { access: "public" });
+    const blob = await put(uniqueName, file, { access: "private" });
 
     return Response.json({ url: blob.url });
   } catch (error: any) {
