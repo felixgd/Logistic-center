@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     const urgency = body.urgency;
     const notes = sanitizeText(body.notes);
     const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
+    const documentUrl = body.documentUrl || null;
 
     if (!name || !whatsapp) {
       return Response.json({ error: "Nombre y WhatsApp son requeridos." }, { status: 400 });
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
       lng,
       vehicleType,
       capacityKg,
+      documentUrl,
     });
 
     let resultPayload: any = { token, csrfToken, actor };

@@ -6,7 +6,7 @@ import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function POST(req: NextRequest) {
   try {
-    const { shipmentId, name, whatsapp } = await req.json();
+    const { shipmentId, name, whatsapp, documentUrl } = await req.json();
 
     if (!shipmentId || !name || !whatsapp) {
       return Response.json({ error: "shipmentId, name, y whatsapp son requeridos." }, { status: 400 });
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
       city: "Móvil",
       lat: null,
       lng: null,
+      documentUrl: documentUrl || null,
     });
 
     // 2. Fetch the shipment to make sure it's valid and unassigned

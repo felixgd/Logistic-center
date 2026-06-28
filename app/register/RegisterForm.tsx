@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
+import DocumentUpload from "@/components/DocumentUpload";
 
 function RegisterFormInner() {
   const router = useRouter();
@@ -31,6 +32,7 @@ function RegisterFormInner() {
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
   const [countryCode, setCountryCode] = useState("+52");
+  const [documentUrl, setDocumentUrl] = useState("");
 
   useEffect(() => {
     if (affiliateCode) {
@@ -92,6 +94,7 @@ function RegisterFormInner() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!affiliateCode && !form.address.trim()) return "La dirección es requerida";
     if (!affiliateCode && form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
+    if (!affiliateCode && !documentUrl) return "Debes subir un documento de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -106,7 +109,7 @@ function RegisterFormInner() {
     const endpoint = affiliateCode ? "/api/actores/afiliar/registrar" : "/api/actores/register";
     const body = affiliateCode
       ? { code: affiliateCode, name: form.name, phone: full, email: form.email, phoneVerificationToken: verifToken || undefined }
-      : { ...form, phone: full, whatsapp: full, phoneVerificationToken: verifToken || undefined };
+      : { ...form, phone: full, whatsapp: full, phoneVerificationToken: verifToken || undefined, documentUrl };
 
     try {
       const res = await fetch(endpoint, {
@@ -271,6 +274,7 @@ function RegisterFormInner() {
                 <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
               </>
             )}
+            <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Atrás</button>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={!verifToken}>Crear cuenta</button>

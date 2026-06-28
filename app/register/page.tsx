@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
+import DocumentUpload from "@/components/DocumentUpload";
 import RegisterForm from "./RegisterForm";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -44,6 +45,7 @@ function RegisterPageContent() {
   const [verifMocked, setVerifMocked] = useState(false);
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
+  const [documentUrl, setDocumentUrl] = useState("");
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -101,6 +103,7 @@ function RegisterPageContent() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!form.address.trim()) return "La dirección es requerida";
     if (form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
+    if (!documentUrl) return "Debes subir un documento de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -113,7 +116,7 @@ function RegisterPageContent() {
     try {
       const res = await fetch("/api/actores/register", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, phone: fullPhone(), whatsapp: fullPhone(), phoneVerificationToken: verifToken }),
+        body: JSON.stringify({ ...form, phone: fullPhone(), whatsapp: fullPhone(), phoneVerificationToken: verifToken, documentUrl }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
@@ -233,6 +236,7 @@ function RegisterPageContent() {
                     <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
                   </>
                 )}
+                <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
               </div>
 
               <div className="register-buttons-field">

@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     const lat = body.lat ? Number(body.lat) : null;
     const lng = body.lng ? Number(body.lng) : null;
     const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
+    const documentUrl = body.documentUrl || null;
 
     const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
     if (targetPhone.length < 10) return jsonError(400, "Teléfono / WhatsApp inválido");
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
         lng: lng || null,
         vehicleType: type === "transportista" ? vehicleType : null,
         capacityKg: type === "transportista" ? capacityKg : null,
+        documentUrl,
       },
     });
 

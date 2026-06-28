@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
 import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect, { COUNTRY_CODES } from "@/components/CountryCodeSelect";
+import DocumentUpload from "@/components/DocumentUpload";
 import { 
   Compass, 
   Layout, 
@@ -211,6 +212,7 @@ export default function HomePage() {
   // Driver specific fields
   const [formVehicleType, setFormVehicleType] = useState("Camión");
   const [formCapacityKg, setFormCapacityKg] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
 
   // OTP verification state
   const [verifCode, setVerifCode] = useState("");
@@ -428,6 +430,7 @@ export default function HomePage() {
     setVerifSent(false);
     setVerifMocked(false);
     setVerifMockCode("");
+    setDocumentUrl("");
     setCountdown(0);
     setActiveModal(type);
   };
@@ -435,6 +438,7 @@ export default function HomePage() {
   const openClaimModal = (shipmentId: string) => {
     setSubmitError("");
     setSubmitSuccess("");
+    setDocumentUrl("");
     setActiveClaimShipmentId(shipmentId);
     setActiveModal("claim");
   };
@@ -449,6 +453,11 @@ export default function HomePage() {
 
     if (!isAuthenticated && !verifToken) {
       setSubmitError("Debes verificar tu WhatsApp antes de publicar.");
+      return;
+    }
+
+    if (activeModal === "driver" && !documentUrl) {
+      setSubmitError("Debes subir un documento de identificación (sujeto a verificación).");
       return;
     }
 
@@ -472,6 +481,7 @@ export default function HomePage() {
         notes: formNotes,
         vehicleType: formVehicleType,
         capacityKg: Number(formCapacityKg) || 0,
+        documentUrl: activeModal === "driver" ? documentUrl : undefined,
       };
       if (!isAuthenticated && verifToken) {
         payload.phoneVerificationToken = verifToken;
@@ -522,6 +532,11 @@ export default function HomePage() {
       return;
     }
 
+    if (!documentUrl) {
+      setSubmitError("Debes subir un documento de identificación (sujeto a verificación).");
+      return;
+    }
+
     try {
       setSubmitLoading(true);
       setSubmitError("");
@@ -533,6 +548,7 @@ export default function HomePage() {
           shipmentId: activeClaimShipmentId,
           name: formName,
           whatsapp: fullFormPhone(),
+          documentUrl,
         }),
       });
 
@@ -938,16 +954,19 @@ export default function HomePage() {
 
               {/* Specific fields */}
               {activeModal === "driver" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div className="form-group">
-                    <label>Tipo de Vehículo</label>
-                    <input value={formVehicleType} onChange={(e) => setFormVehicleType(e.target.value)} required placeholder="Camioneta, Camión, etc." />
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="form-group">
+                      <label>Tipo de Vehículo</label>
+                      <input value={formVehicleType} onChange={(e) => setFormVehicleType(e.target.value)} required placeholder="Camioneta, Camión, etc." />
+                    </div>
+                    <div className="form-group">
+                      <label>Capacidad Máxima (kg)</label>
+                      <input type="number" value={formCapacityKg} onChange={(e) => setFormCapacityKg(e.target.value)} required placeholder="500" />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>Capacidad Máxima (kg)</label>
-                    <input type="number" value={formCapacityKg} onChange={(e) => setFormCapacityKg(e.target.value)} required placeholder="500" />
-                  </div>
-                </div>
+                  <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
+                </>
               ) : (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -1052,6 +1071,8 @@ export default function HomePage() {
                   />
                 </div>
               </div>
+
+              <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>
