@@ -45,3 +45,26 @@ export function validateUrgency(value: unknown): { valid: true; urgency: string 
   }
   return { valid: true, urgency };
 }
+
+/**
+ * Validates latitude and longitude coordinates.
+ * Latitude must be in [-90, 90] and Longitude in [-180, 180].
+ */
+export function validateCoordinates(lat: unknown, lng: unknown): { valid: true; lat: number | null; lng: number | null } | { valid: false; error: string } {
+  if (lat === null || lat === undefined || lng === null || lng === undefined || lat === "" || lng === "") {
+    return { valid: true, lat: null, lng: null };
+  }
+  const numLat = Number(lat);
+  const numLng = Number(lng);
+  if (isNaN(numLat) || isNaN(numLng)) {
+    return { valid: false, error: "Coordinates must be valid numbers" };
+  }
+  if (numLat < -90 || numLat > 90) {
+    return { valid: false, error: "Latitude must be between -90 and 90" };
+  }
+  if (numLng < -180 || numLng > 180) {
+    return { valid: false, error: "Longitude must be between -180 and 180" };
+  }
+  return { valid: true, lat: numLat, lng: numLng };
+}
+

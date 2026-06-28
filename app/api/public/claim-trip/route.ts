@@ -135,6 +135,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Public claim-trip API error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: "An internal server error occurred." }, { status: 500 });
   }
 }

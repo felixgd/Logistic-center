@@ -44,3 +44,13 @@ export function requireTipo(tipos: string[]) {
 export function jsonError(status: number, message: string) {
   return Response.json({ error: message }, { status });
 }
+
+/**
+ * Returns a standardized generic 500 response while logging the detailed error on the server
+ * to prevent leaking internal database stack traces or architecture information.
+ */
+export function jsonInternalError(error: unknown) {
+  console.error("Internal server error details:", error);
+  return Response.json({ error: "An internal server error occurred." }, { status: 500 });
+}
+

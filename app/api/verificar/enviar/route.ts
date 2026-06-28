@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
       mensaje: mocked ? "Modo de prueba activo" : "Código enviado",
       expiresIn: 600,
       mocked,
-      code: mocked ? code : undefined,
+      code: (mocked && process.env.NODE_ENV !== "production") ? code : undefined,
     });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    console.error("Verification send API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

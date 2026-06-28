@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json({ mensaje: "Teléfono verificado", token });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    console.error("Verification code check API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

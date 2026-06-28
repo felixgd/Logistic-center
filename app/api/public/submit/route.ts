@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateActor } from "@/lib/frictionless";
 import { publishEvent } from "@/lib/pubsub";
-import { sanitizeText, normalizeUnit, validateQuantity, validateUrgency } from "@/lib/validation";
+import { sanitizeText, normalizeUnit, validateQuantity, validateUrgency, validateCoordinates } from "@/lib/validation";
 import { getAuthActor } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -13,8 +13,14 @@ export async function POST(req: NextRequest) {
     const whatsapp = sanitizeText(body.whatsapp);
     const address = sanitizeText(body.address || "Sin dirección");
     const city = sanitizeText(body.city || "Sin ciudad");
-    const lat = body.lat ? Number(body.lat) : null;
-    const lng = body.lng ? Number(body.lng) : null;
+
+    const coordsValidation = validateCoordinates(body.lat, body.lng);
+    if (!coordsValidation.valid) {
+      return Response.json({ error: coordsValidation.error }, { status: 400 });
+    }
+    const lat = coordsValidation.lat;
+    const lng = coordsValidation.lng;
+
     const vehicleType = sanitizeText(body.vehicleType);
     const capacityKg = body.capacityKg ? Number(body.capacityKg) : undefined;
     const category = sanitizeText(body.category || "general");
@@ -156,6 +162,6 @@ export async function POST(req: NextRequest) {
     return Response.json(resultPayload, { status: 201 });
   } catch (error: any) {
     console.error("Public submit API error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: "An internal server error occurred." }, { status: 500 });
   }
 }

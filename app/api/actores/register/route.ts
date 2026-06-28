@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
-import { sanitizeText } from "@/lib/validation";
+import { sanitizeText, validateCoordinates } from "@/lib/validation";
 import { generateCsrfToken } from "@/lib/csrf";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { createDiditSession } from "@/lib/didit";
@@ -20,8 +20,12 @@ export async function POST(req: NextRequest) {
     const email = sanitizeText(body.email);
     const vehicleType = sanitizeText(body.vehicleType);
     const capacityKg = body.capacityKg ? Number(body.capacityKg) : null;
-    const lat = body.lat ? Number(body.lat) : null;
-    const lng = body.lng ? Number(body.lng) : null;
+
+    const coordsValidation = validateCoordinates(body.lat, body.lng);
+    if (!coordsValidation.valid) return jsonError(400, coordsValidation.error || "Invalid coordinates");
+    const lat = coordsValidation.lat;
+    const lng = coordsValidation.lng;
+
     const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
     const documentNumber = body.documentNumber || null;
 
@@ -43,6 +47,9 @@ export async function POST(req: NextRequest) {
     const finalEmail = email || `wa_${targetPhone}@disaster.acopio`;
     const existing = await prisma.user.findUnique({ where: { email: finalEmail } });
     if (existing) return jsonError(400, "El email o whatsapp ya está registrado");
+
+    const existingPhone = await prisma.user.findUnique({ where: { phone: targetPhone } });
+    if (existingPhone) return jsonError(400, "This phone number is already registered.");
 
     const user = await prisma.user.create({
       data: { name, phone: targetPhone, phoneVerified: true, email: finalEmail },
@@ -124,6 +131,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    return jsonError(500, error.message);
+    console.error("Actors registration API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

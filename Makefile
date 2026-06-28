@@ -1,4 +1,4 @@
-.PHONY: dev build up down install db-push db-studio db-seed lint logs
+.PHONY: dev build up down install db-push db-studio db-seed lint test logs
 
 # Entorno
 -include .env
@@ -36,6 +36,9 @@ db-seed:
 # Calidad
 lint:
 	npm run lint
+
+test:
+	npm run test
 
 # Logs
 logs:
