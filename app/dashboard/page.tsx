@@ -107,6 +107,18 @@ export default function DashboardPage() {
       .catch((err) => console.error("Error cargando lista de actores:", err));
   }, [token, router]);
 
+  // Asegurar que el tipo seleccionado en el modal de crear perfil siempre sea válido
+  useEffect(() => {
+    setNewProfileForm((prev) => {
+      const createdTypes = new Set(userActors.filter((a) => a.isOwner).map((a) => a.type));
+      const availableTypes = PROFILE_TYPES.filter((t) => !createdTypes.has(t.value));
+      if (availableTypes.length > 0 && !availableTypes.some((t) => t.value === prev.type)) {
+        return { ...prev, type: availableTypes[0].value };
+      }
+      return prev;
+    });
+  }, [userActors]);
+
   useEffect(() => {
     const suppliesArr = Array.isArray(insumosData) ? insumosData : [];
     const requestsArr = Array.isArray(solicitudesData) ? solicitudesData : [];
