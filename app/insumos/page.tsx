@@ -248,7 +248,7 @@ export default function SuppliesPage() {
                           g.totalQuantity
                         )}
                       </td>
-                      <td><span style={{ color: "#6b7280", fontSize: 14 }}>{g.totalReserved}</span></td>
+                      <td><span style={{ color: "var(--text-muted)", fontSize: 14 }}>{g.totalReserved}</span></td>
                       <td>{g.unit}</td>
                       <td><span className={`badge ${badgeClass}`}>{badgeLabel}</span></td>
                       <td>
@@ -273,10 +273,10 @@ export default function SuppliesPage() {
                                 <div style={{ minWidth: 160 }}>
                                   <strong>{item.actor?.name}</strong>
                                   <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-                                    <div>📍 {[item.actor?.address, item.actor?.city].filter(Boolean).join(", ")}</div>
-                                    <div>📏 {dist !== null ? `${dist} km` : "—"}</div>
-                                    <div>📦 Disp: <strong>{item.quantity}</strong> {item.unit}</div>
-                                    <div>🔒 Resv: <strong>{item.quantityReserved || 0}</strong> {item.unit}</div>
+                                    <div>Ubicación: {[item.actor?.address, item.actor?.city].filter(Boolean).join(", ")}</div>
+                                    <div>Distancia: {dist !== null ? `${dist} km` : "—"}</div>
+                                    <div>Disponible: <strong>{item.quantity}</strong> {item.unit}</div>
+                                    <div>Reservado: <strong>{item.quantityReserved || 0}</strong> {item.unit}</div>
                                   </div>
                                 </div>
                                 {item.quantity > 0 && (

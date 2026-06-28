@@ -1,9 +1,25 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
 import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect, { COUNTRY_CODES } from "@/components/CountryCodeSelect";
+import { 
+  Compass, 
+  Layout, 
+  Package, 
+  ClipboardText, 
+  Truck, 
+  SignIn, 
+  SignOut, 
+  Plus, 
+  Warning, 
+  CaretDown,
+  List,
+  ArrowsClockwise,
+  ChatCircle
+} from "@phosphor-icons/react";
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
 
@@ -23,7 +39,7 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", background: "#f1f5f9" }}>
-      <p style={{ color: "#64748b", fontWeight: 600 }}>Cargando mapa interactivo...</p>
+      <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>Cargando mapa interactivo...</p>
     </div>
   ),
 });
@@ -273,6 +289,20 @@ export default function HomePage() {
     return () => clearInterval(intervalId);
   }, []);
 
+  // Listen for custom popup events to handle selections from Leaflet popups
+  useEffect(() => {
+    const handleSelectActorEvent = (e: Event) => {
+      const actorId = (e as CustomEvent).detail;
+      if (actorId) {
+        handleCardClick(actorId);
+      }
+    };
+    window.addEventListener("select-actor", handleSelectActorEvent);
+    return () => {
+      window.removeEventListener("select-actor", handleSelectActorEvent);
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("actor");
@@ -472,162 +502,15 @@ export default function HomePage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden" }}>
       {/* Top Header Navigation */}
-      <header className="main-header">
-        <Link href="/" className="logo">
-          <span>📦 Logística Central</span>
-        </Link>
-        <button className="header-hamburger" onClick={() => setHeaderMenuOpen(!headerMenuOpen)} aria-label="Menú">
-          <span className={`hamburger-line ${headerMenuOpen ? "open" : ""}`} />
-          <span className={`hamburger-line ${headerMenuOpen ? "open" : ""}`} />
-          <span className={`hamburger-line ${headerMenuOpen ? "open" : ""}`} />
-        </button>
-        <nav className={`header-nav ${headerMenuOpen ? "open" : ""}`}>
-          <Link href="/" className="active" onClick={() => setHeaderMenuOpen(false)}>Mapa Central</Link>
-          {mounted && isAuthenticated && <Link href="/dashboard" onClick={() => setHeaderMenuOpen(false)}>Dashboard</Link>}
-          <div className="header-nav-auth">
-            {mounted && isAuthenticated ? (
-              <>
-                <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
-                {actor && availableActors.length > 0 && (
-                  <select 
-                    value={actor.id} 
-                    onChange={async (e) => {
-                      const targetActorId = e.target.value;
-                      if (targetActorId === "create_new_profile") {
-                        window.location.href = "/dashboard?create_profile=true";
-                        return;
-                      }
-                      try {
-                        const res = await fetch("/api/actores/switch", {
-                          method: "POST",
-                          headers: getAuthHeaders(),
-                          body: JSON.stringify({ actorId: targetActorId }),
-                        });
-                        if (res.ok) {
-                          const data = await res.json();
-                          localStorage.setItem("token", data.token);
-                          if (data.csrfToken) setCsrfToken(data.csrfToken);
-                          localStorage.setItem("actor", JSON.stringify(data.actor));
-                          window.location.href = "/dashboard";
-                        }
-                      } catch (err) {
-                        console.error("Error switching actor:", err);
-                      }
-                    }}
-                    style={{
-                      padding: "4px 8px",
-                      fontSize: "12px",
-                      borderRadius: "4px",
-                      backgroundColor: "#334155",
-                      color: "#fff",
-                      border: "1px solid #475569",
-                      cursor: "pointer",
-                      outline: "none",
-                      margin: "4px 8px"
-                    }}
-                  >
-                    {availableActors.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} ({a.type === "warehouse" ? "Almacén" : a.type === "relief" ? "Ayuda" : "Transporte"})
-                      </option>
-                    ))}
-                    <option value="create_new_profile">➕ Crear nuevo perfil...</option>
-                  </select>
-                )}
-                <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
-                  Cerrar Sesión
-                </button>
-              </>
-            ) : (
-              <div style={{ display: "flex", gap: 8 }}>
-                <Link href="/login" className="btn btn-primary" style={{ padding: "6px 14px", fontSize: 12 }} onClick={() => setHeaderMenuOpen(false)}>
-                  Ingresar
-                </Link>
-                <Link href="/register" className="btn btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }} onClick={() => setHeaderMenuOpen(false)}>
-                  Registrarse
-                </Link>
-              </div>
-            )}
-          </div>
-        </nav>
-        <div className="auth-section header-auth-desktop">
-          {mounted && isAuthenticated ? (
-            <>
-              <span className="user-greeting">👋 Hola, <strong>{formName}</strong></span>
-              {actor && availableActors.length > 0 && (
-                <select 
-                  value={actor.id} 
-                  onChange={async (e) => {
-                    const targetActorId = e.target.value;
-                    if (targetActorId === "create_new_profile") {
-                      window.location.href = "/dashboard?create_profile=true";
-                      return;
-                    }
-                    const token = localStorage.getItem("token");
-                    try {
-                      const res = await fetch("/api/actores/switch", {
-                        method: "POST",
-                        headers: { 
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${token}` 
-                        },
-                        body: JSON.stringify({ actorId: targetActorId }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        localStorage.setItem("token", data.token);
-                        localStorage.setItem("actor", JSON.stringify(data.actor));
-                        window.location.href = "/dashboard";
-                      }
-                    } catch (err) {
-                      console.error("Error switching actor:", err);
-                    }
-                  }}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: "12px",
-                    borderRadius: "4px",
-                    backgroundColor: "#334155",
-                    color: "#fff",
-                    border: "1px solid #475569",
-                    cursor: "pointer",
-                    outline: "none",
-                    margin: "0 8px"
-                  }}
-                >
-                  {availableActors.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.type === "warehouse" ? "Almacén" : a.type === "relief" ? "Ayuda" : "Transporte"})
-                    </option>
-                  ))}
-                  <option value="create_new_profile">➕ Crear nuevo perfil...</option>
-                </select>
-              )}
-              <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
-                Cerrar Sesión
-              </button>
-            </>
-          ) : (
-            <div style={{ display: "flex", gap: 8 }}>
-              <Link href="/login" className="btn btn-primary" style={{ padding: "6px 14px", fontSize: 12 }}>
-                Ingresar
-              </Link>
-              <Link href="/register" className="btn btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>
-                Registrarse
-              </Link>
-            </div>
-          )}
-        </div>
-      </header>
+      <Navbar />
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Mobile sidebar toggle */}
-        <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
-          {sidebarOpen ? "✕" : "☰ Acciones"}
-        </button>
+      <div className="homepage-container">
+
+
+
         {/* Sidebar Section */}
         <aside 
-          className={`homepage-sidebar ${sidebarOpen ? "open" : ""}`}
+          className={`homepage-sidebar-content ${sidebarOpen ? "open" : ""}`}
           style={sidebarStyle}
         >
           <div 
@@ -639,48 +522,57 @@ export default function HomePage() {
             onMouseDown={handleMouseDown}
             onClick={(e) => {
               // On mobile, clicking the header background toggles the expand/collapse of the sheet
-              if ((e.target as HTMLElement).closest(".btn") || (e.target as HTMLElement).closest(".sidebar-expand-toggle")) return;
+              if ((e.target as HTMLElement).closest(".btn") || (e.target as HTMLElement).closest(".sidebar-expand-toggle") || (e.target as HTMLElement).closest(".profile-switcher")) return;
               setSidebarOpen(!sidebarOpen);
             }}
           >
             {/* Visual drag handle pill */}
             <div className="sidebar-drag-handle" style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
-              <div style={{ width: "40px", height: "4px", backgroundColor: "rgba(255, 255, 255, 0.3)", borderRadius: "2px" }}></div>
+              <div style={{ width: "40px", height: "4px", backgroundColor: "rgba(0, 0, 0, 0.1)", borderRadius: "2px" }}></div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#fff" }}>Acciones Rápidas</h3>
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                style={{ 
-                  background: "rgba(255, 255, 255, 0.15)", 
-                  border: "none", 
-                  color: "#fff", 
-                  cursor: "pointer", 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  transition: "background 0.2s"
-                }}
-                className="sidebar-expand-toggle"
-              >
-                {sidebarOpen ? "▼ Minimizar" : "▲ Ver Actividad"}
-              </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => openModal("request")} className="btn btn-danger" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
-                  🚨 Pedir Ayuda
-                </button>
-                <button onClick={() => openModal("supply")} className="btn btn-success" style={{ flex: 1, padding: "10px 6px", fontSize: 13, borderRadius: 8 }}>
-                  📦 Ofrecer Ayuda
+            
+            <div className="sidebar-header-panel" style={{ padding: 0, borderBottom: "none", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "var(--text-main)" }}>Acciones Rápidas</h3>
+                <button 
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  style={{ 
+                    background: "var(--border-color)", 
+                    border: "none", 
+                    color: "var(--text-main)", 
+                    cursor: "pointer", 
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "6px 12px",
+                    borderRadius: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    transition: "background 0.2s"
+                  }}
+                  className="sidebar-expand-toggle"
+                >
+                  {sidebarOpen ? "▼ Minimizar" : "▲ Ver Actividad"}
                 </button>
               </div>
-              <button onClick={() => openModal("driver")} className="btn btn-warning" style={{ width: "100%", padding: "10px", fontSize: 13, borderRadius: 8 }}>
-                🚚 Quiero Transportar
+
+
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => openModal("request")} className="btn btn-danger" style={{ flex: 1 }}>
+                  <Warning size={16} weight="bold" />
+                  Pedir Ayuda
+                </button>
+                <button onClick={() => openModal("supply")} className="btn btn-success" style={{ flex: 1 }}>
+                  <Package size={16} weight="bold" />
+                  Ofrecer Ayuda
+                </button>
+              </div>
+              <button onClick={() => openModal("driver")} className="btn btn-warning" style={{ width: "100%" }}>
+                <Truck size={18} weight="bold" />
+                Quiero Transportar
               </button>
             </div>
           </div>
@@ -698,13 +590,13 @@ export default function HomePage() {
         {/* Content list */}
         <div className="activity-list">
           {loading ? (
-            <p style={{ textAlign: "center", color: "#64748b", marginTop: 24, fontSize: 14 }}>Cargando datos recientes...</p>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: 24, fontSize: 14 }}>Cargando datos recientes...</p>
           ) : activeTab === "requests" ? (
             data.recentRequests.length === 0 ? (
               <p style={{ textAlign: "center", color: "#94a3b8", marginTop: 24, fontSize: 13 }}>No hay solicitudes recientes.</p>
             ) : (
               data.recentRequests.map((req) => (
-                <div key={req.id} className="activity-card" onClick={() => handleCardClick(req.actor.id)}>
+                <div key={req.id} className={`activity-card ${req.actor.id === selectedActorId ? "active" : ""}`} onClick={() => handleCardClick(req.actor.id)}>
                   <div className="activity-card-header">
                     <span className="activity-card-title">{req.name}</span>
                     <span className="activity-card-time">{new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -713,7 +605,7 @@ export default function HomePage() {
                     <p style={{ marginBottom: 4 }}>
                       Cant: <strong>{req.quantity} {req.unit}</strong>
                     </p>
-                    <p style={{ fontSize: 12, color: "#64748b" }}>Solicita: {req.actor.name} ({req.actor.city || "Sin ciudad"})</p>
+                    <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Solicita: {req.actor.name} ({req.actor.city || "Sin ciudad"})</p>
                   </div>
                   <div className="activity-card-footer" style={{ marginTop: 12 }}>
                     <span
@@ -735,7 +627,8 @@ export default function HomePage() {
                         style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 4 }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        💬 Enviar ayuda
+                        <ChatCircle size={14} weight="bold" />
+                        Enviar ayuda
                       </a>
                     )}
                   </div>
@@ -746,9 +639,9 @@ export default function HomePage() {
             <p style={{ textAlign: "center", color: "#94a3b8", marginTop: 24, fontSize: 13 }}>No hay envíos/viajes activos.</p>
           ) : (
             data.recentShipments.map((ship) => (
-              <div key={ship.id} className="activity-card" onClick={() => handleCardClick(ship.centroAyuda.id)}>
+              <div key={ship.id} className={`activity-card ${ship.centroAyuda.id === selectedActorId ? "active" : ""}`} onClick={() => handleCardClick(ship.centroAyuda.id)}>
                 <div className="activity-card-header">
-                  <span className="activity-card-title" style={{ color: "#2563eb" }}>Código: {ship.codigoViaje}</span>
+                  <span className="activity-card-title">Código: {ship.codigoViaje}</span>
                   <span className="activity-card-time">{new Date(ship.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
                 <div className="activity-card-body">
@@ -758,7 +651,7 @@ export default function HomePage() {
                   <p style={{ fontSize: 12, marginBottom: 4 }}>
                     <strong>Destino:</strong> {ship.centroAyuda.name}
                   </p>
-                  <p style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
                     Insumos: {ship.insumos.map((i) => `${i.quantity} ${i.unit} de ${i.name}`).join(", ")}
                   </p>
                 </div>
@@ -773,9 +666,10 @@ export default function HomePage() {
                         openClaimModal(ship.id);
                       }}
                       className="btn btn-warning"
-                      style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6 }}
+                      style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 4 }}
                     >
-                      🚚 Transportar
+                      <Truck size={14} weight="bold" />
+                      Transportar
                     </button>
                   ) : (
                     ship.transportista?.whatsapp && (
@@ -784,10 +678,11 @@ export default function HomePage() {
                         target="_blank"
                         rel="noreferrer"
                         className="btn btn-secondary"
-                        style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6 }}
+                        style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 4 }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        💬 Contactar
+                        <ChatCircle size={14} weight="bold" />
+                        Contactar
                       </a>
                     )
                   )}
@@ -813,8 +708,8 @@ export default function HomePage() {
         />
 
         {/* Floating refresh button */}
-        <button className="floating-refresh" onClick={fetchData} title="Actualizar datos">
-          🔄
+        <button className="floating-refresh" onClick={fetchData} title="Actualizar datos" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <ArrowsClockwise size={16} weight="bold" />
         </button>
       </main>
 
@@ -823,9 +718,9 @@ export default function HomePage() {
         <div className="modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "550px" }}>
             <h3>
-              {activeModal === "request" && "🚨 Solicitar Insumos (Pedir Ayuda)"}
-              {activeModal === "supply" && "📦 Ofrecer Insumos (Ofrecer Ayuda)"}
-              {activeModal === "driver" && "🚚 Registrarse como Transportista"}
+              {activeModal === "request" && "Solicitar Insumos (Pedir Ayuda)"}
+              {activeModal === "supply" && "Ofrecer Insumos (Ofrecer Ayuda)"}
+              {activeModal === "driver" && "Registrarse como Transportista"}
             </h3>
 
             {submitError && <div className="alert alert-error">{submitError}</div>}
@@ -968,8 +863,8 @@ export default function HomePage() {
       {activeModal === "claim" && (
         <div className="modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>🚚 Transportar este envío</h3>
-            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+            <h3>Transportar este envío</h3>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
               Ingresa tus datos para aceptar el envío. Te enviaremos los detalles del remitente y destinatario para coordinar por WhatsApp.
             </p>
 

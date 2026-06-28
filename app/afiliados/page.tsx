@@ -86,7 +86,7 @@ export default function AfiliadosPage() {
         <div className="page-header">
           <h2>Voluntarios</h2>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ color: "#6b7280", fontSize: 14 }}>{members.length} miembros</span>
+            <span style={{ color: "var(--text-muted)", fontSize: 14 }}>{members.length} miembros</span>
             <button className="btn btn-primary" onClick={generarCodigo}>+ Código QR</button>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function AfiliadosPage() {
           <div className="card">
             <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar voluntario..." />
             {sortedMembers.length === 0 ? (
-              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron voluntarios con "{searchTerm}".</p>
+              <p style={{ color: "var(--text-muted)", padding: "12px 0" }}>No se encontraron voluntarios con "{searchTerm}".</p>
             ) : (
             <div className="table-wrapper">
               <table>
@@ -115,7 +115,7 @@ export default function AfiliadosPage() {
                       <td>{m.email}</td>
                       <td>{m.phone || "—"}</td>
                       <td><span className="badge badge-proceso">{m.role}</span></td>
-                      <td style={{ fontSize: 13, color: "#6b7280" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
+                      <td style={{ fontSize: 13, color: "var(--text-muted)" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
                       <td>
                         <button className="btn btn-secondary" style={{ padding: "4px 10px", fontSize: 12, marginRight: 4 }} onClick={() => openEdit(m)}>Editar</button>
                         <button className="btn btn-danger" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => handleDelete(m.id, m.name)}>Eliminar</button>

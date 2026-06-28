@@ -70,9 +70,10 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
           gap: 6,
           padding: "10px 8px",
           borderRadius: "6px 0 0 6px",
-          border: "1px solid #cbd5e1",
+          border: "1px solid var(--border-color)",
           borderRight: "none",
-          backgroundColor: "#f8fafc",
+          backgroundColor: "var(--bg-card)",
+          color: "var(--text-main)",
           fontSize: 14,
           minWidth: 90,
           cursor: "pointer",
@@ -81,7 +82,7 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
       >
         <span>{selected.flag}</span>
         <span style={{ fontWeight: 600 }}>{selected.code}</span>
-        <span style={{ fontSize: 10, color: "#64748b", marginLeft: "auto" }}>▼</span>
+        <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: "auto" }}>▼</span>
       </button>
 
       {open && (
@@ -91,10 +92,10 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
             top: "calc(100% + 4px)",
             left: 0,
             zIndex: 9999,
-            backgroundColor: "#fff",
-            border: "1px solid #e2e8f0",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border-dark)",
             borderRadius: 8,
-            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.15)",
             minWidth: 220,
             maxHeight: 280,
             display: "flex",
@@ -102,7 +103,7 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
           }}
         >
           {showSearch && (
-            <div style={{ padding: 8, borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ padding: 8, borderBottom: "1px solid var(--border-color)" }}>
               <input
                 autoFocus
                 value={search}
@@ -112,7 +113,9 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
                   width: "100%",
                   padding: "6px 8px",
                   borderRadius: 6,
-                  border: "1px solid #cbd5e1",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-main)",
+                  color: "var(--text-main)",
                   fontSize: 13,
                 }}
               />
@@ -123,6 +126,7 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
               <button
                 key={`${c.code}-${c.name}`}
                 type="button"
+                className="hover-gray-bg"
                 onClick={() => {
                   onChange(c.code);
                   setOpen(false);
@@ -135,7 +139,8 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
                   width: "100%",
                   padding: "8px 12px",
                   border: "none",
-                  backgroundColor: c.code === value ? "#eff6ff" : "#fff",
+                  backgroundColor: c.code === value ? "var(--border-color)" : "transparent",
+                  color: "var(--text-main)",
                   cursor: "pointer",
                   textAlign: "left",
                   fontSize: 14,
@@ -143,11 +148,11 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
               >
                 <span style={{ fontSize: 18 }}>{c.flag}</span>
                 <span style={{ fontWeight: 600, minWidth: 42 }}>{c.code}</span>
-                <span style={{ color: "#475569", fontSize: 13 }}>{c.name}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 13 }}>{c.name}</span>
               </button>
             ))}
             {filtered.length === 0 && (
-              <div style={{ padding: 12, color: "#94a3b8", fontSize: 13, textAlign: "center" }}>
+              <div style={{ padding: 12, color: "var(--text-muted)", fontSize: 13, textAlign: "center" }}>
                 No se encontraron países
               </div>
             )}

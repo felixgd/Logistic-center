@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthHeaders } from "@/lib/api-client";
+import { Bell } from "@phosphor-icons/react";
 
 interface Notification {
   id: string;
@@ -107,12 +108,14 @@ export default function NotificationBell() {
           cursor: "pointer",
           position: "relative",
           padding: 8,
-          color: "#fff",
-          fontSize: 20,
+          color: "var(--text-muted)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
         aria-label="Notificaciones"
       >
-        🔔
+        <Bell size={22} />
         {unreadCount > 0 && (
           <span
             style={{
@@ -145,10 +148,10 @@ export default function NotificationBell() {
             right: 0,
             width: 360,
             maxHeight: 480,
-            background: "#fff",
+            background: "var(--bg-card)",
             borderRadius: 12,
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--border-dark)",
             zIndex: 9999,
             display: "flex",
             flexDirection: "column",
@@ -157,20 +160,20 @@ export default function NotificationBell() {
           <div
             style={{
               padding: "12px 16px",
-              borderBottom: "1px solid #f1f5f9",
+              borderBottom: "1px solid var(--border-color)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <strong style={{ color: "#0f172a", fontSize: 15 }}>Notificaciones</strong>
+            <strong style={{ color: "var(--text-main)", fontSize: 15 }}>Notificaciones</strong>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#2563eb",
+                  color: "#22c55e",
                   fontSize: 12,
                   cursor: "pointer",
                   fontWeight: 600,
@@ -183,7 +186,7 @@ export default function NotificationBell() {
 
           <div style={{ overflowY: "auto", flex: 1, maxHeight: 400 }}>
             {notifications.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#64748b", fontSize: 14 }}>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
                 No tienes notificaciones
               </div>
             ) : (
@@ -193,21 +196,22 @@ export default function NotificationBell() {
                   onClick={() => markAsRead(n.id, n.link)}
                   style={{
                     padding: "12px 16px",
-                    borderBottom: "1px solid #f8fafc",
+                    borderBottom: "1px solid var(--border-color)",
                     cursor: n.link ? "pointer" : "default",
-                    background: n.read ? "#fff" : "#eff6ff",
+                    background: n.read ? "transparent" : "var(--border-color)",
                     transition: "background 0.15s",
                   }}
+                  className="hover-gray-bg"
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                    <strong style={{ color: "#0f172a", fontSize: 13, fontWeight: 700 }}>{n.title}</strong>
-                    <span style={{ color: "#94a3b8", fontSize: 11, whiteSpace: "nowrap" }}>{formatDate(n.createdAt)}</span>
+                    <strong style={{ color: "var(--text-main)", fontSize: 13, fontWeight: 700 }}>{n.title}</strong>
+                    <span style={{ color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>{formatDate(n.createdAt)}</span>
                   </div>
-                  <p style={{ color: "#475569", fontSize: 13, margin: "4px 0 0", lineHeight: 1.4 }}>{n.message}</p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 13, margin: "4px 0 0", lineHeight: 1.4 }}>{n.message}</p>
                   {!n.read && (
                     <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb" }} />
-                      <span style={{ color: "#2563eb", fontSize: 11, fontWeight: 600 }}>Sin leer</span>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
+                      <span style={{ color: "#22c55e", fontSize: 11, fontWeight: 600 }}>Sin leer</span>
                     </div>
                   )}
                 </div>

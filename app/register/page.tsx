@@ -9,7 +9,7 @@ import RegisterForm from "./RegisterForm";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
-  loading: () => <p style={{ color: "#64748b", fontSize: 12, padding: 12 }}>Cargando mapa...</p>,
+  loading: () => <p style={{ color: "var(--text-muted)", fontSize: 12, padding: 12 }}>Cargando mapa...</p>,
 });
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
@@ -192,7 +192,7 @@ function RegisterPageContent() {
                       onChange={(e) => update("phone", normalizePhone(e.target.value))}
                       placeholder="1234567890"
                       required
-                      style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: 14 }}
+                      style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid var(--border-color)", borderLeft: "none", background: "var(--bg-main)", color: "var(--text-main)", padding: "10px 12px", fontSize: 14 }}
                     />
                     {verifToken ? (
                       <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
@@ -208,7 +208,7 @@ function RegisterPageContent() {
                       </button>
                     )}
                   </div>
-                  <small style={{ color: "#6b7280", fontSize: 12 }}>Selecciona tu país e ingresa tu número sin código de país. Te enviaremos un código de verificación.</small>
+                  <small style={{ color: "var(--text-muted)", fontSize: 12 }}>Selecciona tu país e ingresa tu número sin código de país. Te enviaremos un código de verificación.</small>
                 </div>
                 {verifSent && !verifToken && (
                   <div className="form-group">
