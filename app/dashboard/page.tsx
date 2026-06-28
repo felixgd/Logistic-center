@@ -255,7 +255,7 @@ export default function DashboardPage() {
             {actor.isOwner && ["warehouse", "relief"].includes(actor.type) && (
               <>
                 <button className="btn btn-secondary" onClick={generateQr}>+ Afiliar Personal</button>
-                <a href="/afiliados" className="btn btn-secondary">Gestionar Afiliados</a>
+                <a href="/afiliados" className="btn btn-secondary">Gestionar Voluntarios</a>
               </>
             )}
           </div>
@@ -400,7 +400,7 @@ export default function DashboardPage() {
                         </Link>
                         <Link href="/matching" className="dashboard-action-card">
                           <div className="dashboard-action-icon">🤝</div>
-                          <div className="dashboard-action-title">Ver Matches</div>
+                          <div className="dashboard-action-title">Ver Coordinaciones</div>
                           <div className="dashboard-action-desc">Sincroniza tus insumos disponibles con solicitudes abiertas.</div>
                         </Link>
                       </>

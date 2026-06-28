@@ -64,6 +64,15 @@ export default function TripsPage() {
     invalidateCache("/api/viajes/disponibles");
   };
 
+  const STATUS_LABELS: Record<string, string> = {
+    proposed: "Propuesto",
+    approved: "Aprobado",
+    assigned: "Asignado",
+    in_transit: "En tránsito",
+    delivered: "Completado",
+    cancelled: "Cancelado",
+  };
+
   const statusBadge = (s: string) => `badge ${({ proposed: "badge-pendiente", approved: "badge-pendiente", assigned: "badge-proceso", in_transit: "badge-proceso", delivered: "badge-completado", cancelled: "badge-cancelado" } as any)[s] || ""}`;
 
   const formatDate = (d: string | Date | null | undefined) =>
@@ -147,7 +156,7 @@ export default function TripsPage() {
                       <td>{t.centroAyuda?.name || "N/A"}</td>
                       <td style={{ fontSize: 13 }}>{(t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
                       <td>{t.transportista?.name || "—"}</td>
-                      <td><span className={statusBadge(t.estado)}>{t.estado}</span></td>
+                      <td><span className={statusBadge(t.estado)}>{STATUS_LABELS[t.estado] || t.estado}</span></td>
                       <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
                       <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
                       <td>

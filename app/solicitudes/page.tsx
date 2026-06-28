@@ -43,6 +43,13 @@ export default function RequestsPage() {
     invalidateCache("/api/solicitudes");
   };
 
+  const STATUS_LABELS: Record<string, string> = {
+    open: "Abierta",
+    in_progress: "En progreso",
+    fulfilled: "Completada",
+    cancelled: "Cancelada",
+  };
+
   const statusBadge = (status: string) => `badge ${({ open: "badge-pendiente", in_progress: "badge-proceso", fulfilled: "badge-completado", cancelled: "badge-cancelado" } as any)[status] || ""}`;
 
   const urgencyOrder: Record<string, number> = { critica: 0, alta: 1, media: 2, baja: 3 };
@@ -132,7 +139,7 @@ export default function RequestsPage() {
                       <td>{r.name}</td>
                       <td>{r.quantityOriginal || r.quantity} {r.unit} <span style={{ color: "#6b7280", fontSize: 12 }}>({r.quantityFulfilled || 0} entregados)</span></td>
                       <td><span className={`badge ${r.urgency === "critica" ? "badge-critica" : r.urgency === "alta" ? "badge-pendiente" : ""}`}>{r.urgency}</span></td>
-                      <td><span className={statusBadge(r.status)}>{r.status}</span></td>
+                      <td><span className={statusBadge(r.status)}>{STATUS_LABELS[r.status] || r.status}</span></td>
                       <td>{new Date(r.createdAt).toLocaleDateString()}</td>
                       <td>
                         {r.status === "open" && r.actorId === actor.id && (

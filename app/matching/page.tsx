@@ -138,12 +138,12 @@ export default function MatchingPage() {
     const data = await res.json();
     if (!res.ok) { setError(data.error); return; }
     if (data.totalMatches === 0) {
-      setSuccess(data.mensaje || "No se encontraron matches automáticos.");
+      setSuccess(data.mensaje || "No se encontraron coordinaciones automáticas.");
       setMatches([]);
       setSelectedSolicitud(null);
       return;
     }
-    setSuccess(`Matching automático completado. ${data.totalMatches} solicitudes con match.`);
+    setSuccess(`Coordinación automática completada. ${data.totalMatches} solicitudes coordinadas.`);
     const flat = data.matches.flatMap((m: any) =>
       (m.almacenes || []).map((a: any) => ({
         almacenId: a.almacenId,
@@ -169,18 +169,18 @@ export default function MatchingPage() {
       <Navbar />
       <div className="container">
         <div className="page-header">
-          <h2>Matching Oferta - Demanda</h2>
-          <button className="btn btn-warning" onClick={crearViajeAutomatico}>Matching Automático</button>
+          <h2>Coordinación Oferta - Demanda</h2>
+          <button className="btn btn-warning" onClick={crearViajeAutomatico}>Coordinación Automática</button>
         </div>
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
         {matches.length > 0 && (
           <div className="card">
-            <h3>Matches Encontrados</h3>
+            <h3>Coordinaciones Encontradas</h3>
             <p style={{ color: "#6b7280", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
-            <TableSearch value={searchMatches} onChange={setSearchMatches} placeholder="Buscar match..." />
+            <TableSearch value={searchMatches} onChange={setSearchMatches} placeholder="Buscar coordinación..." />
             {sortedMatches.length === 0 ? (
-              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron matches con "{searchMatches}".</p>
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron coordinaciones con "{searchMatches}".</p>
             ) : (
             <div className="table-wrapper">
               <table>
@@ -221,7 +221,7 @@ export default function MatchingPage() {
                       <td>{p.name}</td>
                       <td>{p.quantity} {p.unit}</td>
                       <td><span className={`badge ${p.urgency === "critica" ? "badge-critica" : p.urgency === "alta" ? "badge-pendiente" : ""}`}>{p.urgency}</span></td>
-                      <td><button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => buscarMatches(p.id)}>Buscar Match</button></td>
+                      <td><button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => buscarMatches(p.id)}>Buscar Coordinación</button></td>
                     </tr>
                   ))}
                 </tbody>

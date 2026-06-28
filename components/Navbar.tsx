@@ -63,13 +63,13 @@ export default function Navbar() {
     { path: "/insumos", label: "Insumos", roles: ["warehouse", "relief"] },
     { path: "/solicitudes", label: "Solicitudes", roles: ["warehouse", "relief"] },
     { path: "/viajes", label: "Viajes" },
-    { path: "/matching", label: "Matching", roles: ["warehouse", "relief"] },
+    { path: "/matching", label: "Coordinación", roles: ["warehouse", "relief"] },
   ];
 
   const links = allLinks.filter((l) => !l.roles || l.roles.includes(actor.type));
 
   if (actor.isOwner && actor.type !== "transporter") {
-    links.push({ path: "/afiliados", label: "Afiliados" });
+    links.push({ path: "/afiliados", label: "Voluntarios" });
   }
 
   const ownedTypes = new Set(availableActors.filter((a) => a.isOwner).map((a) => a.type));

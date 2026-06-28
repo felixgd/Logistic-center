@@ -31,7 +31,7 @@ export default function AfiliadosPage() {
   useEffect(() => {
     if (membersError) {
       if ((membersError as Error).message.includes("403")) {
-        setError("Solo el administrador principal puede gestionar afiliados");
+        setError("Solo el administrador principal puede gestionar voluntarios");
       } else {
         router.push("/login");
       }
@@ -84,7 +84,7 @@ export default function AfiliadosPage() {
       <Navbar />
       <div className="container">
         <div className="page-header">
-          <h2>Afiliados</h2>
+          <h2>Voluntarios</h2>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ color: "#6b7280", fontSize: 14 }}>{members.length} miembros</span>
             <button className="btn btn-primary" onClick={generarCodigo}>+ Código QR</button>
@@ -94,8 +94,8 @@ export default function AfiliadosPage() {
         {error && <div className="alert alert-error">{error}</div>}
         {members.length === 0 ? (
           <div className="card empty-state">
-            <h3>No hay afiliados</h3>
-            <p>Usa el código QR desde el Dashboard para invitar personal a este {actor.type === "warehouse" ? "almacén" : "centro de ayuda"}.</p>
+            <h3>No hay voluntarios</h3>
+            <p>Usa el código QR desde el Dashboard para invitar voluntarios a este {actor.type === "warehouse" ? "almacén" : "centro de ayuda"}.</p>
           </div>
         ) : (
           <div className="card">
