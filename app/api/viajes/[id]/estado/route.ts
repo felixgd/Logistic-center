@@ -91,6 +91,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             }
           }
         }
+
+        if (status === "cancelled" && shipment.requestId) {
+          const shippedQty = shipment.shipmentItem.reduce((sum, item) => sum + item.quantity, 0);
+          const updated = await tx.request.update({
+            where: { id: shipment.requestId },
+            data: {
+              quantity: { increment: shippedQty },
+              quantityFulfilled: { decrement: shippedQty },
+            },
+          });
+          if (updated.quantityFulfilled <= 0) {
+            await tx.request.update({
+              where: { id: shipment.requestId },
+              data: { status: "open" },
+            });
+          }
+        }
       }
     }, { isolationLevel: "Serializable" });
 
