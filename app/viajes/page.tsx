@@ -46,7 +46,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-function resolveCoordinates(trip: any) {
+function resolveCoordinates(trip: any, userLocation?: { lat: number; lng: number } | null) {
   let latOri = trip?.almacen?.lat;
   let lngOri = trip?.almacen?.lng;
   let latDes = trip?.centroAyuda?.lat;
@@ -56,11 +56,18 @@ function resolveCoordinates(trip: any) {
   const hasDes = typeof latDes === "number" && !isNaN(latDes);
 
   if (!hasOri && !hasDes) {
-    // Both missing -> Bogotá default points (close to each other)
-    latOri = 4.711;
-    lngOri = -74.072;
-    latDes = 4.721;
-    lngDes = -74.065;
+    // Both missing -> Use user location if available, otherwise La Guaira, Venezuela
+    if (userLocation) {
+      latOri = userLocation.lat;
+      lngOri = userLocation.lng;
+      latDes = userLocation.lat + 0.009;
+      lngDes = userLocation.lng - 0.007;
+    } else {
+      latOri = 10.5925;
+      lngOri = -66.9317;
+      latDes = 10.6015;
+      lngDes = -66.9247;
+    }
   } else if (hasOri && !hasDes) {
     // Destination missing -> make it close to Origin (offset by ~1.2 km)
     latDes = latOri + 0.009;
@@ -89,6 +96,24 @@ export default function TripsPage() {
   
   // Mobile Tab Navigation State
   const [mobileTab, setMobileTab] = useState<"activo" | "agenda" | "disponibles" | "historial">("activo");
+
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        () => {
+          console.log("Geolocation permission denied, using La Guaira fallback.");
+        }
+      );
+    }
+  }, []);
 
   // Modals state
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -275,7 +300,7 @@ export default function TripsPage() {
 
     // Safely load Leaflet
     import("leaflet").then((L) => {
-      const { latOri, lngOri, latDes, lngDes } = resolveCoordinates(activeTrip);
+      const { latOri, lngOri, latDes, lngDes } = resolveCoordinates(activeTrip, userLocation);
 
       const map = L.map("active-trip-map", {
         center: [latOri, lngOri],
@@ -321,6 +346,27 @@ export default function TripsPage() {
         weight: 3,
         dashArray: "6, 10",
       }).addTo(map);
+
+      // Draw driver's current position with a beautiful green circle with opacity (no pins!)
+      if (userLocation) {
+        const userPos: L.LatLngTuple = [userLocation.lat, userLocation.lng];
+        
+        L.circle(userPos, {
+          radius: 150,
+          color: "#10b981",
+          fillColor: "#10b981",
+          fillOpacity: 0.15,
+          weight: 1,
+        }).addTo(map);
+
+        const driverIcon = L.divIcon({
+          html: `<div style="background:#10b981;width:10px;height:10px;border:2px solid #ffffff;border-radius:50%;box-shadow:0 0 8px rgba(16,185,129,0.65);"></div>`,
+          className: "custom-user-gps-dot",
+          iconSize: [10, 10],
+          iconAnchor: [5, 5],
+        });
+        L.marker(userPos, { icon: driverIcon }).addTo(map).bindPopup("<strong>Tu Ubicación Actual (Conductor)</strong>");
+      }
 
       map.fitBounds([posOri, posDes], { padding: [40, 40] });
     }).catch(err => console.error("Error loading Leaflet: ", err));
@@ -378,7 +424,7 @@ export default function TripsPage() {
   // Helper values for simulated travel map overlay
   const getMockDistance = () => {
     if (!activeTrip) return "1.2 KM";
-    const { latOri, lngOri, latDes, lngDes } = resolveCoordinates(activeTrip);
+    const { latOri, lngOri, latDes, lngDes } = resolveCoordinates(activeTrip, userLocation);
     const dist = calculateDistance(latOri, lngOri, latDes, lngDes);
     return `${dist.toFixed(1)} KM`;
   };
