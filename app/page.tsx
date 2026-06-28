@@ -212,7 +212,7 @@ export default function HomePage() {
   // Driver specific fields
   const [formVehicleType, setFormVehicleType] = useState("Camión");
   const [formCapacityKg, setFormCapacityKg] = useState("");
-  const [documentUrl, setDocumentUrl] = useState("");
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   // OTP verification state
   const [verifCode, setVerifCode] = useState("");
@@ -430,7 +430,7 @@ export default function HomePage() {
     setVerifSent(false);
     setVerifMocked(false);
     setVerifMockCode("");
-    setDocumentUrl("");
+    setDocumentFile(null);
     setCountdown(0);
     setActiveModal(type);
   };
@@ -438,7 +438,7 @@ export default function HomePage() {
   const openClaimModal = (shipmentId: string) => {
     setSubmitError("");
     setSubmitSuccess("");
-    setDocumentUrl("");
+    setDocumentFile(null);
     setActiveClaimShipmentId(shipmentId);
     setActiveModal("claim");
   };
@@ -456,7 +456,7 @@ export default function HomePage() {
       return;
     }
 
-    if (activeModal === "driver" && !documentUrl) {
+    if (activeModal === "driver" && !isAuthenticated && !documentFile) {
       setSubmitError("Debes subir un documento de identificación (sujeto a verificación).");
       return;
     }
@@ -464,6 +464,16 @@ export default function HomePage() {
     try {
       setSubmitLoading(true);
       setSubmitError("");
+
+      let documentUrl = "";
+      if (activeModal === "driver" && !isAuthenticated && documentFile) {
+        const fd = new FormData();
+        fd.append("file", documentFile);
+        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
+        const upData = await upRes.json();
+        if (!upRes.ok) { setSubmitError(upData.error); setSubmitLoading(false); return; }
+        documentUrl = upData.url;
+      }
 
       const payload: any = {
         action: activeModal,
@@ -481,7 +491,7 @@ export default function HomePage() {
         notes: formNotes,
         vehicleType: formVehicleType,
         capacityKg: Number(formCapacityKg) || 0,
-        documentUrl: activeModal === "driver" ? documentUrl : undefined,
+        ...(activeModal === "driver" && !isAuthenticated && documentUrl ? { documentUrl } : {}),
       };
       if (!isAuthenticated && verifToken) {
         payload.phoneVerificationToken = verifToken;
@@ -532,7 +542,7 @@ export default function HomePage() {
       return;
     }
 
-    if (!documentUrl) {
+    if (!isAuthenticated && !documentFile) {
       setSubmitError("Debes subir un documento de identificación (sujeto a verificación).");
       return;
     }
@@ -541,6 +551,16 @@ export default function HomePage() {
       setSubmitLoading(true);
       setSubmitError("");
 
+      let documentUrl = "";
+      if (!isAuthenticated && documentFile) {
+        const fd = new FormData();
+        fd.append("file", documentFile);
+        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
+        const upData = await upRes.json();
+        if (!upRes.ok) { setSubmitError(upData.error); setSubmitLoading(false); return; }
+        documentUrl = upData.url;
+      }
+
       const res = await fetch("/api/public/claim-trip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -548,7 +568,7 @@ export default function HomePage() {
           shipmentId: activeClaimShipmentId,
           name: formName,
           whatsapp: fullFormPhone(),
-          documentUrl,
+          ...(!isAuthenticated && documentUrl ? { documentUrl } : {}),
         }),
       });
 
@@ -965,7 +985,7 @@ export default function HomePage() {
                       <input type="number" value={formCapacityKg} onChange={(e) => setFormCapacityKg(e.target.value)} required placeholder="500" />
                     </div>
                   </div>
-                  <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
+                  {!isAuthenticated && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
                 </>
               ) : (
                 <>
@@ -1072,7 +1092,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
+              {!isAuthenticated && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>
