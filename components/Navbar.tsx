@@ -72,6 +72,9 @@ export default function Navbar() {
     links.push({ path: "/afiliados", label: "Afiliados" });
   }
 
+  const ownedTypes = new Set(availableActors.filter((a) => a.isOwner).map((a) => a.type));
+  const canCreateProfile = ownedTypes.size < 3;
+
   return (
     <nav className="navbar">
       <h1>Logística</h1>
@@ -137,7 +140,9 @@ export default function Navbar() {
                 {a.name} ({a.type === "warehouse" ? "Almacén" : a.type === "relief" ? "Ayuda" : "Transporte"})
               </option>
             ))}
-            <option value="create_new_profile">➕ Crear nuevo perfil...</option>
+            {canCreateProfile && (
+              <option value="create_new_profile">➕ Crear nuevo perfil...</option>
+            )}
           </select>
         )}
         <button className="btn btn-secondary navbar-logout" onClick={logout}>

@@ -16,6 +16,12 @@ function RegisterFormInner() {
     type: "", name: "", address: "", city: "", phone: "", whatsapp: "",
     email: "", vehicleType: "", capacityKg: 0,
   });
+
+  const typeLabel: Record<string, string> = {
+    warehouse: "Almacén / Centro de Acopio",
+    relief: "Centro de Ayuda Humanitaria",
+    transporter: "Transportista / Conductor",
+  };
   const [error, setError] = useState("");
   const [verifCode, setVerifCode] = useState("");
   const [verifToken, setVerifToken] = useState("");
@@ -127,6 +133,22 @@ function RegisterFormInner() {
           </p>
           {error && <div className="alert alert-error">{error}</div>}
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Organización a la que te unes</label>
+              <input value={affiliateInfo.actorName || ""} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+            </div>
+            <div className="form-group">
+              <label>Tipo de organización</label>
+              <input value={typeLabel[affiliateInfo.actorType as string] || affiliateInfo.actorType || ""} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+            </div>
+            <div className="form-group">
+              <label>Dirección</label>
+              <input value={affiliateInfo.address || "No registrada"} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+            </div>
+            <div className="form-group">
+              <label>Ciudad</label>
+              <input value={affiliateInfo.city || "No registrada"} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+            </div>
             <div className="form-group"><label>Nombre completo</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
             <div className="form-group">
               <label>Teléfono / WhatsApp</label>
@@ -166,10 +188,6 @@ function RegisterFormInner() {
               </div>
             )}
             <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
-            <div className="form-group" style={{ background: "#f1f5f9", padding: 12, borderRadius: 6, fontSize: 13, color: "#475569" }}>
-              <strong>Dirección:</strong> {affiliateInfo.address || "No registrada"}<br />
-              <strong>Ciudad:</strong> {affiliateInfo.city || "No registrada"}
-            </div>
             <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={!verifToken}>Crear cuenta</button>
             <div className="link"><Link href="/login">¿Ya tienes cuenta? Inicia sesión</Link></div>
           </form>

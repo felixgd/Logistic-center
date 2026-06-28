@@ -14,11 +14,17 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   loading: () => <p style={{ color: "#64748b", padding: 16 }}>Cargando mini-mapa...</p>,
 });
 
-const LABELS: Record<string, string> = {
+  const LABELS: Record<string, string> = {
   warehouse: "Almacén / Centro de Acopio",
   relief: "Centro de Ayuda Humanitaria",
   transporter: "Transportista / Conductor",
 };
+
+  const PROFILE_TYPES = [
+    { value: "warehouse", label: "Almacén / Centro de Acopio" },
+    { value: "relief", label: "Centro de Ayuda Humanitaria" },
+    { value: "transporter", label: "Transportista / Conductor" },
+  ];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -62,6 +68,7 @@ export default function DashboardPage() {
   });
   const [createProfileError, setCreateProfileError] = useState("");
   const [createProfileSaving, setCreateProfileSaving] = useState(false);
+  const [userActors, setUserActors] = useState<any[]>([]);
 
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -88,6 +95,16 @@ export default function DashboardPage() {
         setActor(mergedActor);
       })
       .catch((err) => console.error("Error cargando perfil completo:", err));
+
+    // Cargar lista de perfiles del usuario para ocultar tipos ya creados
+    fetch("/api/actores/list", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setUserActors(data);
+        }
+      })
+      .catch((err) => console.error("Error cargando lista de actores:", err));
   }, [token, router]);
 
   useEffect(() => {
@@ -712,28 +729,40 @@ export default function DashboardPage() {
                 setCreateProfileSaving(false);
               }
             }}>
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
-                  Tipo de Perfil / Rol *
-                </label>
-                <select
-                  value={newProfileForm.type}
-                  onChange={(e) => setNewProfileForm({ ...newProfileForm, type: e.target.value })}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "6px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: 14,
-                    backgroundColor: "#fff"
-                  }}
-                >
-                  <option value="warehouse">Almacén / Centro de Acopio</option>
-                  <option value="relief">Centro de Ayuda Humanitaria</option>
-                  <option value="transporter">Transportista / Conductor</option>
-                </select>
-              </div>
+              {(() => {
+                const createdTypes = new Set(userActors.filter((a) => a.isOwner).map((a) => a.type));
+                const availableTypes = PROFILE_TYPES.filter((t) => !createdTypes.has(t.value));
+                return (
+                  <div className="form-group" style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                      Tipo de Perfil / Rol *
+                    </label>
+                    {availableTypes.length === 0 ? (
+                      <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+                        Ya tienes creados los 3 perfiles disponibles.
+                      </p>
+                    ) : (
+                      <select
+                        value={newProfileForm.type}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, type: e.target.value })}
+                        required
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: 14,
+                          backgroundColor: "#fff"
+                        }}
+                      >
+                        {availableTypes.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="form-group" style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>

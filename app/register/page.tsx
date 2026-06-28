@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
+import RegisterForm from "./RegisterForm";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -14,7 +15,11 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
 const isValidLocalPhone = (value: string) => normalizePhone(value).length >= 10;
 
-export default function RegisterPage() {
+function RegisterPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const affiliateCode = searchParams.get("code");
+
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     type: "",
@@ -39,7 +44,6 @@ export default function RegisterPage() {
   const [verifMocked, setVerifMocked] = useState(false);
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
-  const router = useRouter();
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -123,6 +127,10 @@ export default function RegisterPage() {
   const typeLabel: Record<string, string> = { warehouse: "Almacén", relief: "Centro de Ayuda", transporter: "Transportista" };
 
   const targetPhone = form.phone;
+
+  if (affiliateCode) {
+    return <RegisterForm />;
+  }
 
   return (
     <div className="auth-container">
@@ -237,5 +245,13 @@ export default function RegisterPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="auth-container"><div className="auth-card"><p>Cargando...</p></div></div>}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }
