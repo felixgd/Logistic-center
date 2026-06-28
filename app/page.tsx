@@ -39,7 +39,7 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", background: "#f1f5f9" }}>
-      <p style={{ color: "#64748b", fontWeight: 600 }}>Cargando mapa interactivo...</p>
+      <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>Cargando mapa interactivo...</p>
     </div>
   ),
 });
@@ -506,10 +506,8 @@ export default function HomePage() {
 
       <div className="homepage-container">
 
-        {/* Mobile sidebar toggle */}
-        <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <List size={20} /> Acciones
-        </button>
+
+
         {/* Sidebar Section */}
         <aside 
           className={`homepage-sidebar-content ${sidebarOpen ? "open" : ""}`}
@@ -592,7 +590,7 @@ export default function HomePage() {
         {/* Content list */}
         <div className="activity-list">
           {loading ? (
-            <p style={{ textAlign: "center", color: "#64748b", marginTop: 24, fontSize: 14 }}>Cargando datos recientes...</p>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: 24, fontSize: 14 }}>Cargando datos recientes...</p>
           ) : activeTab === "requests" ? (
             data.recentRequests.length === 0 ? (
               <p style={{ textAlign: "center", color: "#94a3b8", marginTop: 24, fontSize: 13 }}>No hay solicitudes recientes.</p>
@@ -607,7 +605,7 @@ export default function HomePage() {
                     <p style={{ marginBottom: 4 }}>
                       Cant: <strong>{req.quantity} {req.unit}</strong>
                     </p>
-                    <p style={{ fontSize: 12, color: "#64748b" }}>Solicita: {req.actor.name} ({req.actor.city || "Sin ciudad"})</p>
+                    <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Solicita: {req.actor.name} ({req.actor.city || "Sin ciudad"})</p>
                   </div>
                   <div className="activity-card-footer" style={{ marginTop: 12 }}>
                     <span
@@ -653,7 +651,7 @@ export default function HomePage() {
                   <p style={{ fontSize: 12, marginBottom: 4 }}>
                     <strong>Destino:</strong> {ship.centroAyuda.name}
                   </p>
-                  <p style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
                     Insumos: {ship.insumos.map((i) => `${i.quantity} ${i.unit} de ${i.name}`).join(", ")}
                   </p>
                 </div>
@@ -866,7 +864,7 @@ export default function HomePage() {
         <div className="modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Transportar este envío</h3>
-            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
               Ingresa tus datos para aceptar el envío. Te enviaremos los detalles del remitente y destinatario para coordinar por WhatsApp.
             </p>
 

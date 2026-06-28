@@ -135,19 +135,19 @@ function RegisterFormInner() {
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>Organización a la que te unes</label>
-              <input value={affiliateInfo.actorName || ""} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+              <input value={affiliateInfo.actorName || ""} readOnly style={{ backgroundColor: "var(--border-color)", color: "var(--text-muted)" }} />
             </div>
             <div className="form-group">
               <label>Tipo de organización</label>
-              <input value={typeLabel[affiliateInfo.actorType as string] || affiliateInfo.actorType || ""} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+              <input value={typeLabel[affiliateInfo.actorType as string] || affiliateInfo.actorType || ""} readOnly style={{ backgroundColor: "var(--border-color)", color: "var(--text-muted)" }} />
             </div>
             <div className="form-group">
               <label>Dirección</label>
-              <input value={affiliateInfo.address || "No registrada"} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+              <input value={affiliateInfo.address || "No registrada"} readOnly style={{ backgroundColor: "var(--border-color)", color: "var(--text-muted)" }} />
             </div>
             <div className="form-group">
               <label>Ciudad</label>
-              <input value={affiliateInfo.city || "No registrada"} readOnly style={{ backgroundColor: "#f1f5f9", color: "#64748b" }} />
+              <input value={affiliateInfo.city || "No registrada"} readOnly style={{ backgroundColor: "var(--border-color)", color: "var(--text-muted)" }} />
             </div>
             <div className="form-group"><label>Nombre completo</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
             <div className="form-group">

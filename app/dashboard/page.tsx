@@ -28,7 +28,7 @@ import {
 // Dynamically import the map component with SSR disabled
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
-  loading: () => <p style={{ color: "#64748b", padding: 16 }}>Cargando mini-mapa...</p>,
+  loading: () => <p style={{ color: "var(--text-muted)", padding: 16 }}>Cargando mini-mapa...</p>,
 });
 
   const LABELS: Record<string, string> = {
@@ -285,7 +285,7 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <p style={{ textAlign: "center", color: "#64748b", marginTop: 40, fontSize: 16 }}>Cargando información del dashboard...</p>
+          <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: 40, fontSize: 16 }}>Cargando información del dashboard...</p>
         ) : (
           <>
             {/* Visual Metric Grid */}
@@ -527,7 +527,7 @@ export default function DashboardPage() {
                 {/* Warehouse Feed */}
                 {actor.type === "warehouse" && (
                   <div>
-                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "#64748b", marginBottom: 12 }}>Insumos Recientes</h4>
+                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>Insumos Recientes</h4>
                     {recentSupplies.length === 0 ? (
                       <p style={{ color: "#9ca3af", fontSize: 13, padding: "8px 0" }}>No hay insumos registrados en inventario.</p>
                     ) : (
@@ -547,7 +547,7 @@ export default function DashboardPage() {
                 {/* Relief Center Feed */}
                 {actor.type === "relief" && (
                   <div>
-                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "#64748b", marginBottom: 12 }}>Solicitudes de Ayuda</h4>
+                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>Solicitudes de Ayuda</h4>
                     {recentRequests.length === 0 ? (
                       <p style={{ color: "#9ca3af", fontSize: 13, padding: "8px 0" }}>No has publicado ninguna solicitud.</p>
                     ) : (
@@ -567,7 +567,7 @@ export default function DashboardPage() {
                 {/* Transporter Feed */}
                 {actor.type === "transporter" && (
                   <div>
-                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "#64748b", marginBottom: 12 }}>Tus Cargas / Envíos Asignados</h4>
+                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>Tus Cargas / Envíos Asignados</h4>
                     {recentShipments.length === 0 ? (
                       <p style={{ color: "#9ca3af", fontSize: 13, padding: "8px 0" }}>No tienes viajes asignados en este momento.</p>
                     ) : (
@@ -587,7 +587,7 @@ export default function DashboardPage() {
                 {/* Unified Recent Shipments List (Common view) */}
                 {recentShipments.length > 0 && actor.type !== "transporter" && (
                   <div style={{ marginTop: 24, borderTop: "1px solid #f1f5f9", paddingTop: 16 }}>
-                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "#64748b", marginBottom: 12 }}>Envíos en Curso</h4>
+                    <h4 style={{ fontSize: 13, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>Envíos en Curso</h4>
                     {recentShipments.map((ship) => (
                       <div key={ship.id} className="feed-item">
                         <div className="feed-item-left">
@@ -614,7 +614,7 @@ export default function DashboardPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backgroundColor: "rgba(13, 13, 13, 0.7)",
           backdropFilter: "blur(4px)",
           display: "flex",
           alignItems: "center",
@@ -751,7 +751,7 @@ export default function DashboardPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backgroundColor: "rgba(13, 13, 13, 0.7)",
           backdropFilter: "blur(4px)",
           display: "flex",
           alignItems: "center",
@@ -810,7 +810,7 @@ export default function DashboardPage() {
                       Tipo de Perfil / Rol *
                     </label>
                     {availableTypes.length === 0 ? (
-                      <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+                      <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>
                         Ya tienes creados los 3 perfiles disponibles.
                       </p>
                     ) : (
@@ -870,7 +870,7 @@ export default function DashboardPage() {
                     borderRadius: "6px",
                     border: "1px solid #e2e8f0",
                     backgroundColor: "#f1f5f9",
-                    color: "#64748b",
+                    color: "var(--text-muted)",
                     fontSize: 14
                   }}
                 />
@@ -891,7 +891,7 @@ export default function DashboardPage() {
                       borderRadius: "6px",
                       border: "1px solid #e2e8f0",
                       backgroundColor: "#f1f5f9",
-                      color: "#64748b",
+                      color: "var(--text-muted)",
                       fontSize: 14
                     }}
                   />
@@ -910,7 +910,7 @@ export default function DashboardPage() {
                       borderRadius: "6px",
                       border: "1px solid #e2e8f0",
                       backgroundColor: "#f1f5f9",
-                      color: "#64748b",
+                      color: "var(--text-muted)",
                       fontSize: 14
                     }}
                   />

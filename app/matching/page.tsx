@@ -177,7 +177,7 @@ export default function MatchingPage() {
         {matches.length > 0 && (
           <div className="card">
             <h3>Coordinaciones Encontradas</h3>
-            <p style={{ color: "#6b7280", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
+            <p style={{ color: "var(--text-muted)", marginBottom: 12, fontSize: 14 }}>Para: {selectedSolicitud?.actor?.name}</p>
             <TableSearch value={searchMatches} onChange={setSearchMatches} placeholder="Buscar coordinación..." />
             {sortedMatches.length === 0 ? (
               <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron coordinaciones con "{searchMatches}".</p>

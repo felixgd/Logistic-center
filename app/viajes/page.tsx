@@ -157,8 +157,8 @@ export default function TripsPage() {
                       <td style={{ fontSize: 13 }}>{(t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
                       <td>{t.transportista?.name || "—"}</td>
                       <td><span className={statusBadge(t.estado)}>{STATUS_LABELS[t.estado] || t.estado}</span></td>
-                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
-                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
+                      <td style={{ fontSize: 13, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
+                      <td style={{ fontSize: 13, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
                       <td>
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
                           <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => router.push(`/viajes/${t.id}/manifiesto`)}>Manifiesto</button>
@@ -206,8 +206,8 @@ export default function TripsPage() {
                       <td>{t.almacen?.name}</td>
                       <td>{t.centroAyuda?.name}</td>
                       <td>{t.insumos?.map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(", ")}</td>
-                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
-                      <td style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
+                      <td style={{ fontSize: 13, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{formatDate(t.createdAt)}</td>
+                      <td style={{ fontSize: 13, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{formatDate(t.updatedAt)}</td>
                     <td><button className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => assignTrip(t.id)}>Tomar Viaje</button></td>
                   </tr>
                   ))}

@@ -63,43 +63,43 @@ export default function ManifiestoPage() {
         </div>
         <div className="card" style={{ maxWidth: 700, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <h1 style={{ fontSize: 28, color: "#1e293b" }}>{data.codigoViaje}</h1>
+            <h1 style={{ fontSize: 28, color: "var(--text-main)" }}>{data.codigoViaje}</h1>
             <span className={`badge ${data.estado === "delivered" ? "badge-completado" : data.estado === "in_transit" ? "badge-proceso" : "badge-pendiente"}`} style={{ fontSize: 14, padding: "6px 16px" }}>{data.estado}</span>
-            <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", fontSize: 13, color: "#6b7280" }}>
+            <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", fontSize: 13, color: "var(--text-muted)" }}>
               <span><strong>Creado:</strong> {formatDate(data.createdAt)}</span>
               <span><strong>Última actualización:</strong> {formatDate(data.updatedAt)}</span>
             </div>
           </div>
           {data.transportista && (
-            <div style={{ background: "#f0fdf4", padding: 12, borderRadius: 6, marginBottom: 16, border: "1px solid #bbf7d0" }}>
+            <div style={{ background: "var(--accent-green-bg)", padding: 12, borderRadius: 6, marginBottom: 16, border: "1px solid var(--accent-green-text)" }}>
               <strong>Transportista:</strong> {data.transportista.name} - {data.transportista.whatsapp}
             </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
-            <div style={{ background: "#eff6ff", padding: 16, borderRadius: 8, border: "1px solid #bfdbfe" }}>
-              <h4 style={{ color: "#1e40af", marginBottom: 8 }}>Punto de Carga</h4>
+            <div style={{ background: "var(--accent-blue-bg)", padding: 16, borderRadius: 8, border: "1px solid var(--border-color)" }}>
+              <h4 style={{ color: "var(--text-main)", marginBottom: 8 }}>Punto de Carga</h4>
               <p><strong>{data.puntoCarga.nombre}</strong></p>
-              <p style={{ color: "#6b7280", fontSize: 14 }}>{data.puntoCarga.direccion}</p>
-              <p style={{ color: "#6b7280", fontSize: 14 }}>{data.puntoCarga.contacto}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{data.puntoCarga.direccion}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{data.puntoCarga.contacto}</p>
             </div>
-            <div style={{ background: "#fef2f2", padding: 16, borderRadius: 8, border: "1px solid #fecaca" }}>
-              <h4 style={{ color: "#991b1b", marginBottom: 8 }}>Punto de Descarga</h4>
+            <div style={{ background: "var(--accent-red-bg)", padding: 16, borderRadius: 8, border: "1px solid var(--accent-red-text)" }}>
+              <h4 style={{ color: "var(--accent-red-text)", marginBottom: 8 }}>Punto de Descarga</h4>
               <p><strong>{data.puntoDescarga.nombre}</strong></p>
-              <p style={{ color: "#6b7280", fontSize: 14 }}>{data.puntoDescarga.direccion}</p>
-              <p style={{ color: "#6b7280", fontSize: 14 }}>{data.puntoDescarga.contacto}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{data.puntoDescarga.direccion}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{data.puntoDescarga.contacto}</p>
             </div>
           </div>
           {(data.estado === "assigned" || data.estado === "in_transit") && (
-            <div style={{ marginBottom: 24, padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
-              <h4 style={{ marginBottom: 8, color: "#92400e" }}>Ruta sugerida</h4>
-              <p style={{ fontSize: 13, color: "#92400e", marginBottom: 8 }}>Tu ubicacion → {data.puntoCarga.nombre} → {data.puntoDescarga.nombre}</p>
+            <div style={{ marginBottom: 24, padding: 16, background: "var(--accent-amber-bg)", border: "1px solid var(--accent-amber-text)", borderRadius: 8 }}>
+              <h4 style={{ marginBottom: 8, color: "var(--accent-amber-text)" }}>Ruta sugerida</h4>
+              <p style={{ fontSize: 13, color: "var(--accent-amber-text)", marginBottom: 8 }}>Tu ubicacion → {data.puntoCarga.nombre} → {data.puntoDescarga.nombre}</p>
               <NavegacionViaje origen={data.puntoCarga} destino={data.puntoDescarga} />
             </div>
           )}
           <h3 style={{ marginBottom: 12 }}>Manifiesto de Carga</h3>
           <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar en manifiesto..." />
           {sortedManifiesto.length === 0 ? (
-            <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron ítems con "{searchTerm}".</p>
+            <p style={{ color: "var(--text-muted)", padding: "12px 0" }}>No se encontraron ítems con "{searchTerm}".</p>
           ) : (
           <div className="table-wrapper">
             <table>
@@ -112,8 +112,8 @@ export default function ManifiestoPage() {
             </table>
           </div>
           )}
-          <div style={{ marginTop: 24, padding: 16, background: "#f9fafb", borderRadius: 6, border: "1px dashed #d1d5db" }}>
-            <p style={{ textAlign: "center", color: "#6b7280", fontSize: 13 }}>Manifiesto generado el {formatDate(data.createdAt)}</p>
+          <div style={{ marginTop: 24, padding: 16, background: "var(--border-color)", borderRadius: 6, border: "1px dashed var(--border-dark)" }}>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>Manifiesto generado el {formatDate(data.createdAt)}</p>
           </div>
         </div>
       </div>

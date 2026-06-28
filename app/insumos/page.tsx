@@ -248,7 +248,7 @@ export default function SuppliesPage() {
                           g.totalQuantity
                         )}
                       </td>
-                      <td><span style={{ color: "#6b7280", fontSize: 14 }}>{g.totalReserved}</span></td>
+                      <td><span style={{ color: "var(--text-muted)", fontSize: 14 }}>{g.totalReserved}</span></td>
                       <td>{g.unit}</td>
                       <td><span className={`badge ${badgeClass}`}>{badgeLabel}</span></td>
                       <td>

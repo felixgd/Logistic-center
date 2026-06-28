@@ -101,10 +101,10 @@ export default function LoginPage() {
                 placeholder="1234567890"
                 required
                 disabled={sent}
-                style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
+                style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid var(--border-color)", borderLeft: "none", background: "var(--bg-main)", color: "var(--text-main)", padding: "10px 12px", fontSize: 14 }}
               />
             </div>
-            <small style={{ color: "#6b7280", fontSize: 12 }}>Selecciona tu país e ingresa tu número sin código de país.</small>
+            <small style={{ color: "var(--text-muted)", fontSize: 12 }}>Selecciona tu país e ingresa tu número sin código de país.</small>
           </div>
           <div className="form-group">
             <label>Código de verificación</label>
