@@ -429,7 +429,9 @@ export default function HomePage() {
         return;
       }
 
+      if (json.token) localStorage.setItem("token", json.token);
       if (json.csrfToken) setCsrfToken(json.csrfToken);
+      if (json.actor) localStorage.setItem("actor", JSON.stringify(json.actor));
       setSubmitSuccess("¡Viaje asignado con éxito! Revisa tus mensajes de WhatsApp para coordinar.");
       setTimeout(() => {
         setActiveModal(null);
