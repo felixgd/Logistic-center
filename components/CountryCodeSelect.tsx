@@ -63,21 +63,23 @@ export default function CountryCodeSelect({ value, onChange, showSearch = false 
     <div ref={containerRef} style={{ position: "relative" }}>
       <button
         type="button"
+        className="country-select-btn"
         onClick={() => setOpen((o) => !o)}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "10px 8px",
+          padding: "10px 12px",
           borderRadius: "6px 0 0 6px",
-          border: "1px solid var(--border-color)",
-          borderRight: "none",
-          backgroundColor: "var(--bg-card)",
+          border: "none",
+          borderRight: "1px solid var(--border-color)",
+          backgroundColor: "transparent",
           color: "var(--text-main)",
           fontSize: 14,
           minWidth: 90,
           cursor: "pointer",
           height: "100%",
+          outline: "none",
         }}
       >
         <span>{selected.flag}</span>

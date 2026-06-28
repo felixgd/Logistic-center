@@ -93,7 +93,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Teléfono / WhatsApp</label>
-            <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+            <div className="phone-input-container">
               <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
               <input
                 value={localPhone}
@@ -101,7 +101,6 @@ export default function LoginPage() {
                 placeholder="1234567890"
                 required
                 disabled={sent}
-                style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid var(--border-color)", borderLeft: "none", background: "var(--bg-main)", color: "var(--text-main)", padding: "10px 12px", fontSize: 14 }}
               />
             </div>
             <small style={{ color: "var(--text-muted)", fontSize: 12 }}>Selecciona tu país e ingresa tu número sin código de país.</small>

@@ -884,20 +884,21 @@ export default function HomePage() {
               </div>
               <div className="form-group">
                 <label>Tu WhatsApp</label>
-                <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
-                  <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
-                  <input
-                    value={formWhatsapp}
-                    onChange={(e) => {
-                      setFormWhatsapp(normalizePhone(e.target.value));
-                      setVerifToken("");
-                      setVerifSent(false);
-                      setVerifCode("");
-                    }}
-                    required
-                    placeholder="1234567890"
-                    style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
-                  />
+                <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                  <div className="phone-input-container">
+                    <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
+                    <input
+                      value={formWhatsapp}
+                      onChange={(e) => {
+                        setFormWhatsapp(normalizePhone(e.target.value));
+                        setVerifToken("");
+                        setVerifSent(false);
+                        setVerifCode("");
+                      }}
+                      required
+                      placeholder="1234567890"
+                    />
+                  </div>
                   {isAuthenticated || verifToken ? (
                     <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13, whiteSpace: "nowrap" }}>✓ Verificado</span>
                   ) : (
@@ -1080,14 +1081,13 @@ export default function HomePage() {
               </div>
               <div className="form-group">
                 <label>Tu WhatsApp</label>
-                <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+                <div className="phone-input-container">
                   <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
                   <input
                     value={formWhatsapp}
                     onChange={(e) => setFormWhatsapp(normalizePhone(e.target.value))}
                     required
                     placeholder="1234567890"
-                    style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
                   />
                 </div>
               </div>
