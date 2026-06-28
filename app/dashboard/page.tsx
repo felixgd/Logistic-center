@@ -150,7 +150,7 @@ export default function DashboardPage() {
       solicitudesAbiertasGlobal: requestsArr.filter((r: any) => r.status === "open").length,
       viajes: shipmentsArr.length,
       viajesActivos: shipmentsArr.filter((v: any) => v.estado === "in_transit" || v.estado === "assigned").length,
-      viajesCompletados: shipmentsArr.filter((v: any) => v.estado === "completed").length,
+      viajesCompletados: shipmentsArr.filter((v: any) => v.estado === "delivered").length,
     });
 
     setRecentSupplies(suppliesArr.slice(0, 5));
@@ -180,7 +180,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!showCreateProfileModal || !token) return;
-    fetch("/api/actores/perfil", { headers })
+    fetch("/api/actores/perfil", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => {
         const phone = data.phone || data.whatsapp || data.userPhone || "";
@@ -197,7 +197,7 @@ export default function DashboardPage() {
         }));
       })
       .catch((err) => console.error("Error cargando perfil para nuevo actor:", err));
-  }, [showCreateProfileModal, token, headers]);
+  }, [showCreateProfileModal, token]);
 
   const generateQr = async () => {
     setQError("");
@@ -376,7 +376,7 @@ export default function DashboardPage() {
                 <>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
-                      <span className="dashboard-stat-title">Viajes Asignados</span>
+                      <span className="dashboard-stat-title">Envíos Asignados</span>
                       <span className="dashboard-stat-value">{stats.viajes}</span>
                     </div>
                     <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
@@ -385,7 +385,7 @@ export default function DashboardPage() {
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
-                      <span className="dashboard-stat-title">Viajes en Tránsito</span>
+                      <span className="dashboard-stat-title">Envíos en Tránsito</span>
                       <span className="dashboard-stat-value">{stats.viajesActivos}</span>
                     </div>
                     <div className="dashboard-stat-icon" style={{ background: "var(--border-color)", color: "var(--text-muted)" }}>
