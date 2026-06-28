@@ -1404,3 +1404,68 @@ table tbody tr:last-child td {
   background-color: #f1f5f9 !important;
   border-color: #e2e8f0 !important;
 }
+
+/* Custom upload box interactive styles */
+.hover-upload-box {
+  transition: all 0.2s ease;
+}
+
+.hover-upload-box:hover {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.02) !important;
+}
+
+[data-theme="dark"] .hover-upload-box {
+  background: #161616 !important;
+}
+
+[data-theme="dark"] .hover-upload-box:hover {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.04) !important;
+}
+
+/* Seamless Phone Input Redesign */
+.phone-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: var(--bg-card);
+  transition: all 0.2s ease;
+  width: 100%;
+  flex: 1;
+}
+
+[data-theme="dark"] .phone-input-container {
+  border-color: var(--border-color);
+  background: var(--bg-main);
+}
+
+.phone-input-container:focus-within {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Strip native borders from the select dropdown inside */
+.phone-input-container .country-select-btn {
+  border: none !important;
+  background: transparent !important;
+  border-right: 1px solid var(--border-color) !important;
+  border-radius: 8px 0 0 8px !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+}
+
+/* Strip native borders from the text input inside */
+.phone-input-container input {
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  flex: 1 !important;
+  height: 40px !important;
+  padding: 0 12px !important;
+  color: var(--text-main) !important;
+  font-size: 14px !important;
+  border-radius: 0 8px 8px 0 !important;
+}

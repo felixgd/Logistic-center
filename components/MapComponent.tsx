@@ -49,8 +49,8 @@ export default function MapComponent({
   actors,
   selectedActorId,
   interactive = false,
-  initialLat = 4.711,
-  initialLng = -74.072,
+  initialLat = 10.5925,
+  initialLng = -66.9317,
   onLocationSelected,
   onAddressFound,
   onMapClick,
@@ -108,6 +108,39 @@ export default function MapComponent({
         zoom: 13,
         zoomControl: false,
       });
+
+      // Try to get user location if they didn't pass explicitly customized coordinates
+      const isDefaultCoords = initialLat === 10.5925 && initialLng === -66.9317;
+      if (isDefaultCoords && typeof window !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            map.setView([userLat, userLng], 13);
+
+            // Render a beautiful green circle with opacity on user's location (no standard pins)
+            const userPos: L.LatLngTuple = [userLat, userLng];
+            L.circle(userPos, {
+              radius: 200,
+              color: "#10b981",
+              fillColor: "#10b981",
+              fillOpacity: 0.15,
+              weight: 1,
+            }).addTo(map);
+
+            const userIcon = L.divIcon({
+              html: `<div style="background:#10b981;width:12px;height:12px;border:2px solid #ffffff;border-radius:50%;box-shadow:0 0 8px rgba(16,185,129,0.6);"></div>`,
+              className: "custom-user-gps-dot",
+              iconSize: [12, 12],
+              iconAnchor: [6, 6],
+            });
+            L.marker(userPos, { icon: userIcon }).addTo(map).bindPopup("<strong>Tu Ubicación Actual</strong>");
+          },
+          (err) => {
+            console.log("Geolocation permission denied, using default La Guaira, Venezuela.");
+          }
+        );
+      }
 
       // Add modern zoom control at bottom-right
       L.control.zoom({ position: "bottomright" }).addTo(map);

@@ -168,15 +168,16 @@ function RegisterFormInner() {
             <div className="form-group"><label>Nombre completo</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
             <div className="form-group">
               <label>Teléfono / WhatsApp</label>
-              <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
-                <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
-                <input
-                  value={form.phone}
-                  onChange={(e) => update("phone", normalizePhone(e.target.value))}
-                  placeholder="1234567890"
-                  required
-                  style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: 14 }}
-                />
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                <div className="phone-input-container">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
+                  <input
+                    value={form.phone}
+                    onChange={(e) => update("phone", normalizePhone(e.target.value))}
+                    placeholder="1234567890"
+                    required
+                  />
+                </div>
                 {verifToken ? (
                   <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
                 ) : (
@@ -245,15 +246,16 @@ function RegisterFormInner() {
             <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
             <div className="form-group">
               <label>WhatsApp</label>
-              <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
-                <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
-                <input
-                  value={form.phone}
-                  onChange={(e) => update("phone", normalizePhone(e.target.value))}
-                  placeholder="1234567890"
-                  required
-                  style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: 14 }}
-                />
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                <div className="phone-input-container">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
+                  <input
+                    value={form.phone}
+                    onChange={(e) => update("phone", normalizePhone(e.target.value))}
+                    placeholder="1234567890"
+                    required
+                  />
+                </div>
                 {verifToken ? (
                   <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
                 ) : (

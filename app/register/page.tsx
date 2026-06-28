@@ -201,15 +201,16 @@ function RegisterPageContent() {
               <div className="register-bottom-fields">
                 <div className="form-group">
                   <label>Teléfono / WhatsApp *</label>
-                  <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
-                    <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
-                    <input
-                      value={form.phone}
-                      onChange={(e) => update("phone", normalizePhone(e.target.value))}
-                      placeholder="1234567890"
-                      required
-                      style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid var(--border-color)", borderLeft: "none", background: "var(--bg-main)", color: "var(--text-main)", padding: "10px 12px", fontSize: 14 }}
-                    />
+                  <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                    <div className="phone-input-container">
+                      <CountryCodeSelect value={countryCode} onChange={setCountryCode} showSearch />
+                      <input
+                        value={form.phone}
+                        onChange={(e) => update("phone", normalizePhone(e.target.value))}
+                        placeholder="1234567890"
+                        required
+                      />
+                    </div>
                     {verifToken ? (
                       <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13 }}>✓ Verificado</span>
                     ) : (
