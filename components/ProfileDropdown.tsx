@@ -7,7 +7,9 @@ import {
   Package, 
   Truck, 
   Heart,
-  Plus
+  Plus,
+  Sun,
+  Moon
 } from "@phosphor-icons/react";
 import { getAuthHeaders, setCsrfToken } from "@/lib/api-client";
 
@@ -38,9 +40,14 @@ export default function ProfileDropdown({
   onLogout,
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState("light");
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Sync state with HTML attribute on mount
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    setTheme(currentTheme);
+
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -49,6 +56,13 @@ export default function ProfileDropdown({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  };
 
   const handleSwitch = async (targetActorId: string) => {
     if (targetActorId === actor.id) return;
@@ -111,8 +125,8 @@ export default function ProfileDropdown({
             width: "32px",
             height: "32px",
             borderRadius: "50%",
-            backgroundColor: "#0f172a",
-            color: "#ffffff",
+            backgroundColor: "var(--text-main)",
+            color: "var(--bg-card)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -125,15 +139,15 @@ export default function ProfileDropdown({
 
         {/* User Label details */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
-          <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
+          <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-main)" }}>
             {actor.name}
           </span>
-          <span style={{ fontSize: "10px", fontWeight: "600", color: "#64748b" }}>
+          <span style={{ fontSize: "10px", fontWeight: "600", color: "var(--text-muted)" }}>
             {LABELS[actor.type] || actor.type}
           </span>
         </div>
 
-        <CaretDown size={14} color="#64748b" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        <CaretDown size={14} color="currentColor" style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
 
       {/* Popover Menu Dropdown */}
@@ -144,9 +158,9 @@ export default function ProfileDropdown({
             top: "calc(100% + 8px)",
             right: 0,
             width: "240px",
-            background: "#ffffff",
+            background: "var(--bg-card)",
             borderRadius: "12px",
-            border: "1px solid #cbd5e1",
+            border: "1px solid var(--border-dark)",
             boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
             zIndex: 99999,
             padding: "6px",
@@ -159,7 +173,7 @@ export default function ProfileDropdown({
             style={{
               fontSize: "9px",
               fontWeight: "800",
-              color: "#64748b",
+              color: "var(--text-muted)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               padding: "6px 8px 4px 8px",
@@ -186,8 +200,8 @@ export default function ProfileDropdown({
                   padding: "8px 10px",
                   borderRadius: "8px",
                   border: "none",
-                  background: isActive ? "#f1f5f9" : "transparent",
-                  color: isActive ? "#0f172a" : "#475569",
+                  background: isActive ? "var(--border-color)" : "transparent",
+                  color: isActive ? "var(--text-main)" : "var(--text-muted)",
                   fontSize: "12px",
                   fontWeight: isActive ? "700" : "600",
                   textAlign: "left",
@@ -196,7 +210,7 @@ export default function ProfileDropdown({
                 }}
                 className={isActive ? "" : "hover-gray-bg"}
               >
-                <span style={{ color: isActive ? "#0f172a" : "#64748b", display: "flex", alignItems: "center" }}>
+                <span style={{ color: isActive ? "var(--text-main)" : "var(--text-muted)", display: "flex", alignItems: "center" }}>
                   {getActorIcon(a.type)}
                 </span>
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -216,7 +230,7 @@ export default function ProfileDropdown({
                 gap: "8px",
                 padding: "8px 10px",
                 borderRadius: "8px",
-                color: "#2563eb",
+                color: "#3b82f6",
                 fontSize: "12px",
                 fontWeight: "600",
                 textDecoration: "none",
@@ -229,7 +243,36 @@ export default function ProfileDropdown({
             </Link>
           )}
 
-          <div style={{ height: "1px", backgroundColor: "#cbd5e1", margin: "4px 0" }} />
+          <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "4px 0" }} />
+
+          {/* Theme toggle option */}
+          <button
+            onClick={toggleTheme}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              width: "100%",
+              padding: "8px 10px",
+              borderRadius: "8px",
+              border: "none",
+              background: "transparent",
+              color: "var(--text-main)",
+              fontSize: "12px",
+              fontWeight: "600",
+              textAlign: "left",
+              cursor: "pointer",
+              transition: "background 0.2s",
+            }}
+            className="hover-gray-bg"
+          >
+            <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </span>
+            <span>Tema: {theme === "dark" ? "Oscuro" : "Claro"}</span>
+          </button>
+
+          <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "4px 0" }} />
 
           <button
             onClick={() => {
@@ -245,7 +288,7 @@ export default function ProfileDropdown({
               borderRadius: "8px",
               border: "none",
               background: "transparent",
-              color: "#b91c1c",
+              color: "var(--accent-red-text)",
               fontSize: "12px",
               fontWeight: "700",
               textAlign: "left",

@@ -18,6 +18,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={dmSans.variable}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            const theme = localStorage.getItem('theme') || 
+              (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+          })()
+        ` }} />
+      </head>
       <body><ToastProvider>{children}</ToastProvider></body>
     </html>
   );

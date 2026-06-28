@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const [createProfileError, setCreateProfileError] = useState("");
   const [createProfileSaving, setCreateProfileSaving] = useState(false);
   const [userActors, setUserActors] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
 
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -96,6 +97,7 @@ export default function DashboardPage() {
   const { data: viajesData, error: viajesError } = useApi<any[]>(token ? "/api/viajes" : null);
 
   useEffect(() => {
+    setMounted(true);
     if (!token) {
       router.push("/login");
       return;
@@ -209,6 +211,7 @@ export default function DashboardPage() {
     }
   };
 
+  if (!mounted) return null;
   if (!token) return null;
 
   const getUrgencyBadge = (urgency: string) => {
@@ -319,9 +322,9 @@ export default function DashboardPage() {
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos en Tránsito</span>
-                      <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
+                      <span className="dashboard-stat-value">{stats.viajesActivos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                    <div className="dashboard-stat-icon" style={{ background: "var(--border-color)", color: "var(--text-muted)" }}>
                       <ArrowsClockwise size={24} />
                     </div>
                   </Link>
@@ -383,9 +386,9 @@ export default function DashboardPage() {
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Viajes en Tránsito</span>
-                      <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
+                      <span className="dashboard-stat-value">{stats.viajesActivos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                    <div className="dashboard-stat-icon" style={{ background: "var(--border-color)", color: "var(--text-muted)" }}>
                       <Truck size={24} />
                     </div>
                   </Link>
@@ -428,7 +431,7 @@ export default function DashboardPage() {
               {/* Left Column: Actions & Location Map */}
               <div className="dashboard-left-col">
                 <div className="card" style={{ padding: "24px" }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-main)", marginBottom: 16 }}>
                     Acciones Rápidas
                   </h3>
                   
@@ -623,10 +626,11 @@ export default function DashboardPage() {
             maxWidth: "450px",
             padding: "24px",
             borderRadius: "12px",
-            backgroundColor: "#fff",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
           }}>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-main)", marginBottom: 16 }}>
               Actualizar Perfil
             </h3>
             {profileError && (
@@ -761,10 +765,11 @@ export default function DashboardPage() {
             overflowY: "auto",
             padding: "24px",
             borderRadius: "12px",
-            backgroundColor: "#fff",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
           }}>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-main)", marginBottom: 16 }}>
               Crear Nuevo Perfil / Rol
             </h3>
             {createProfileError && (

@@ -60,6 +60,29 @@ export default function MapComponent({
   const markersRef = useRef<Record<string, L.Marker>>({});
   const clickMarkerRef = useRef<L.Marker | null>(null);
   const hasFitBoundsRef = useRef(false);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme" && tileLayerRef.current) {
+          const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+          tileLayerRef.current.setUrl(
+            isDark
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          );
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Keep reference to the latest callbacks to avoid re-triggering the useEffect
   const onLocationSelectedRef = useRef(onLocationSelected);
@@ -90,11 +113,18 @@ export default function MapComponent({
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
       // Add a beautiful Mapbox/CartoDB clean map layer
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-      }).addTo(map);
+      const isDarkTheme = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark";
+      const tileLayer = L.tileLayer(
+        isDarkTheme
+          ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: "abcd",
+          maxZoom: 20,
+        }
+      ).addTo(map);
+      tileLayerRef.current = tileLayer;
 
       mapRef.current = map;
 
@@ -110,7 +140,7 @@ export default function MapComponent({
 
           // Create a new marker at click position
           const markerIcon = L.divIcon({
-            html: `<div class="marker-pin warehouse-pin"><span class="icon-inner" style="display: flex; align-items: center; justify-content: center; color: #fff; width: 100%; height: 100%;">${PIN_SVGs.warehouse}</span></div>`,
+            html: `<div class="marker-pin warehouse-pin"><span class="icon-inner" style="display: flex; align-items: center; justify-content: center; color: #4b5563; width: 100%; height: 100%;">${PIN_SVGs.warehouse}</span></div>`,
             className: "custom-div-icon",
             iconSize: [38, 38],
             iconAnchor: [19, 38],
@@ -199,13 +229,16 @@ export default function MapComponent({
       // Decide icon details based on actor type
       let svgMarkup = PIN_SVGs.warehouse;
       let pinClass = "warehouse-pin";
+      let iconColor = "#4b5563";
 
       if (actor.type === "relief") {
         svgMarkup = PIN_SVGs.relief;
         pinClass = "relief-pin";
+        iconColor = "#ef4444";
       } else if (actor.type === "transporter") {
         svgMarkup = PIN_SVGs.transporter;
         pinClass = "transporter-pin";
+        iconColor = "#f59e0b";
       }
 
       // Construct detailed popup
@@ -248,7 +281,7 @@ export default function MapComponent({
 
       const existingMarker = markersRef.current[actor.id];
       const customIcon = L.divIcon({
-        html: `<div class="marker-pin ${pinClass}"><span class="icon-inner" style="display: flex; align-items: center; justify-content: center; color: #fff; width: 100%; height: 100%;">${svgMarkup}</span></div>`,
+        html: `<div class="marker-pin ${pinClass}"><span class="icon-inner" style="display: flex; align-items: center; justify-content: center; color: ${iconColor}; width: 100%; height: 100%;">${svgMarkup}</span></div>`,
         className: "custom-div-icon",
         iconSize: [38, 38],
         iconAnchor: [19, 38],

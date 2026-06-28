@@ -643,7 +643,7 @@ export default function HomePage() {
             data.recentShipments.map((ship) => (
               <div key={ship.id} className={`activity-card ${ship.centroAyuda.id === selectedActorId ? "active" : ""}`} onClick={() => handleCardClick(ship.centroAyuda.id)}>
                 <div className="activity-card-header">
-                  <span className="activity-card-title" style={{ color: "#2563eb" }}>Código: {ship.codigoViaje}</span>
+                  <span className="activity-card-title">Código: {ship.codigoViaje}</span>
                   <span className="activity-card-time">{new Date(ship.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
                 <div className="activity-card-body">

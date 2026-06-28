@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
 import { getAuthHeaders, clearCsrfToken } from "@/lib/api-client";
 import { 
-  Globe,
+  Plus,
   Compass,
   Layout,
   Package,
@@ -73,7 +73,7 @@ export default function Navbar() {
     return (
       <nav className="navbar">
         <Link href="/" className="navbar-logo" style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <Globe size={24} weight="bold" style={{ color: "var(--primary)" }} />
+          <Plus size={24} weight="bold" style={{ color: "#22c55e" }} />
           <strong style={{ letterSpacing: "-0.015em", fontSize: 16 }}>Logística en Crisis</strong>
         </Link>
       </nav>
@@ -106,7 +106,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link href="/" className="navbar-logo" style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-        <Globe size={24} weight="bold" style={{ color: "var(--primary)" }} />
+        <Plus size={24} weight="bold" style={{ color: "#22c55e" }} />
         <strong style={{ letterSpacing: "-0.015em", fontSize: 16 }}>Logística en Crisis</strong>
       </Link>
       
