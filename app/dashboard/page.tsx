@@ -297,7 +297,7 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Insumos en Almacén</span>
                       <span className="dashboard-stat-value">{stats.insumos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <Package size={24} />
                     </div>
                   </Link>
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Solicitudes Abiertas (Global)</span>
                       <span className="dashboard-stat-value">{stats.solicitudesAbiertasGlobal}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <ClipboardText size={24} />
                     </div>
                   </Link>
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Envíos Totales</span>
                       <span className="dashboard-stat-value">{stats.viajes}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <Truck size={24} />
                     </div>
                   </Link>
@@ -338,34 +338,34 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Mis Solicitudes</span>
                       <span className="dashboard-stat-value">{stats.solicitudes}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <ClipboardText size={24} />
                     </div>
                   </Link>
                   <Link href="/solicitudes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Solicitudes Abiertas</span>
-                      <span className="dashboard-stat-value" style={{ color: "#ef4444" }}>{stats.solicitudesAbiertas}</span>
+                      <span className="dashboard-stat-value" style={{ color: "var(--accent-red-text)" }}>{stats.solicitudesAbiertas}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#fef2f2", color: "#ef4444" }}>
+                    <div className="dashboard-stat-icon" style={{ background: "var(--accent-red-bg)", color: "var(--accent-red-text)" }}>
                       <Warning size={24} />
                     </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos en Camino</span>
-                      <span className="dashboard-stat-value" style={{ color: "#f59e0b" }}>{stats.viajesActivos}</span>
+                      <span className="dashboard-stat-value" style={{ color: "var(--accent-amber-text)" }}>{stats.viajesActivos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#fffbeb", color: "#f59e0b" }}>
+                    <div className="dashboard-stat-icon" style={{ background: "var(--accent-amber-bg)", color: "var(--accent-amber-text)" }}>
                       <Truck size={24} />
                     </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos Recibidos</span>
-                      <span className="dashboard-stat-value" style={{ color: "#10b981" }}>{stats.viajesCompletados}</span>
+                      <span className="dashboard-stat-value" style={{ color: "var(--accent-green-text)" }}>{stats.viajesCompletados}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#ecfdf5", color: "#10b981" }}>
+                    <div className="dashboard-stat-icon" style={{ background: "var(--accent-green-bg)", color: "var(--accent-green-text)" }}>
                       <CheckCircle size={24} />
                     </div>
                   </Link>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Viajes Asignados</span>
                       <span className="dashboard-stat-value">{stats.viajes}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <Compass size={24} />
                     </div>
                   </Link>
@@ -403,7 +403,7 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <Truck size={24} />
                     </div>
                   </div>
@@ -418,7 +418,7 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                    <div className="dashboard-stat-icon" style={{ color: "var(--text-muted)", background: "var(--border-color)" }}>
                       <Scales size={24} />
                     </div>
                   </div>
