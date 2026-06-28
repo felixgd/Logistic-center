@@ -102,6 +102,10 @@ export async function findOrCreateActor(input: FrictionlessInput) {
       type: actor.type,
       name: actor.name,
       whatsapp: actor.whatsapp,
+      address: actor.address,
+      city: actor.city,
+      lat: actor.lat,
+      lng: actor.lng,
     },
   };
 }

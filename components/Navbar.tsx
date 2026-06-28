@@ -22,30 +22,44 @@ const LABELS: Record<string, string> = {
   transporter: "Transportista",
 };
 
-export default function Navbar() {
+interface NavbarProps {
+  isAuthenticated?: boolean;
+  actor?: any;
+}
+
+export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: propActor }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [availableActors, setAvailableActors] = useState<any[]>([]);
   const pathname = usePathname();
   const router = useRouter();
-  const [actor, setActor] = useState<any>({});
+  const [actor, setActor] = useState<any>(propActor || {});
   const [mounted, setMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!propIsAuthenticated);
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
 
-    if (token) {
-      const storedActor = localStorage.getItem("actor");
-      if (storedActor) {
-        try {
-          setActor(JSON.parse(storedActor));
-        } catch (e) {
-          console.error("Error parsing actor", e);
+    if (propIsAuthenticated !== undefined && propActor !== undefined) {
+      setIsAuthenticated(propIsAuthenticated);
+      if (propActor) setActor(propActor);
+    } else {
+      const token = localStorage.getItem("token");
+      setIsAuthenticated(!!token);
+
+      if (token) {
+        const storedActor = localStorage.getItem("actor");
+        if (storedActor) {
+          try {
+            setActor(JSON.parse(storedActor));
+          } catch (e) {
+            console.error("Error parsing actor", e);
+          }
         }
       }
+    }
 
+    const token = localStorage.getItem("token");
+    if (token) {
       fetch("/api/actores/list", {
         headers: getAuthHeaders()
       })
@@ -57,7 +71,7 @@ export default function Navbar() {
         })
         .catch((e) => console.error("Error fetching available actors", e));
     }
-  }, []);
+  }, [propIsAuthenticated, propActor]);
 
   const logout = () => {
     localStorage.removeItem("token");
