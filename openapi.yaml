@@ -1,0 +1,651 @@
+openapi: 3.0.3
+info:
+  title: Logística Centros de Acopio API
+  description: |
+    API para la coordinación logística entre almacenes, centros de ayuda humanitaria y transportistas.
+    Permite gestionar insumos, solicitudes, viajes, voluntarios y coordinación oferta-demanda.
+  version: 1.0.0
+  contact:
+    name: Soporte
+servers:
+  - url: https://crisis-logistics.vercel.app
+    description: Producción
+  - url: http://localhost:3000
+    description: Desarrollo local
+security:
+  - bearerAuth: []
+paths:
+  /api/health:
+    get:
+      tags:
+        - Sistema
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Servicio activo
+
+  /api/actores/register:
+    post:
+      tags:
+        - Autenticación
+      summary: Registrar un nuevo actor/propietario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registro exitoso
+        "400":
+          description: Error de validación
+
+  /api/actores/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Iniciar sesión con teléfono y código
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login exitoso
+        "401":
+          description: Credenciales inválidas
+
+  /api/verificar/enviar:
+    post:
+      tags:
+        - Autenticación
+      summary: Enviar código de verificación SMS
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: "521234567890"
+      responses:
+        "200":
+          description: Código enviado
+
+  /api/verificar/codigo:
+    post:
+      tags:
+        - Autenticación
+      summary: Verificar código SMS
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        "200":
+          description: Código verificado
+
+  /api/actores/perfil:
+    get:
+      tags:
+        - Perfiles
+      summary: Obtener perfil del actor actual
+      responses:
+        "200":
+          description: Perfil obtenido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Actor"
+    put:
+      tags:
+        - Perfiles
+      summary: Actualizar perfil del actor actual
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActorUpdate"
+      responses:
+        "200":
+          description: Perfil actualizado
+
+  /api/actores/list:
+    get:
+      tags:
+        - Perfiles
+      summary: Listar actores accesibles para el usuario
+      responses:
+        "200":
+          description: Lista de actores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Actor"
+
+  /api/actores/create:
+    post:
+      tags:
+        - Perfiles
+      summary: Crear un nuevo perfil/actor para el usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActorCreate"
+      responses:
+        "201":
+          description: Perfil creado
+
+  /api/actores/switch:
+    post:
+      tags:
+        - Perfiles
+      summary: Cambiar al contexto de otro actor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actorId:
+                  type: string
+      responses:
+        "200":
+          description: Contexto cambiado
+
+  /api/insumos:
+    get:
+      tags:
+        - Insumos
+      summary: Listar insumos
+      responses:
+        "200":
+          description: Lista de insumos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Supply"
+    post:
+      tags:
+        - Insumos
+      summary: Crear un nuevo insumo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplyCreate"
+      responses:
+        "201":
+          description: Insumo creado
+
+  /api/insumos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Insumos
+      summary: Obtener un insumo
+      responses:
+        "200":
+          description: Insumo encontrado
+    put:
+      tags:
+        - Insumos
+      summary: Actualizar cantidad de un insumo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplyUpdate"
+      responses:
+        "200":
+          description: Insumo actualizado
+    delete:
+      tags:
+        - Insumos
+      summary: Eliminar un insumo
+      responses:
+        "204":
+          description: Insumo eliminado
+
+  /api/solicitudes:
+    get:
+      tags:
+        - Solicitudes
+      summary: Listar solicitudes
+      responses:
+        "200":
+          description: Lista de solicitudes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Request"
+    post:
+      tags:
+        - Solicitudes
+      summary: Crear una nueva solicitud de insumos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestCreate"
+      responses:
+        "201":
+          description: Solicitud creada
+
+  /api/solicitudes/{id}/estado:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags:
+        - Solicitudes
+      summary: Cambiar estado de una solicitud
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [open, in_progress, fulfilled, cancelled]
+      responses:
+        "200":
+          description: Estado actualizado
+
+  /api/viajes:
+    get:
+      tags:
+        - Viajes
+      summary: Listar viajes
+      responses:
+        "200":
+          description: Lista de viajes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Shipment"
+    post:
+      tags:
+        - Viajes
+      summary: Crear un nuevo viaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentCreate"
+      responses:
+        "201":
+          description: Viaje creado
+
+  /api/viajes/{id}/asignar:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Viajes
+      summary: Asignar un viaje al transportista actual
+      responses:
+        "200":
+          description: Viaje asignado
+
+  /api/viajes/{id}/estado:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags:
+        - Viajes
+      summary: Actualizar estado de un viaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [proposed, approved, assigned, in_transit, delivered, cancelled]
+      responses:
+        "200":
+          description: Estado actualizado
+
+  /api/matching/automatico:
+    post:
+      tags:
+        - Coordinación
+      summary: Ejecutar coordinación automática oferta-demanda
+      responses:
+        "200":
+          description: Coordinación completada
+
+  /api/matching/solicitud/{solicitudId}:
+    parameters:
+      - name: solicitudId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Coordinación
+      summary: Buscar coordinaciones para una solicitud
+      responses:
+        "200":
+          description: Posibles coordinaciones encontradas
+
+  /api/notificaciones:
+    get:
+      tags:
+        - Notificaciones
+      summary: Listar notificaciones del usuario
+      responses:
+        "200":
+          description: Lista de notificaciones
+
+  /api/notificaciones/{id}/leida:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags:
+        - Notificaciones
+      summary: Marcar notificación como leída
+      responses:
+        "200":
+          description: Notificación actualizada
+
+  /api/public/map-data:
+    get:
+      tags:
+        - Público
+      summary: Obtener datos públicos para el mapa
+      security: []
+      responses:
+        "200":
+          description: Datos del mapa
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Actor:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [warehouse, relief, transporter]
+        name:
+          type: string
+        contactName:
+          type: string
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        vehicleType:
+          type: string
+        capacityKg:
+          type: integer
+    ActorCreate:
+      type: object
+      required: [type, name]
+      properties:
+        type:
+          type: string
+          enum: [warehouse, relief, transporter]
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        vehicleType:
+          type: string
+        capacityKg:
+          type: integer
+    ActorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        contactName:
+          type: string
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        vehicleType:
+          type: string
+        capacityKg:
+          type: integer
+    RegisterRequest:
+      type: object
+      required: [type, name, phone, email, phoneVerificationToken]
+      properties:
+        type:
+          type: string
+          enum: [warehouse, relief, transporter]
+        name:
+          type: string
+        contactName:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        vehicleType:
+          type: string
+        capacityKg:
+          type: integer
+        phoneVerificationToken:
+          type: string
+    LoginRequest:
+      type: object
+      required: [phone, code]
+      properties:
+        phone:
+          type: string
+          example: "521234567890"
+        code:
+          type: string
+          example: "123456"
+    Supply:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: integer
+        quantityReserved:
+          type: integer
+        status:
+          type: string
+    SupplyCreate:
+      type: object
+      required: [category, name, unit, quantity]
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: integer
+    SupplyUpdate:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [add, set]
+        delta:
+          type: integer
+        quantity:
+          type: integer
+        version:
+          type: integer
+    Request:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: integer
+        quantityFulfilled:
+          type: integer
+        urgency:
+          type: string
+        status:
+          type: string
+    RequestCreate:
+      type: object
+      required: [category, name, unit, quantity, urgency]
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: integer
+        urgency:
+          type: string
+          enum: [baja, media, alta, critica]
+        notes:
+          type: string
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: string
+        codigoViaje:
+          type: string
+        status:
+          type: string
+        almacen:
+          $ref: "#/components/schemas/Actor"
+        centroAyuda:
+          $ref: "#/components/schemas/Actor"
+        transportista:
+          $ref: "#/components/schemas/Actor"
+        insumos:
+          type: array
+          items:
+            type: object
+    ShipmentCreate:
+      type: object
+      required: [warehouseActorId, reliefActorId, items]
+      properties:
+        warehouseActorId:
+          type: string
+        reliefActorId:
+          type: string
+        requestId:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              quantity:
+                type: integer
+              unit:
+                type: string
+              supplyId:
+                type: string

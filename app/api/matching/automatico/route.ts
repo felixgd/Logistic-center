@@ -15,7 +15,7 @@ function distancia(lat1: number, lon1: number, lat2: number, lon2: number): numb
 export async function POST(req: NextRequest) {
   const auth = getAuthActor(req);
   if (!auth) return jsonError(401, "Token requerido");
-  if (auth.actorType !== "warehouse") return jsonError(403, "Solo los almacenes pueden usar el matching");
+  if (auth.actorType !== "warehouse") return jsonError(403, "Solo los almacenes pueden usar la coordinación");
 
   try {
     const resultados: any[] = [];
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         include: { actor: { select: { id: true, name: true, lat: true, lng: true } } },
       });
       if (supplies.length === 0) {
-        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes insumos disponibles para match." });
+        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes insumos disponibles para coordinar." });
       }
 
       const pendientes = await prisma.request.findMany({
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (pendientes.length === 0) {
-        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes solicitudes abiertas para match." });
+        return Response.json({ totalMatches: 0, matches: [], mensaje: "No tienes solicitudes abiertas para coordinar." });
       }
 
       const supplies = await prisma.supply.findMany({

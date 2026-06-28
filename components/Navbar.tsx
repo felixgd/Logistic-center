@@ -63,14 +63,17 @@ export default function Navbar() {
     { path: "/insumos", label: "Insumos", roles: ["warehouse", "relief"] },
     { path: "/solicitudes", label: "Solicitudes", roles: ["warehouse", "relief"] },
     { path: "/viajes", label: "Viajes" },
-    { path: "/matching", label: "Matching", roles: ["warehouse", "relief"] },
+    { path: "/matching", label: "Coordinación", roles: ["warehouse", "relief"] },
   ];
 
   const links = allLinks.filter((l) => !l.roles || l.roles.includes(actor.type));
 
   if (actor.isOwner && actor.type !== "transporter") {
-    links.push({ path: "/afiliados", label: "Afiliados" });
+    links.push({ path: "/afiliados", label: "Voluntarios" });
   }
+
+  const ownedTypes = new Set(availableActors.filter((a) => a.isOwner).map((a) => a.type));
+  const canCreateProfile = ownedTypes.size < 3;
 
   return (
     <nav className="navbar">
@@ -137,7 +140,9 @@ export default function Navbar() {
                 {a.name} ({a.type === "warehouse" ? "Almacén" : a.type === "relief" ? "Ayuda" : "Transporte"})
               </option>
             ))}
-            <option value="create_new_profile">➕ Crear nuevo perfil...</option>
+            {canCreateProfile && (
+              <option value="create_new_profile">➕ Crear nuevo perfil...</option>
+            )}
           </select>
         )}
         <button className="btn btn-secondary navbar-logout" onClick={logout}>

@@ -31,7 +31,7 @@ export default function AfiliadosPage() {
   useEffect(() => {
     if (membersError) {
       if ((membersError as Error).message.includes("403")) {
-        setError("Solo el administrador principal puede gestionar afiliados");
+        setError("Solo el administrador principal puede gestionar voluntarios");
       } else {
         router.push("/login");
       }
@@ -84,7 +84,7 @@ export default function AfiliadosPage() {
       <Navbar />
       <div className="container">
         <div className="page-header">
-          <h2>Afiliados</h2>
+          <h2>Voluntarios</h2>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ color: "#6b7280", fontSize: 14 }}>{members.length} miembros</span>
             <button className="btn btn-primary" onClick={generarCodigo}>+ Código QR</button>
@@ -94,14 +94,14 @@ export default function AfiliadosPage() {
         {error && <div className="alert alert-error">{error}</div>}
         {members.length === 0 ? (
           <div className="card empty-state">
-            <h3>No hay afiliados</h3>
-            <p>Usa el código QR desde el Dashboard para invitar personal a este {actor.type === "warehouse" ? "almacén" : "centro de ayuda"}.</p>
+            <h3>No hay voluntarios</h3>
+            <p>Usa el código QR desde el Dashboard para invitar voluntarios a este {actor.type === "warehouse" ? "almacén" : "centro de ayuda"}.</p>
           </div>
         ) : (
           <div className="card">
-            <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar afiliado..." />
+            <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar voluntario..." />
             {sortedMembers.length === 0 ? (
-              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron afiliados con "{searchTerm}".</p>
+              <p style={{ color: "#9ca3af", padding: "12px 0" }}>No se encontraron voluntarios con "{searchTerm}".</p>
             ) : (
             <div className="table-wrapper">
               <table>
@@ -132,7 +132,7 @@ export default function AfiliadosPage() {
       {editMember && (
         <div className="modal-overlay" onClick={() => setEditMember(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Editar Afiliado</h3>
+            <h3>Editar Voluntario</h3>
             <form onSubmit={handleEdit}>
               <div className="form-group"><label>Nombre</label><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required /></div>
               <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></div>

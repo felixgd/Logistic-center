@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
 
   const actor = await prisma.actor.findUnique({ where: { id: auth.actorId } });
   if (!actor) return jsonError(404, "Actor no encontrado");
-  if (!["warehouse", "relief"].includes(actor.type)) return jsonError(403, "Solo almacenes y centros de ayuda pueden gestionar afiliados");
-  if (actor.userId !== auth.userId) return jsonError(403, "Solo el administrador principal puede gestionar afiliados");
+  if (!["warehouse", "relief"].includes(actor.type)) return jsonError(403, "Solo almacenes y centros de ayuda pueden gestionar voluntarios");
+  if (actor.userId !== auth.userId) return jsonError(403, "Solo el administrador principal puede gestionar voluntarios");
 
   const members = await prisma.actor_user.findMany({
     where: { actorId: auth.actorId, deletedAt: null },

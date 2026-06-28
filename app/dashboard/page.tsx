@@ -14,11 +14,17 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   loading: () => <p style={{ color: "#64748b", padding: 16 }}>Cargando mini-mapa...</p>,
 });
 
-const LABELS: Record<string, string> = {
+  const LABELS: Record<string, string> = {
   warehouse: "Almacén / Centro de Acopio",
   relief: "Centro de Ayuda Humanitaria",
   transporter: "Transportista / Conductor",
 };
+
+  const PROFILE_TYPES = [
+    { value: "warehouse", label: "Almacén / Centro de Acopio" },
+    { value: "relief", label: "Centro de Ayuda Humanitaria" },
+    { value: "transporter", label: "Transportista / Conductor" },
+  ];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -44,6 +50,8 @@ export default function DashboardPage() {
     vehicleType: "",
     capacityKg: ""
   });
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
   const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
   const [newProfileForm, setNewProfileForm] = useState({
     type: "warehouse",
@@ -58,6 +66,9 @@ export default function DashboardPage() {
     vehicleType: "",
     capacityKg: ""
   });
+  const [createProfileError, setCreateProfileError] = useState("");
+  const [createProfileSaving, setCreateProfileSaving] = useState(false);
+  const [userActors, setUserActors] = useState<any[]>([]);
 
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -74,7 +85,39 @@ export default function DashboardPage() {
     }
     const storedActorObj = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(storedActorObj);
+
+    // Cargar datos completos del perfil (vehículo, capacidad, ubicación, etc.)
+    fetch("/api/actores/perfil", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        const mergedActor = { ...storedActorObj, ...data };
+        localStorage.setItem("actor", JSON.stringify(mergedActor));
+        setActor(mergedActor);
+      })
+      .catch((err) => console.error("Error cargando perfil completo:", err));
+
+    // Cargar lista de perfiles del usuario para ocultar tipos ya creados
+    fetch("/api/actores/list", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setUserActors(data);
+        }
+      })
+      .catch((err) => console.error("Error cargando lista de actores:", err));
   }, [token, router]);
+
+  // Asegurar que el tipo seleccionado en el modal de crear perfil siempre sea válido
+  useEffect(() => {
+    setNewProfileForm((prev) => {
+      const createdTypes = new Set(userActors.filter((a) => a.isOwner).map((a) => a.type));
+      const availableTypes = PROFILE_TYPES.filter((t) => !createdTypes.has(t.value));
+      if (availableTypes.length > 0 && !availableTypes.some((t) => t.value === prev.type)) {
+        return { ...prev, type: availableTypes[0].value };
+      }
+      return prev;
+    });
+  }, [userActors]);
 
   useEffect(() => {
     const suppliesArr = Array.isArray(insumosData) ? insumosData : [];
@@ -129,7 +172,9 @@ export default function DashboardPage() {
           phone,
           whatsapp,
           address: data.address || "",
-          city: data.city || ""
+          city: data.city || "",
+          vehicleType: data.vehicleType || "",
+          capacityKg: data.capacityKg ? String(data.capacityKg) : ""
         }));
       })
       .catch((err) => console.error("Error cargando perfil para nuevo actor:", err));
@@ -210,7 +255,7 @@ export default function DashboardPage() {
             {actor.isOwner && ["warehouse", "relief"].includes(actor.type) && (
               <>
                 <button className="btn btn-secondary" onClick={generateQr}>+ Afiliar Personal</button>
-                <a href="/afiliados" className="btn btn-secondary">Gestionar Afiliados</a>
+                <a href="/afiliados" className="btn btn-secondary">Gestionar Voluntarios</a>
               </>
             )}
           </div>
@@ -355,7 +400,7 @@ export default function DashboardPage() {
                         </Link>
                         <Link href="/matching" className="dashboard-action-card">
                           <div className="dashboard-action-icon">🤝</div>
-                          <div className="dashboard-action-title">Ver Matches</div>
+                          <div className="dashboard-action-title">Ver Coordinaciones</div>
                           <div className="dashboard-action-desc">Sincroniza tus insumos disponibles con solicitudes abiertas.</div>
                         </Link>
                       </>
@@ -529,27 +574,33 @@ export default function DashboardPage() {
             <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
               Actualizar Perfil
             </h3>
+            {profileError && (
+              <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{profileError}</p>
+            )}
             <form onSubmit={async (e) => {
               e.preventDefault();
+              setProfileError("");
+              setProfileSaving(true);
               try {
                 const res = await fetch("/api/actores/perfil", {
                   method: "PUT",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify(profileForm)
                 });
-                if (res.ok) {
-                  const data = await res.json();
-                  const updatedActor = { ...actor, ...data.actor };
-                  localStorage.setItem("actor", JSON.stringify(updatedActor));
-                  setActor(updatedActor);
-                  setShowProfileModal(false);
-                  window.location.reload();
+                const data = await res.json();
+                if (!res.ok) {
+                  setProfileError(data.error || "Error al actualizar el perfil");
+                  setProfileSaving(false);
+                  return;
                 }
+                const updatedActor = { ...actor, ...data.actor };
+                localStorage.setItem("actor", JSON.stringify(updatedActor));
+                setActor(updatedActor);
+                setShowProfileModal(false);
+                window.location.reload();
               } catch (err) {
-                console.error("Error updating profile:", err);
+                setProfileError("Error de conexión al actualizar el perfil");
+                setProfileSaving(false);
               }
             }}>
               <div className="form-group" style={{ marginBottom: 16 }}>
@@ -624,9 +675,10 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
+                  disabled={profileSaving}
                   style={{ padding: "8px 16px", fontSize: 13 }}
                 >
-                  Guardar Cambios
+                  {profileSaving ? "Guardando..." : "Guardar Cambios"}
                 </button>
               </div>
             </form>
@@ -660,51 +712,69 @@ export default function DashboardPage() {
             <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
               Crear Nuevo Perfil / Rol
             </h3>
+            {createProfileError && (
+              <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{createProfileError}</p>
+            )}
             <form onSubmit={async (e) => {
               e.preventDefault();
+              setCreateProfileError("");
+              setCreateProfileSaving(true);
               try {
                 const res = await fetch("/api/actores/create", {
                   method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify(newProfileForm)
                 });
-                if (res.ok) {
-                  const data = await res.json();
-                  localStorage.setItem("token", data.token);
-                  if (data.csrfToken) setCsrfToken(data.csrfToken);
-                  localStorage.setItem("actor", JSON.stringify(data.actor));
-                  setShowCreateProfileModal(false);
-                  window.location.href = "/dashboard";
+                const data = await res.json();
+                if (!res.ok) {
+                  setCreateProfileError(data.error || "Error al crear el perfil");
+                  setCreateProfileSaving(false);
+                  return;
                 }
+                localStorage.setItem("token", data.token);
+                if (data.csrfToken) setCsrfToken(data.csrfToken);
+                localStorage.setItem("actor", JSON.stringify(data.actor));
+                setShowCreateProfileModal(false);
+                window.location.href = "/dashboard";
               } catch (err) {
-                console.error("Error creating new profile:", err);
+                setCreateProfileError("Error de conexión al crear el perfil");
+                setCreateProfileSaving(false);
               }
             }}>
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
-                  Tipo de Perfil / Rol *
-                </label>
-                <select
-                  value={newProfileForm.type}
-                  onChange={(e) => setNewProfileForm({ ...newProfileForm, type: e.target.value })}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "6px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: 14,
-                    backgroundColor: "#fff"
-                  }}
-                >
-                  <option value="warehouse">Almacén / Centro de Acopio</option>
-                  <option value="relief">Centro de Ayuda Humanitaria</option>
-                  <option value="transporter">Transportista / Conductor</option>
-                </select>
-              </div>
+              {(() => {
+                const createdTypes = new Set(userActors.filter((a) => a.isOwner).map((a) => a.type));
+                const availableTypes = PROFILE_TYPES.filter((t) => !createdTypes.has(t.value));
+                return (
+                  <div className="form-group" style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                      Tipo de Perfil / Rol *
+                    </label>
+                    {availableTypes.length === 0 ? (
+                      <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+                        Ya tienes creados los 3 perfiles disponibles.
+                      </p>
+                    ) : (
+                      <select
+                        value={newProfileForm.type}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, type: e.target.value })}
+                        required
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: 14,
+                          backgroundColor: "#fff"
+                        }}
+                      >
+                        {availableTypes.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="form-group" style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
@@ -896,9 +966,10 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
+                  disabled={createProfileSaving}
                   style={{ padding: "8px 16px", fontSize: 13 }}
                 >
-                  Crear Perfil
+                  {createProfileSaving ? "Creando..." : "Crear Perfil"}
                 </button>
               </div>
             </form>
