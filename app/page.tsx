@@ -212,12 +212,32 @@ export default function HomePage() {
   const [formVehicleType, setFormVehicleType] = useState("Camión");
   const [formCapacityKg, setFormCapacityKg] = useState("");
 
+  // OTP verification state
+  const [verifCode, setVerifCode] = useState("");
+  const [verifToken, setVerifToken] = useState("");
+  const [verifSending, setVerifSending] = useState(false);
+  const [verifSent, setVerifSent] = useState(false);
+  const [verifMocked, setVerifMocked] = useState(false);
+  const [verifMockCode, setVerifMockCode] = useState("");
+  const [countdown, setCountdown] = useState(0);
+
   // Claim Trip specific
   const [activeClaimShipmentId, setActiveClaimShipmentId] = useState<string | null>(null);
 
   const [availableActors, setAvailableActors] = useState<any[]>([]);
   const [actor, setActor] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) clearInterval(timer);
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const fetchData = async () => {
     try {
@@ -260,6 +280,28 @@ export default function HomePage() {
     const token = localStorage.getItem("token");
     if (token) {
       setIsAuthenticated(true);
+      setVerifToken("authenticated");
+
+      fetch("/api/actores/perfil", {
+        headers: getAuthHeaders()
+      })
+        .then((r) => r.json())
+        .then((profile) => {
+          if (profile && profile.id) {
+            setActor(profile);
+            localStorage.setItem("actor", JSON.stringify(profile));
+            setFormName(profile.name || "");
+            const { countryCode, local } = splitCountryCode(profile.whatsapp || "");
+            setFormCountryCode(countryCode);
+            setFormWhatsapp(local);
+            setFormAddress(profile.address || "");
+            setFormCity(profile.city || "");
+            if (profile.lat) setFormLat(profile.lat);
+            if (profile.lng) setFormLng(profile.lng);
+          }
+        })
+        .catch((e) => console.error("Error fetching profile", e));
+
       fetch("/api/actores/list", {
         headers: getAuthHeaders()
       })
@@ -273,7 +315,7 @@ export default function HomePage() {
     }
 
     const storedActor = localStorage.getItem("actor");
-    if (storedActor) {
+    if (storedActor && !token) {
       try {
         const actorObj = JSON.parse(storedActor);
         setActor(actorObj);
@@ -281,6 +323,10 @@ export default function HomePage() {
         const { countryCode, local } = splitCountryCode(actorObj.whatsapp || "");
         setFormCountryCode(countryCode);
         setFormWhatsapp(local);
+        if (actorObj.address) setFormAddress(actorObj.address);
+        if (actorObj.city) setFormCity(actorObj.city);
+        if (actorObj.lat) setFormLat(actorObj.lat);
+        if (actorObj.lng) setFormLng(actorObj.lng);
       } catch (e) {
         console.error("Error parsing stored actor", e);
       }
@@ -315,6 +361,49 @@ export default function HomePage() {
 
   const fullFormPhone = () => normalizePhone(formCountryCode) + normalizePhone(formWhatsapp);
 
+  const enviarCodigoVerificacion = async () => {
+    if (!formWhatsapp || normalizePhone(formWhatsapp).length < 10) {
+      setSubmitError("Ingresa un número de WhatsApp válido (mínimo 10 dígitos)");
+      return;
+    }
+    setVerifSending(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/verificar/enviar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullFormPhone() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSubmitError(data.error); setVerifSending(false); return; }
+      setVerifSent(true);
+      setVerifSending(false);
+      setCountdown(60);
+      if (data.mocked) { setVerifMocked(true); setVerifMockCode(data.code || ""); }
+    } catch {
+      setSubmitError("Error de red al enviar el código");
+      setVerifSending(false);
+    }
+  };
+
+  const verificarCodigoVerificacion = async () => {
+    if (!verifCode || verifCode.length < 6) return;
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/verificar/codigo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullFormPhone(), code: verifCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSubmitError(data.error); return; }
+      setVerifToken(data.token);
+      setVerifCode("");
+    } catch {
+      setSubmitError("Error de red al verificar el código");
+    }
+  };
+
   const handleCardClick = (actorId: string) => {
     setSelectedActorId(null);
     setTimeout(() => {
@@ -330,8 +419,16 @@ export default function HomePage() {
     setFormItemName("");
     setFormQuantity("");
     setFormNotes("");
-    setFormLat(null);
-    setFormLng(null);
+    if (!isAuthenticated) {
+      setFormLat(null);
+      setFormLng(null);
+    }
+    setVerifCode("");
+    if (!isAuthenticated) setVerifToken("");
+    setVerifSent(false);
+    setVerifMocked(false);
+    setVerifMockCode("");
+    setCountdown(0);
     setActiveModal(type);
   };
 
@@ -350,11 +447,16 @@ export default function HomePage() {
       return;
     }
 
+    if (!isAuthenticated && !verifToken) {
+      setSubmitError("Debes verificar tu WhatsApp antes de publicar.");
+      return;
+    }
+
     try {
       setSubmitLoading(true);
       setSubmitError("");
 
-      const payload = {
+      const payload: any = {
         action: activeModal,
         name: formName,
         whatsapp: fullFormPhone(),
@@ -371,10 +473,19 @@ export default function HomePage() {
         vehicleType: formVehicleType,
         capacityKg: Number(formCapacityKg) || 0,
       };
+      if (!isAuthenticated && verifToken) {
+        payload.phoneVerificationToken = verifToken;
+      }
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (isAuthenticated) {
+        const jwt = localStorage.getItem("token");
+        if (jwt) headers.Authorization = `Bearer ${jwt}`;
+      }
 
       const res = await fetch("/api/public/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -388,6 +499,8 @@ export default function HomePage() {
       localStorage.setItem("token", json.token);
       if (json.csrfToken) setCsrfToken(json.csrfToken);
       localStorage.setItem("actor", JSON.stringify(json.actor));
+      setIsAuthenticated(true);
+      setActor(json.actor);
 
       setSubmitSuccess("¡Registro exitoso y publicado con éxito!");
       setTimeout(() => {
@@ -504,7 +617,7 @@ export default function HomePage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden" }}>
       {/* Top Header Navigation */}
-      <Navbar />
+      <Navbar isAuthenticated={isAuthenticated} actor={actor} />
 
       <div className="homepage-container">
 
@@ -729,25 +842,68 @@ export default function HomePage() {
             {submitSuccess && <div className="alert alert-success">{submitSuccess}</div>}
 
             <form onSubmit={handleSubmitAction}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div className="form-group">
-                  <label>Tu Nombre / Organización</label>
-                  <input value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="Ej: Refugio Local" />
+              <div className="form-group">
+                <label>Tu Nombre / Organización</label>
+                <input value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="Ej: Refugio Local" />
+              </div>
+              <div className="form-group">
+                <label>Tu WhatsApp</label>
+                <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
+                  <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
+                  <input
+                    value={formWhatsapp}
+                    onChange={(e) => {
+                      setFormWhatsapp(normalizePhone(e.target.value));
+                      setVerifToken("");
+                      setVerifSent(false);
+                      setVerifCode("");
+                    }}
+                    required
+                    placeholder="1234567890"
+                    style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
+                  />
+                  {isAuthenticated || verifToken ? (
+                    <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13, whiteSpace: "nowrap" }}>✓ Verificado</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                      onClick={enviarCodigoVerificacion}
+                      disabled={verifSending || countdown > 0 || normalizePhone(formWhatsapp).length < 10}
+                    >
+                      {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
+                    </button>
+                  )}
                 </div>
-                <div className="form-group">
-                  <label>Tu WhatsApp</label>
-                  <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
-                    <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
+                  {!isAuthenticated && !verifToken && normalizePhone(formWhatsapp).length > 0 && normalizePhone(formWhatsapp).length < 10 && (
+                    <small style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4, display: "block" }}>
+                      Ingresa al menos 10 dígitos para activar la verificación
+                    </small>
+                  )}
+                </div>
+
+              {!isAuthenticated && verifSent && !verifToken && (
+                <div className="form-group" style={{ marginTop: 8 }}>
+                  <label>Código de verificación</label>
+                  {verifMocked && (
+                    <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
+                      Modo de prueba activo. Usa el código: <strong>{verifMockCode}</strong>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 4 }}>
                     <input
-                      value={formWhatsapp}
-                      onChange={(e) => setFormWhatsapp(normalizePhone(e.target.value))}
-                      required
-                      placeholder="1234567890"
-                      style={{ flex: 1, borderRadius: "0 6px 6px 0", border: "1px solid #cbd5e1", borderLeft: "none", padding: "10px 12px", fontSize: 14 }}
+                      value={verifCode}
+                      onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }}
                     />
+                    <button type="button" className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }}
+                      onClick={verificarCodigoVerificacion} disabled={verifCode.length < 6}>Confirmar</button>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div className="form-group">
@@ -852,10 +1008,15 @@ export default function HomePage() {
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitLoading}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitLoading || (!isAuthenticated && !verifToken) || !formName || !formWhatsapp}>
                   {submitLoading ? "Publicando..." : "Publicar Ahora"}
                 </button>
               </div>
+              {!isAuthenticated && !verifToken && formName && formWhatsapp && (
+                <small style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 8, display: "block", textAlign: "center" }}>
+                  Debes verificar tu WhatsApp antes de publicar
+                </small>
+              )}
             </form>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { findOrCreateActor } from "@/lib/frictionless";
 import { publishEvent } from "@/lib/pubsub";
 import { sanitizeText, normalizeUnit, validateQuantity, validateUrgency } from "@/lib/validation";
+import { getAuthActor } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,9 +23,25 @@ export async function POST(req: NextRequest) {
     const quantity = body.quantity;
     const urgency = body.urgency;
     const notes = sanitizeText(body.notes);
+    const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
 
     if (!name || !whatsapp) {
       return Response.json({ error: "Nombre y WhatsApp son requeridos." }, { status: 400 });
+    }
+
+    const cleanWhatsapp = whatsapp.replace(/\D/g, "");
+    const authActor = getAuthActor(req);
+    if (!authActor) {
+      if (!phoneVerificationToken) {
+        return Response.json({ error: "Debes verificar tu teléfono antes de continuar." }, { status: 400 });
+      }
+
+      const verif = await prisma.phone_verification.findFirst({
+        where: { phone: cleanWhatsapp, token: phoneVerificationToken, verified: true },
+      });
+      if (!verif) {
+        return Response.json({ error: "Teléfono no verificado. Solicita un nuevo código." }, { status: 400 });
+      }
     }
 
     // 1. Map action to actor type
