@@ -45,7 +45,7 @@ function RegisterPageContent() {
   const [verifMocked, setVerifMocked] = useState(false);
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
-  const [documentUrl, setDocumentUrl] = useState("");
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -103,7 +103,7 @@ function RegisterPageContent() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!form.address.trim()) return "La dirección es requerida";
     if (form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
-    if (!documentUrl) return "Debes subir un documento de identificación (sujeto a verificación)";
+    if (!documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -113,6 +113,19 @@ function RegisterPageContent() {
     setError("");
     const validationError = validateForm();
     if (validationError) { setError(validationError); return; }
+
+    let documentUrl = "";
+    if (documentFile) {
+      try {
+        const fd = new FormData();
+        fd.append("file", documentFile);
+        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
+        const upData = await upRes.json();
+        if (!upRes.ok) { setError(upData.error); return; }
+        documentUrl = upData.url;
+      } catch { setError("Error al subir el documento"); return; }
+    }
+
     try {
       const res = await fetch("/api/actores/register", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -236,7 +249,7 @@ function RegisterPageContent() {
                     <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
                   </>
                 )}
-                <DocumentUpload value={documentUrl} onChange={setDocumentUrl} />
+                <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />
               </div>
 
               <div className="register-buttons-field">
