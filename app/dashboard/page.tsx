@@ -44,6 +44,8 @@ export default function DashboardPage() {
     vehicleType: "",
     capacityKg: ""
   });
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
   const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
   const [newProfileForm, setNewProfileForm] = useState({
     type: "warehouse",
@@ -58,6 +60,8 @@ export default function DashboardPage() {
     vehicleType: "",
     capacityKg: ""
   });
+  const [createProfileError, setCreateProfileError] = useState("");
+  const [createProfileSaving, setCreateProfileSaving] = useState(false);
 
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -529,27 +533,33 @@ export default function DashboardPage() {
             <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
               Actualizar Perfil
             </h3>
+            {profileError && (
+              <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{profileError}</p>
+            )}
             <form onSubmit={async (e) => {
               e.preventDefault();
+              setProfileError("");
+              setProfileSaving(true);
               try {
                 const res = await fetch("/api/actores/perfil", {
                   method: "PUT",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify(profileForm)
                 });
-                if (res.ok) {
-                  const data = await res.json();
-                  const updatedActor = { ...actor, ...data.actor };
-                  localStorage.setItem("actor", JSON.stringify(updatedActor));
-                  setActor(updatedActor);
-                  setShowProfileModal(false);
-                  window.location.reload();
+                const data = await res.json();
+                if (!res.ok) {
+                  setProfileError(data.error || "Error al actualizar el perfil");
+                  setProfileSaving(false);
+                  return;
                 }
+                const updatedActor = { ...actor, ...data.actor };
+                localStorage.setItem("actor", JSON.stringify(updatedActor));
+                setActor(updatedActor);
+                setShowProfileModal(false);
+                window.location.reload();
               } catch (err) {
-                console.error("Error updating profile:", err);
+                setProfileError("Error de conexión al actualizar el perfil");
+                setProfileSaving(false);
               }
             }}>
               <div className="form-group" style={{ marginBottom: 16 }}>
@@ -624,9 +634,10 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
+                  disabled={profileSaving}
                   style={{ padding: "8px 16px", fontSize: 13 }}
                 >
-                  Guardar Cambios
+                  {profileSaving ? "Guardando..." : "Guardar Cambios"}
                 </button>
               </div>
             </form>
@@ -660,27 +671,33 @@ export default function DashboardPage() {
             <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
               Crear Nuevo Perfil / Rol
             </h3>
+            {createProfileError && (
+              <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{createProfileError}</p>
+            )}
             <form onSubmit={async (e) => {
               e.preventDefault();
+              setCreateProfileError("");
+              setCreateProfileSaving(true);
               try {
                 const res = await fetch("/api/actores/create", {
                   method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                  },
+                  headers: getAuthHeaders(),
                   body: JSON.stringify(newProfileForm)
                 });
-                if (res.ok) {
-                  const data = await res.json();
-                  localStorage.setItem("token", data.token);
-                  if (data.csrfToken) setCsrfToken(data.csrfToken);
-                  localStorage.setItem("actor", JSON.stringify(data.actor));
-                  setShowCreateProfileModal(false);
-                  window.location.href = "/dashboard";
+                const data = await res.json();
+                if (!res.ok) {
+                  setCreateProfileError(data.error || "Error al crear el perfil");
+                  setCreateProfileSaving(false);
+                  return;
                 }
+                localStorage.setItem("token", data.token);
+                if (data.csrfToken) setCsrfToken(data.csrfToken);
+                localStorage.setItem("actor", JSON.stringify(data.actor));
+                setShowCreateProfileModal(false);
+                window.location.href = "/dashboard";
               } catch (err) {
-                console.error("Error creating new profile:", err);
+                setCreateProfileError("Error de conexión al crear el perfil");
+                setCreateProfileSaving(false);
               }
             }}>
               <div className="form-group" style={{ marginBottom: 12 }}>
@@ -896,9 +913,10 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
+                  disabled={createProfileSaving}
                   style={{ padding: "8px 16px", fontSize: 13 }}
                 >
-                  Crear Perfil
+                  {createProfileSaving ? "Creando..." : "Crear Perfil"}
                 </button>
               </div>
             </form>
