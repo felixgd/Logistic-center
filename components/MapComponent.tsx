@@ -10,6 +10,13 @@ const TYPE_LABELS: Record<string, string> = {
   transporter: "Transportista",
 };
 
+// Pure SVG markup for Phosphor Icons to render inside Leaflet divIcons
+const PIN_SVGs: Record<string, string> = {
+  warehouse: `<svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M218.83,103.77l-80-75.06a16,16,0,0,0-21.66,0l-80,75.06A16,16,0,0,0,32,115.55V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V115.55A16,16,0,0,0,218.83,103.77ZM144,208H112V160h32Z"></path></svg>`,
+  relief: `<svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M240,94c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,220.66,16,164,16,94A62,62,0,0,1,122,51.81,62,62,0,0,1,228,94,61.79,61.79,0,0,1,240,94Z"></path></svg>`,
+  transporter: `<svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M240,116.14V192a16,16,0,0,1-16,16H206.51a32,32,0,0,1-61,0H110.51a32,32,0,0,1-61,0H32a16,16,0,0,1-16-16V64A16,16,0,0,1,32,48H168a16,16,0,0,1,16,16v56h40.51A15.93,15.93,0,0,1,240,116.14ZM80,184a16,16,0,1,0,16,16A16,16,0,0,0,80,184Zm96,0a16,16,0,1,0,16,16A16,16,0,0,0,176,184Z"></path></svg>`
+};
+
 interface Actor {
   id: string;
   name: string;
@@ -52,6 +59,7 @@ export default function MapComponent({
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
   const clickMarkerRef = useRef<L.Marker | null>(null);
+  const hasFitBoundsRef = useRef(false);
 
   // Keep reference to the latest callbacks to avoid re-triggering the useEffect
   const onLocationSelectedRef = useRef(onLocationSelected);
@@ -102,7 +110,7 @@ export default function MapComponent({
 
           // Create a new marker at click position
           const markerIcon = L.divIcon({
-            html: `<div class="marker-pin warehouse-pin"><span class="icon-inner">📍</span></div>`,
+            html: `<div class="marker-pin warehouse-pin"><span class="icon-inner" style="display: flex; align-items: center; justify-content: center; color: #fff; width: 100%; height: 100%;">${PIN_SVGs.warehouse}</span></div>`,
             className: "custom-div-icon",
             iconSize: [38, 38],
             iconAnchor: [19, 38],
@@ -170,13 +178,18 @@ export default function MapComponent({
     const map = mapRef.current;
     if (!map || interactive) return;
 
-    // Clear existing markers
-    Object.values(markersRef.current).forEach((m) => map.removeLayer(m));
-    markersRef.current = {};
-
     const bounds: L.LatLngTuple[] = [];
+    const currentActorIds = new Set(actors.map((a) => a.id));
 
-    // Create markers for actors
+    // 1. Remove markers that are no longer in the new actors array
+    Object.keys(markersRef.current).forEach((id) => {
+      if (!currentActorIds.has(id)) {
+        map.removeLayer(markersRef.current[id]);
+        delete markersRef.current[id];
+      }
+    });
+
+    // 2. Add or update markers for current actors
     actors.forEach((actor) => {
       if (actor.lat === null || actor.lng === null) return;
 
@@ -184,54 +197,87 @@ export default function MapComponent({
       bounds.push(position);
 
       // Decide icon details based on actor type
-      let emoji = "🏠";
+      let svgMarkup = PIN_SVGs.warehouse;
       let pinClass = "warehouse-pin";
 
       if (actor.type === "relief") {
-        emoji = "❤️";
+        svgMarkup = PIN_SVGs.relief;
         pinClass = "relief-pin";
       } else if (actor.type === "transporter") {
-        emoji = "🚚";
+        svgMarkup = PIN_SVGs.transporter;
         pinClass = "transporter-pin";
       }
-
-      const customIcon = L.divIcon({
-        html: `<div class="marker-pin ${pinClass}"><span class="icon-inner">${emoji}</span></div>`,
-        className: "custom-div-icon",
-        iconSize: [38, 38],
-        iconAnchor: [19, 38],
-        popupAnchor: [0, -38],
-      });
 
       // Construct detailed popup
       let popupContent = `
         <div class="popup-card">
           <span class="type-badge ${pinClass}">${TYPE_LABELS[actor.type] || actor.type}</span>
           <h4>${actor.name}</h4>
-          <p><strong>Dirección:</strong> ${actor.address || "No especificada"}</p>
-          <p><strong>Ciudad:</strong> ${actor.city || "No especificada"}</p>
+          <div class="popup-info-grid" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px;">
+            <p style="margin: 0;"><strong>Dirección:</strong> ${actor.address || "No especificada"}</p>
+            <p style="margin: 0;"><strong>Ciudad:</strong> ${actor.city || "No especificada"}</p>
       `;
 
       if (actor.type === "transporter" && actor.vehicleType) {
-        popupContent += `<p><strong>Vehículo:</strong> ${actor.vehicleType} (${actor.capacityKg || 0} kg)</p>`;
+        popupContent += `<p style="margin: 0;"><strong>Vehículo:</strong> ${actor.vehicleType} (${actor.capacityKg || 0} kg)</p>`;
       }
 
       if (actor.phone || actor.whatsapp) {
-        popupContent += `<p><strong>Contacto:</strong> ${actor.phone || actor.whatsapp}</p>`;
+        popupContent += `<p style="margin: 0;"><strong>Contacto:</strong> ${actor.phone || actor.whatsapp}</p>`;
       }
 
-      popupContent += `</div>`;
+      popupContent += `</div>`; // Close popup-info-grid
 
-      const marker = L.marker(position, { icon: customIcon })
-        .addTo(map)
-        .bindPopup(popupContent);
+      // Actions row inside popup
+      popupContent += `<div class="popup-actions" style="margin-top: 12px; display: flex; gap: 8px;">`;
+      if (actor.whatsapp) {
+        popupContent += `
+          <a href="https://wa.me/${actor.whatsapp.replace(/\D/g, "")}" target="_blank" class="btn btn-success" style="flex: 1; padding: 6px 8px; font-size: 11px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;">
+            WhatsApp
+          </a>
+        `;
+      }
+      popupContent += `
+        <button class="btn btn-secondary" onclick="window.dispatchEvent(new CustomEvent('select-actor', {detail: '${actor.id}'}))" style="flex: 1; padding: 6px 8px; font-size: 11px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; outline: none;">
+          Actividad
+        </button>
+      `;
+      popupContent += `</div>`; // Close popup-actions
 
-      markersRef.current[actor.id] = marker;
+      popupContent += `</div>`; // Close popup-card
+
+      const existingMarker = markersRef.current[actor.id];
+      const customIcon = L.divIcon({
+        html: `<div class="marker-pin ${pinClass}"><span class="icon-inner" style="display: flex; align-items: center; justify-content: center; color: #fff; width: 100%; height: 100%;">${svgMarkup}</span></div>`,
+        className: "custom-div-icon",
+        iconSize: [38, 38],
+        iconAnchor: [19, 38],
+        popupAnchor: [0, -38],
+      });
+
+      if (existingMarker) {
+        // Update marker in place to prevent layout shifts or popup closures
+        existingMarker.setLatLng(position);
+        existingMarker.setPopupContent(popupContent);
+        existingMarker.setIcon(customIcon);
+      } else {
+        // Instantiate a new marker
+        const marker = L.marker(position, { icon: customIcon })
+          .addTo(map)
+          .bindPopup(popupContent);
+
+        markersRef.current[actor.id] = marker;
+      }
     });
 
-    // Fit bounds if there are markers
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    // 3. Fit bounds only once on initial map load/markers population
+    if (bounds.length > 0 && !hasFitBoundsRef.current) {
+      map.fitBounds(bounds, { 
+        paddingTopLeft: [390, 50],
+        paddingBottomRight: [50, 50],
+        maxZoom: 15 
+      });
+      hasFitBoundsRef.current = true;
     }
   }, [actors, interactive]);
 

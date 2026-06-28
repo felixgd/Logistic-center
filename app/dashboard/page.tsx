@@ -7,6 +7,23 @@ import Navbar from "@/components/Navbar";
 import QrModal from "@/components/QrModal";
 import { useApi, invalidateCache } from "@/lib/swr";
 import { getAuthHeaders, setCsrfToken } from "@/lib/api-client";
+import { 
+  Package, 
+  ClipboardText, 
+  Truck, 
+  CheckCircle,
+  Warning,
+  PencilSimple,
+  Plus,
+  ArrowSquareOut,
+  MapPin,
+  Globe,
+  Handshake,
+  Compass,
+  Layout,
+  Scales,
+  ArrowsClockwise
+} from "@phosphor-icons/react";
 
 // Dynamically import the map component with SSR disabled
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -229,20 +246,22 @@ export default function DashboardPage() {
         {/* Header Greeting */}
         <div className="dashboard-header">
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
-            <h2 style={{ margin: 0 }}>¡Hola, {actor.name || "Usuario"}! 👋</h2>
+            <h2 style={{ margin: 0 }}>¡Hola, {actor.name || "Usuario"}!</h2>
             <button 
               onClick={() => setShowProfileModal(true)} 
               className="btn btn-secondary" 
-              style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+              style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}
             >
-              ✏️ Editar Perfil
+              <PencilSimple size={12} weight="bold" />
+              Editar Perfil
             </button>
             <button 
               onClick={() => setShowCreateProfileModal(true)} 
               className="btn btn-success" 
-              style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+              style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}
             >
-              ➕ Crear Perfil
+              <Plus size={12} weight="bold" />
+              Crear Perfil
             </button>
           </div>
           <p className="subtitle" style={{ marginTop: 4 }}>
@@ -275,28 +294,36 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Insumos en Almacén</span>
                       <span className="dashboard-stat-value">{stats.insumos}</span>
                     </div>
-                    <div className="dashboard-stat-icon">📦</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <Package size={24} />
+                    </div>
                   </Link>
                   <Link href="/matching" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Solicitudes Abiertas (Global)</span>
                       <span className="dashboard-stat-value">{stats.solicitudesAbiertasGlobal}</span>
                     </div>
-                    <div className="dashboard-stat-icon">📋</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <ClipboardText size={24} />
+                    </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos Totales</span>
                       <span className="dashboard-stat-value">{stats.viajes}</span>
                     </div>
-                    <div className="dashboard-stat-icon">🚚</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <Truck size={24} />
+                    </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos en Tránsito</span>
                       <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff" }}>⚡</div>
+                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                      <ArrowsClockwise size={24} />
+                    </div>
                   </Link>
                 </>
               )}
@@ -308,28 +335,36 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Mis Solicitudes</span>
                       <span className="dashboard-stat-value">{stats.solicitudes}</span>
                     </div>
-                    <div className="dashboard-stat-icon">📋</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <ClipboardText size={24} />
+                    </div>
                   </Link>
                   <Link href="/solicitudes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Solicitudes Abiertas</span>
                       <span className="dashboard-stat-value" style={{ color: "#ef4444" }}>{stats.solicitudesAbiertas}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#fef2f2" }}>🚨</div>
+                    <div className="dashboard-stat-icon" style={{ background: "#fef2f2", color: "#ef4444" }}>
+                      <Warning size={24} />
+                    </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos en Camino</span>
                       <span className="dashboard-stat-value" style={{ color: "#f59e0b" }}>{stats.viajesActivos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#fffbeb" }}>🚚</div>
+                    <div className="dashboard-stat-icon" style={{ background: "#fffbeb", color: "#f59e0b" }}>
+                      <Truck size={24} />
+                    </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Envíos Recibidos</span>
                       <span className="dashboard-stat-value" style={{ color: "#10b981" }}>{stats.viajesCompletados}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#ecfdf5" }}>✅</div>
+                    <div className="dashboard-stat-icon" style={{ background: "#ecfdf5", color: "#10b981" }}>
+                      <CheckCircle size={24} />
+                    </div>
                   </Link>
                 </>
               )}
@@ -341,14 +376,18 @@ export default function DashboardPage() {
                       <span className="dashboard-stat-title">Viajes Asignados</span>
                       <span className="dashboard-stat-value">{stats.viajes}</span>
                     </div>
-                    <div className="dashboard-stat-icon">🗺️</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <Compass size={24} />
+                    </div>
                   </Link>
                   <Link href="/viajes" className="dashboard-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
                       <span className="dashboard-stat-title">Viajes en Tránsito</span>
                       <span className="dashboard-stat-value" style={{ color: "#2563eb" }}>{stats.viajesActivos}</span>
                     </div>
-                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff" }}>⚡</div>
+                    <div className="dashboard-stat-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                      <Truck size={24} />
+                    </div>
                   </Link>
                   <div className="dashboard-stat-card" onClick={() => setShowProfileModal(true)} style={{ cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
@@ -357,11 +396,13 @@ export default function DashboardPage() {
                         <span className="dashboard-stat-value" style={{ fontSize: 16 }}>{actor.vehicleType}</span>
                       ) : (
                         <span className="btn btn-secondary" style={{ padding: "4px 8px", fontSize: 11, marginTop: 4, width: "fit-content", display: "inline-block" }}>
-                          ➕ Registrar
+                          Registrar
                         </span>
                       )}
                     </div>
-                    <div className="dashboard-stat-icon">🚚</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <Truck size={24} />
+                    </div>
                   </div>
                   <div className="dashboard-stat-card" onClick={() => setShowProfileModal(true)} style={{ cursor: "pointer" }}>
                     <div className="dashboard-stat-info">
@@ -370,11 +411,13 @@ export default function DashboardPage() {
                         <span className="dashboard-stat-value" style={{ fontSize: 16 }}>{actor.capacityKg} kg</span>
                       ) : (
                         <span className="btn btn-secondary" style={{ padding: "4px 8px", fontSize: 11, marginTop: 4, width: "fit-content", display: "inline-block" }}>
-                          ➕ Registrar
+                          Registrar
                         </span>
                       )}
                     </div>
-                    <div className="dashboard-stat-icon">⚖️</div>
+                    <div className="dashboard-stat-icon" style={{ color: "#64748b", background: "#f8fafc" }}>
+                      <Scales size={24} />
+                    </div>
                   </div>
                 </>
               )}
@@ -394,12 +437,16 @@ export default function DashboardPage() {
                     {actor.type === "warehouse" && (
                       <>
                         <Link href="/insumos" className="dashboard-action-card">
-                          <div className="dashboard-action-icon">➕</div>
+                          <div className="dashboard-action-icon" style={{ color: "#0f172a" }}>
+                            <Plus size={20} weight="bold" />
+                          </div>
                           <div className="dashboard-action-title">Añadir Inventario</div>
                           <div className="dashboard-action-desc">Registra nuevos insumos y recursos disponibles en tu almacén.</div>
                         </Link>
                         <Link href="/matching" className="dashboard-action-card">
-                          <div className="dashboard-action-icon">🤝</div>
+                          <div className="dashboard-action-icon" style={{ color: "#0f172a" }}>
+                            <Handshake size={20} />
+                          </div>
                           <div className="dashboard-action-title">Ver Coordinaciones</div>
                           <div className="dashboard-action-desc">Sincroniza tus insumos disponibles con solicitudes abiertas.</div>
                         </Link>
@@ -409,12 +456,16 @@ export default function DashboardPage() {
                     {actor.type === "relief" && (
                       <>
                         <Link href="/solicitudes" className="dashboard-action-card">
-                          <div className="dashboard-action-icon">🚨</div>
+                          <div className="dashboard-action-icon" style={{ color: "#dc2626" }}>
+                            <Plus size={20} weight="bold" />
+                          </div>
                           <div className="dashboard-action-title">Nueva Solicitud</div>
                           <div className="dashboard-action-desc">Crea y publica un pedido de insumos críticos para tu comunidad.</div>
                         </Link>
                         <Link href="/viajes" className="dashboard-action-card">
-                          <div className="dashboard-action-icon">📦</div>
+                          <div className="dashboard-action-icon" style={{ color: "#0f172a" }}>
+                            <Package size={20} />
+                          </div>
                           <div className="dashboard-action-title">Monitorear Envíos</div>
                           <div className="dashboard-action-desc">Revisa el estado de los vehículos que transportan tu ayuda.</div>
                         </Link>
@@ -424,12 +475,16 @@ export default function DashboardPage() {
                     {actor.type === "transporter" && (
                       <>
                         <Link href="/viajes" className="dashboard-action-card">
-                          <div className="dashboard-action-icon">🗺️</div>
+                          <div className="dashboard-action-icon" style={{ color: "#0f172a" }}>
+                            <Compass size={20} />
+                          </div>
                           <div className="dashboard-action-title">Explorar Viajes</div>
                           <div className="dashboard-action-desc">Encuentra y acepta cargas de ayuda humanitaria pendientes.</div>
                         </Link>
                         <Link href="/" className="dashboard-action-card">
-                          <div className="dashboard-action-icon">🌐</div>
+                          <div className="dashboard-action-icon" style={{ color: "#0f172a" }}>
+                            <Globe size={20} />
+                          </div>
                           <div className="dashboard-action-title">Ver Mapa Central</div>
                           <div className="dashboard-action-desc">Consulta el mapa central para ver rutas y otros conductores.</div>
                         </Link>

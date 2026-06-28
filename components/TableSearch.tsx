@@ -1,4 +1,5 @@
 "use client";
+import { MagnifyingGlass, X } from "@phosphor-icons/react";
 
 export default function TableSearch({
   value,
@@ -11,7 +12,9 @@ export default function TableSearch({
 }) {
   return (
     <div className="table-search">
-      <span className="table-search-icon" aria-hidden="true">🔍</span>
+      <span className="table-search-icon" aria-hidden="true">
+        <MagnifyingGlass size={16} weight="bold" />
+      </span>
       <input
         type="text"
         value={value}
@@ -26,7 +29,7 @@ export default function TableSearch({
           onClick={() => onChange("")}
           aria-label="Limpiar búsqueda"
         >
-          ×
+          <X size={14} weight="bold" />
         </button>
       )}
     </div>

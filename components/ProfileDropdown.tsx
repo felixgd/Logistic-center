@@ -1,0 +1,264 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { 
+  CaretDown, 
+  SignOut, 
+  Package, 
+  Truck, 
+  Heart,
+  Plus
+} from "@phosphor-icons/react";
+import { getAuthHeaders, setCsrfToken } from "@/lib/api-client";
+
+const LABELS: Record<string, string> = {
+  warehouse: "Almacén",
+  relief: "Centro Ayuda",
+  transporter: "Transportista",
+};
+
+interface Actor {
+  id: string;
+  name: string;
+  type: string;
+  isOwner?: boolean;
+}
+
+interface ProfileDropdownProps {
+  actor: Actor;
+  availableActors: Actor[];
+  canCreateProfile: boolean;
+  onLogout: () => void;
+}
+
+export default function ProfileDropdown({
+  actor,
+  availableActors,
+  canCreateProfile,
+  onLogout,
+}: ProfileDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSwitch = async (targetActorId: string) => {
+    if (targetActorId === actor.id) return;
+    try {
+      const res = await fetch("/api/actores/switch", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ actorId: targetActorId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("token", data.token);
+        if (data.csrfToken) {
+          setCsrfToken(data.csrfToken);
+        }
+        localStorage.setItem("actor", JSON.stringify(data.actor));
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      console.error("Error switching actor:", err);
+    }
+  };
+
+  const getActorIcon = (type: string) => {
+    switch (type) {
+      case "warehouse":
+        return <Package size={16} />;
+      case "transporter":
+        return <Truck size={16} />;
+      case "relief":
+      default:
+        return <Heart size={16} />;
+    }
+  };
+
+  const initial = actor.name ? actor.name.trim().charAt(0).toUpperCase() : "?";
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      {/* Profile Trigger Button */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="profile-trigger-btn"
+        style={{
+          background: "transparent",
+          border: "1px solid transparent",
+          padding: "4px 8px",
+          borderRadius: "12px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          cursor: "pointer",
+          transition: "all 0.2s",
+          outline: "none",
+        }}
+      >
+        {/* User Initials Avatar */}
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "13px",
+            fontWeight: "700",
+          }}
+        >
+          {initial}
+        </div>
+
+        {/* User Label details */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
+          <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
+            {actor.name}
+          </span>
+          <span style={{ fontSize: "10px", fontWeight: "600", color: "#64748b" }}>
+            {LABELS[actor.type] || actor.type}
+          </span>
+        </div>
+
+        <CaretDown size={14} color="#64748b" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+      </button>
+
+      {/* Popover Menu Dropdown */}
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            right: 0,
+            width: "240px",
+            background: "#ffffff",
+            borderRadius: "12px",
+            border: "1px solid #cbd5e1",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
+            zIndex: 99999,
+            padding: "6px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "9px",
+              fontWeight: "800",
+              color: "#64748b",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              padding: "6px 8px 4px 8px",
+              display: "block",
+            }}
+          >
+            Cambiar Perfil
+          </span>
+
+          {availableActors.map((a) => {
+            const isActive = a.id === actor.id;
+            return (
+              <button
+                key={a.id}
+                onClick={() => {
+                  handleSwitch(a.id);
+                  setOpen(false);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: isActive ? "#f1f5f9" : "transparent",
+                  color: isActive ? "#0f172a" : "#475569",
+                  fontSize: "12px",
+                  fontWeight: isActive ? "700" : "600",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+                className={isActive ? "" : "hover-gray-bg"}
+              >
+                <span style={{ color: isActive ? "#0f172a" : "#64748b", display: "flex", alignItems: "center" }}>
+                  {getActorIcon(a.type)}
+                </span>
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {a.name}
+                </span>
+              </button>
+            );
+          })}
+
+          {canCreateProfile && (
+            <Link
+              href="/dashboard?create_profile=true"
+              onClick={() => setOpen(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                color: "#2563eb",
+                fontSize: "12px",
+                fontWeight: "600",
+                textDecoration: "none",
+                transition: "background 0.2s",
+              }}
+              className="hover-gray-bg"
+            >
+              <Plus size={14} weight="bold" />
+              Crear perfil nuevo
+            </Link>
+          )}
+
+          <div style={{ height: "1px", backgroundColor: "#cbd5e1", margin: "4px 0" }} />
+
+          <button
+            onClick={() => {
+              onLogout();
+              setOpen(false);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              width: "100%",
+              padding: "8px 10px",
+              borderRadius: "8px",
+              border: "none",
+              background: "transparent",
+              color: "#b91c1c",
+              fontSize: "12px",
+              fontWeight: "700",
+              textAlign: "left",
+              cursor: "pointer",
+              transition: "background 0.2s",
+            }}
+            className="hover-red-bg"
+          >
+            <SignOut size={16} />
+            Cerrar Sesión
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

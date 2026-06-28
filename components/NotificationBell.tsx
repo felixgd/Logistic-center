@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getAuthHeaders } from "@/lib/api-client";
+import { Bell } from "@phosphor-icons/react";
 
 interface Notification {
   id: string;
@@ -107,12 +108,14 @@ export default function NotificationBell() {
           cursor: "pointer",
           position: "relative",
           padding: 8,
-          color: "#fff",
-          fontSize: 20,
+          color: "var(--text-muted)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
         aria-label="Notificaciones"
       >
-        🔔
+        <Bell size={22} />
         {unreadCount > 0 && (
           <span
             style={{
