@@ -78,6 +78,16 @@ export default function DashboardPage() {
     }
     const storedActorObj = JSON.parse(localStorage.getItem("actor") || "{}");
     setActor(storedActorObj);
+
+    // Cargar datos completos del perfil (vehículo, capacidad, ubicación, etc.)
+    fetch("/api/actores/perfil", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        const mergedActor = { ...storedActorObj, ...data };
+        localStorage.setItem("actor", JSON.stringify(mergedActor));
+        setActor(mergedActor);
+      })
+      .catch((err) => console.error("Error cargando perfil completo:", err));
   }, [token, router]);
 
   useEffect(() => {
@@ -133,7 +143,9 @@ export default function DashboardPage() {
           phone,
           whatsapp,
           address: data.address || "",
-          city: data.city || ""
+          city: data.city || "",
+          vehicleType: data.vehicleType || "",
+          capacityKg: data.capacityKg ? String(data.capacityKg) : ""
         }));
       })
       .catch((err) => console.error("Error cargando perfil para nuevo actor:", err));
