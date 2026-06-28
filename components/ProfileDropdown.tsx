@@ -138,7 +138,7 @@ export default function ProfileDropdown({
         </div>
 
         {/* User Label details */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
+        <div className="profile-text-info" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
           <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-main)" }}>
             {actor.name}
           </span>
@@ -147,7 +147,7 @@ export default function ProfileDropdown({
           </span>
         </div>
 
-        <CaretDown size={14} color="currentColor" style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        <CaretDown className="profile-caret-icon" size={14} color="currentColor" style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
 
       {/* Popover Menu Dropdown */}

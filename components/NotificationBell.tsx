@@ -142,6 +142,7 @@ export default function NotificationBell() {
 
       {open && (
         <div
+          className="notifications-popover"
           style={{
             position: "absolute",
             top: "calc(100% + 8px)",
