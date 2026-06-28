@@ -13,6 +13,7 @@ interface FrictionlessInput {
   lng: number | null;
   vehicleType?: string;
   capacityKg?: number;
+  documentUrl?: string;
 }
 
 export async function findOrCreateActor(input: FrictionlessInput) {
@@ -50,6 +51,7 @@ export async function findOrCreateActor(input: FrictionlessInput) {
         lng: lng !== null ? lng : actor.lng,
         vehicleType: vehicleType || actor.vehicleType,
         capacityKg: capacityKg !== undefined ? capacityKg : actor.capacityKg,
+        documentUrl: input.documentUrl || actor.documentUrl,
       },
       include: { user: true },
     });
@@ -88,6 +90,7 @@ export async function findOrCreateActor(input: FrictionlessInput) {
         lng,
         vehicleType: type === "transporter" ? vehicleType || "Camión" : null,
         capacityKg: type === "transporter" ? capacityKg || 500 : null,
+        documentUrl: input.documentUrl || null,
       },
       include: { user: true },
     });
