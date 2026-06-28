@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Find or create the transporter actor
-    const { actor } = await findOrCreateActor({
+    const { token, csrfToken, actor } = await findOrCreateActor({
       name,
       whatsapp,
       type: "transporter",
@@ -86,6 +86,9 @@ export async function POST(req: NextRequest) {
 
     return Response.json({
       mensaje: "Envío reclamado con éxito",
+      token,
+      csrfToken,
+      actor,
       shipment: updatedShipment,
     });
   } catch (error: any) {

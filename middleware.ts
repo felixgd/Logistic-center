@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { validateCsrfToken, isSafeMethod } from "@/lib/csrf";
+import { validateCsrf, isSafeMethod } from "@/lib/csrf";
 
 const EXEMPT_PATHS = [
   "/api/public/submit",
@@ -29,7 +29,6 @@ export async function middleware(req: NextRequest) {
   }
 
   const auth = req.headers.get("authorization");
-  const csrfHeader = req.headers.get("x-csrf-token");
 
   // Si no hay token de autenticación, no hay nada que proteger con CSRF
   if (!auth?.startsWith("Bearer ")) {
@@ -39,11 +38,12 @@ export async function middleware(req: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "secret");
     const { payload } = await jwtVerify(auth.slice(7), secret);
-    const csrfToken = payload.csrfToken as string | undefined;
+    const storedToken = (payload.csrfToken as string) || null;
 
-    // Validar CSRF token contra el almacenado en el JWT
-    if (!validateCsrfToken(csrfHeader, csrfToken || null)) {
-      return NextResponse.json({ error: "CSRF token inválido" }, { status: 403 });
+    // Validar CSRF: primero contra el token en el JWT, luego por origen
+    const result = validateCsrf(req, storedToken);
+    if (!result.valid) {
+      return NextResponse.json({ error: result.error }, { status: 403 });
     }
   } catch {
     return NextResponse.json({ error: "Token inválido" }, { status: 401 });

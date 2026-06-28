@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
+import { generateCsrfToken } from "@/lib/csrf";
 import { sanitizeText } from "@/lib/validation";
 
 interface FrictionlessInput {
@@ -93,10 +94,12 @@ export async function findOrCreateActor(input: FrictionlessInput) {
   }
 
   // 3. Sign and return token along with actor details
-  const token = signToken({ userId, actorId: actor.id, actorType: actor.type });
+  const csrfToken = generateCsrfToken();
+  const token = signToken({ userId, actorId: actor.id, actorType: actor.type, csrfToken });
 
   return {
     token,
+    csrfToken,
     actor: {
       id: actor.id,
       type: actor.type,

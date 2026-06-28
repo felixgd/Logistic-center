@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Find or create the actor
-    const { token, actor } = await findOrCreateActor({
+    const { token, csrfToken, actor } = await findOrCreateActor({
       name,
       whatsapp,
       type,
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       capacityKg,
     });
 
-    let resultPayload: any = { token, actor };
+    let resultPayload: any = { token, csrfToken, actor };
 
     // 3. Perform the specific action
     if (action === "request") {
