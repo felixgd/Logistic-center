@@ -16,6 +16,8 @@ export default function RequestsPage() {
   const [form, setForm] = useState({ category: "general", name: "", unit: "unidades", quantity: "", urgency: "media", notes: "" });
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [envioForm, setEnvioForm] = useState<{ requestId: string; quantity: string } | null>(null);
+  const [envioLoading, setEnvioLoading] = useState(false);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = getAuthHeaders();
@@ -78,6 +80,76 @@ export default function RequestsPage() {
     invalidateCache("/api/solicitudes");
   };
 
+  const handleCrearEnvio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!envioForm) return;
+
+    const request = requests.find((r: any) => r.id === envioForm.requestId);
+    if (!request) return;
+
+    setEnvioLoading(true);
+    try {
+      const actorData = JSON.parse(localStorage.getItem("actor") || "{}");
+
+      // 1. Buscar si ya existe un insumo con el mismo nombre
+      const suppliesRes = await fetch("/api/insumos", { headers });
+      const supplies = await suppliesRes.json();
+      let supply = supplies.find((s: any) => s.name.toLowerCase() === request.name.toLowerCase());
+
+      // 2. Si no existe, crearlo
+      if (!supply) {
+        const createRes = await fetch("/api/insumos", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            category: request.category || "general",
+            name: request.name,
+            unit: request.unit,
+            quantity: Number(envioForm.quantity),
+          }),
+        });
+        if (!createRes.ok) {
+          const data = await createRes.json();
+          setError(data.error || "Error al crear el insumo");
+          setEnvioLoading(false);
+          return;
+        }
+        supply = await createRes.json();
+      }
+
+      // 3. Crear el viaje
+      const tripRes = await fetch("/api/viajes", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          warehouseActorId: actorData.id,
+          reliefActorId: request.actorId,
+          requestId: request.id,
+          items: [{
+            supplyId: supply.id,
+            name: request.name,
+            quantity: Number(envioForm.quantity),
+            unit: request.unit,
+          }],
+        }),
+      });
+      if (!tripRes.ok) {
+        const data = await tripRes.json();
+        setError(data.error || "Error al crear el envío");
+        setEnvioLoading(false);
+        return;
+      }
+
+      setEnvioForm(null);
+      invalidateCache("/api/solicitudes");
+    } catch {
+      setError("Error al procesar la solicitud");
+    } finally {
+      setEnvioLoading(false);
+    }
+  };
+
   return (
     <div>
       <Navbar />
@@ -121,6 +193,34 @@ export default function RequestsPage() {
             </div>
           </div>
         )}
+        {envioForm && (() => {
+          const req = requests.find((r: any) => r.id === envioForm.requestId);
+          if (!req) return null;
+          return (
+            <div className="modal-overlay" onClick={() => !envioLoading && setEnvioForm(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h3>Crear envío</h3>
+                <form onSubmit={handleCrearEnvio}>
+                  <div className="card" style={{ marginBottom: 12, padding: 12, background: "var(--bg-main)" }}>
+                    <p><strong>Solicitud:</strong> {req.name}</p>
+                    <p><strong>Centro:</strong> {req.actor?.name || "N/A"}</p>
+                    <p><strong>Cantidad solicitada:</strong> {req.quantityOriginal || req.quantity} {req.unit}</p>
+                    {req.quantityFulfilled > 0 && <p><strong>Entregados:</strong> {req.quantityFulfilled} {req.unit}</p>}
+                    <p><strong>Urgencia:</strong> {req.urgency}</p>
+                  </div>
+                  <div className="form-group">
+                    <label>Cantidad a enviar</label>
+                    <input type="number" value={envioForm.quantity} onChange={(e) => setEnvioForm({ ...envioForm, quantity: e.target.value })} required min="1" max={req.quantity} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setEnvioForm(null)} disabled={envioLoading}>Cancelar</button>
+                    <button type="submit" className="btn btn-primary" disabled={envioLoading}>{envioLoading ? "Creando..." : "Confirmar envío"}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          );
+        })()}
         {requests.length === 0 ? (
           <div className="card empty-state"><h3>No hay solicitudes</h3><p>Los centros de ayuda pueden crear solicitudes.</p></div>
         ) : (
@@ -144,6 +244,11 @@ export default function RequestsPage() {
                       <td>
                         {r.status === "open" && r.actorId === actor.id && (
                           <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => handleCancel(r.id)}>Cancelar</button>
+                        )}
+                        {r.status === "open" && actor.type === "warehouse" && (
+                          <button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setEnvioForm({ requestId: r.id, quantity: String(r.quantity) })}>
+                            Crear envío
+                          </button>
                         )}
                       </td>
                     </tr>

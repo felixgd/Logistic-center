@@ -111,7 +111,7 @@ export default function TripsPage() {
       <Navbar />
       <div className="container">
         <div className="page-header">
-          <h2>Viajes</h2>
+          <h2>Envíos</h2>
           <div style={{ display: "flex", gap: 8 }}>
             <button className={`btn ${tab === "mis-viajes" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("mis-viajes")}>Mis Viajes</button>
             {actor.type === "transporter" && <button className={`btn ${tab === "disponibles" ? "btn-primary" : "btn-secondary"}`} onClick={() => setTab("disponibles")}>Disponibles ({disponibles.length})</button>}
