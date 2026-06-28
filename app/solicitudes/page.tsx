@@ -57,7 +57,8 @@ export default function RequestsPage() {
   const urgencyOrder: Record<string, number> = { critica: 0, alta: 1, media: 2, baja: 3 };
   const statusOrder: Record<string, number> = { open: 0, in_progress: 1, fulfilled: 2, cancelled: 3 };
 
-  const requestsMapped = requests.map((r: any) => {
+  const visibleRequests = requests.filter((r: any) => r.status === "open" || r.status === "in_progress");
+  const requestsMapped = visibleRequests.map((r: any) => {
     const uo = String(urgencyOrder[r.urgency] ?? 4).padStart(2, "0");
     const so = String(statusOrder[r.status] ?? 4).padStart(2, "0");
     return {
@@ -221,8 +222,8 @@ export default function RequestsPage() {
             </div>
           );
         })()}
-        {requests.length === 0 ? (
-          <div className="card empty-state"><h3>No hay solicitudes</h3><p>Los centros de ayuda pueden crear solicitudes.</p></div>
+        {visibleRequests.length === 0 ? (
+          <div className="card empty-state"><h3>No hay solicitudes activas</h3><p>Los centros de ayuda pueden crear solicitudes.</p></div>
         ) : (
           <div className="card">
             <TableSearch value={searchTerm} onChange={setSearchTerm} placeholder="Buscar solicitud..." />
