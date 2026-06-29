@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { COUNTRY_CODES } from "@/components/CountryCodeSelect";
-import { getAuthHeaders } from "@/lib/api-client";
+import { getAuthHeaders, clearSession } from "@/lib/api-client";
 import {
   User,
   Shield,
@@ -156,8 +156,7 @@ export default function ConfiguracionPage() {
         setDeleting(false);
         return;
       }
-      localStorage.removeItem("token");
-      localStorage.removeItem("actor");
+      clearSession();
       router.push("/");
     } catch {
       showMessage("error", "Error de red al eliminar");
@@ -166,8 +165,7 @@ export default function ConfiguracionPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("actor");
+    clearSession();
     router.push("/");
   };
 

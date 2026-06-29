@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
-import { getAuthHeaders, clearCsrfToken } from "@/lib/api-client";
+import { getAuthHeaders, clearSession } from "@/lib/api-client";
 import { 
   Plus,
   Compass,
@@ -75,9 +75,7 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
   }, [propIsAuthenticated, propActor]);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("actor");
-    clearCsrfToken();
+    clearSession();
     setIsAuthenticated(false);
     setActor({});
     setAvailableActors([]);

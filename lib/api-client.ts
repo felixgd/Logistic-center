@@ -17,6 +17,14 @@ export function clearCsrfToken() {
   }
 }
 
+export function clearSession() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("token");
+  localStorage.removeItem("csrfToken");
+  localStorage.removeItem("actor");
+  sessionStorage.clear();
+}
+
 export function getAuthHeaders(): Record<string, string> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const csrfToken = getCsrfToken();

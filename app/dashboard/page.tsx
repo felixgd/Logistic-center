@@ -6,7 +6,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import QrModal from "@/components/QrModal";
 import { useApi, invalidateCache } from "@/lib/swr";
-import { getAuthHeaders, setCsrfToken } from "@/lib/api-client";
+import { getAuthHeaders, setCsrfToken, clearSession } from "@/lib/api-client";
 import { 
   Package, 
   ClipboardText, 
@@ -798,8 +798,7 @@ export default function DashboardPage() {
                 setShowCreateProfileModal(false);
 
                 if (data.verificationUrl) {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("actor");
+                  clearSession();
                   window.location.href = data.verificationUrl;
                 } else {
                   window.location.href = "/dashboard";

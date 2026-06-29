@@ -4,7 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
 import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
-import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
+import { getAuthHeaders, setCsrfToken, clearSession } from "@/lib/api-client";
 import CountryCodeSelect, { COUNTRY_CODES } from "@/components/CountryCodeSelect";
 import { 
   Compass, 
@@ -366,9 +366,7 @@ export default function HomePage() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("actor");
-    clearCsrfToken();
+    clearSession();
     setIsAuthenticated(false);
     setFormName("");
     setFormWhatsapp("");
