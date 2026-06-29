@@ -66,11 +66,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if ((status === "delivered" || status === "cancelled") && shipment.status !== "delivered" && shipment.status !== "cancelled") {
         for (const item of shipment.shipmentItem) {
           if (item.supplyId) {
+            const current = await tx.supply.findUnique({ where: { id: item.supplyId } });
+            if (!current) continue;
+            const decrementQty = Math.min(item.quantity, current.quantityReserved);
             await tx.supply.update({
               where: { id: item.supplyId },
               data: {
-                quantityReserved: { decrement: item.quantity },
-                ...(status === "delivered" ? { quantity: { decrement: item.quantity } } : {}),
+                quantityReserved: { decrement: decrementQty },
+                ...(status === "delivered" ? { quantity: { decrement: Math.min(item.quantity, current.quantity) } } : {}),
               },
             });
           }
