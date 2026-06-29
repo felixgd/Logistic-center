@@ -10,8 +10,7 @@ import {
   Plus,
   Sun,
   Moon,
-  Trash,
-  WarningCircle
+  Gear
 } from "@phosphor-icons/react";
 import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
 
@@ -43,8 +42,6 @@ export default function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("light");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,28 +58,7 @@ export default function ProfileDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleDeleteAccount = async () => {
-    setDeleting(true);
-    try {
-      const res = await fetch("/api/actores/delete-account", {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Error al eliminar la cuenta");
-        setDeleting(false);
-        return;
-      }
-      localStorage.removeItem("token");
-      localStorage.removeItem("actor");
-      clearCsrfToken();
-      window.location.href = "/";
-    } catch {
-      alert("Error al eliminar la cuenta");
-      setDeleting(false);
-    }
-  };
+
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -301,6 +277,32 @@ export default function ProfileDropdown({
 
           <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "4px 0" }} />
 
+          <Link
+            href="/configuracion"
+            onClick={() => setOpen(false)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              width: "100%",
+              padding: "8px 10px",
+              borderRadius: "8px",
+              textDecoration: "none",
+              background: "transparent",
+              color: "var(--text-main)",
+              fontSize: "12px",
+              fontWeight: "700",
+              textAlign: "left",
+              transition: "background 0.2s",
+            }}
+            className="hover-gray-bg"
+          >
+            <Gear size={16} />
+            <span>Configuración</span>
+          </Link>
+
+          <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "4px 0" }} />
+
           <button
             onClick={() => {
               onLogout();
@@ -327,91 +329,6 @@ export default function ProfileDropdown({
             <SignOut size={16} />
             Cerrar Sesión
           </button>
-
-          <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "4px 0" }} />
-
-          <button
-            onClick={() => {
-              setOpen(false);
-              setShowDeleteConfirm(true);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: "8px",
-              border: "none",
-              background: "transparent",
-              color: "var(--accent-red-text)",
-              fontSize: "12px",
-              fontWeight: "700",
-              textAlign: "left",
-              cursor: "pointer",
-              transition: "background 0.2s",
-            }}
-            className="hover-red-bg"
-          >
-            <Trash size={16} />
-            Dar de baja
-          </button>
-        </div>
-      )}
-
-      {/* Delete account confirmation modal */}
-      {showDeleteConfirm && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 999999,
-          }}
-          onClick={() => !deleting && setShowDeleteConfirm(false)}
-        >
-          <div
-            style={{
-              background: "var(--bg-card)",
-              borderRadius: "16px",
-              padding: "24px",
-              maxWidth: "380px",
-              width: "90%",
-              textAlign: "center",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <WarningCircle size={40} weight="fill" style={{ color: "#dc2626", marginBottom: 12 }} />
-            <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "var(--text-main)" }}>
-              Dar de baja cuenta
-            </h3>
-            <p style={{ fontSize: 14, color: "var(--text-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>
-              Esta acción eliminará toda tu información y la de tus perfiles asociados (almacenes, centros de ayuda, transportistas). <strong>No se puede revertir.</strong>
-            </p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
-                disabled={deleting}
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                style={{ flex: 1 }}
-                disabled={deleting}
-                onClick={handleDeleteAccount}
-              >
-                {deleting ? "Eliminando..." : "Confirmar y eliminar"}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

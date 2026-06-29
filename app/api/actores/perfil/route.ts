@@ -47,6 +47,7 @@ export async function PUT(req: NextRequest) {
     const city = body.city !== undefined ? sanitizeText(body.city) : undefined;
     const vehicleType = body.vehicleType !== undefined ? sanitizeText(body.vehicleType) : undefined;
     const capacityKg = body.capacityKg !== undefined ? (body.capacityKg ? Number(body.capacityKg) : null) : undefined;
+    const email = body.email !== undefined ? sanitizeText(body.email) : undefined;
 
     const actor = await prisma.actor.findUnique({
       where: { id: auth.actorId },
@@ -71,14 +72,31 @@ export async function PUT(req: NextRequest) {
       },
     });
 
+    // Update user email if provided
+    if (email !== undefined) {
+      await prisma.user.update({
+        where: { id: auth.userId },
+        data: { email: email || null },
+      });
+    }
+
+    // Fetch fresh user to return email
+    const freshUser = await prisma.user.findUnique({ where: { id: auth.userId } });
+
     return Response.json({
       success: true,
       actor: {
         id: updated.id,
         type: updated.type,
         name: updated.name,
+        email: freshUser?.email || null,
         whatsapp: updated.whatsapp,
         phone: updated.phone,
+        userPhone: freshUser?.phone || null,
+        address: updated.address,
+        city: updated.city,
+        lat: updated.lat,
+        lng: updated.lng,
         vehicleType: updated.vehicleType,
         capacityKg: updated.capacityKg,
       }
