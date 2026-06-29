@@ -237,18 +237,6 @@ export default function RequestsPage() {
             </div>
           </div>
         )}
-        {confirmDialog && (
-          <div className="modal-overlay" onClick={() => !envioLoading && setConfirmDialog(null)}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <h3>Confirmar envío</h3>
-              <p style={{ marginBottom: 16 }}>{confirmDialog.message}</p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" className="btn btn-secondary" onClick={() => { setConfirmDialog(null); setEnvioLoading(false); }} disabled={envioLoading}>Cancelar</button>
-                <button type="button" className="btn btn-primary" onClick={confirmDialog.onConfirm} disabled={envioLoading}>{envioLoading ? "Procesando..." : "Continuar"}</button>
-              </div>
-            </div>
-          </div>
-        )}
         {envioForm && (() => {
           const req = requests.find((r: any) => r.id === envioForm.requestId);
           if (!req) return null;
@@ -277,6 +265,18 @@ export default function RequestsPage() {
             </div>
           );
         })()}
+        {confirmDialog && (
+          <div className="modal-overlay" onClick={() => !envioLoading && setConfirmDialog(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Confirmar envío</h3>
+              <p style={{ marginBottom: 16 }}>{confirmDialog.message}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => { setConfirmDialog(null); setEnvioLoading(false); }} disabled={envioLoading}>Cancelar</button>
+                <button type="button" className="btn btn-primary" onClick={confirmDialog.onConfirm} disabled={envioLoading}>{envioLoading ? "Procesando..." : "Continuar"}</button>
+              </div>
+            </div>
+          </div>
+        )}
         {visibleRequests.length === 0 ? (
           <div className="card empty-state"><h3>No hay solicitudes activas</h3><p>Los centros de ayuda pueden crear solicitudes.</p></div>
         ) : (
