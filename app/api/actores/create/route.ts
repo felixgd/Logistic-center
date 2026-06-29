@@ -25,8 +25,11 @@ export async function POST(req: NextRequest) {
     const capacityKg = body.capacityKg ? Number(body.capacityKg) : null;
     const documentNumber = body.documentNumber || null;
 
-    if (!type || !name) {
-      return jsonError(400, "Tipo de actor y nombre son requeridos");
+    const missing: string[] = [];
+    if (!type) missing.push("tipo de actor");
+    if (!name) missing.push("nombre");
+    if (missing.length > 0) {
+      return jsonError(400, `Campos requeridos faltantes: ${missing.join(", ")}.`);
     }
 
     const validTypes = ["warehouse", "relief", "transporter"];

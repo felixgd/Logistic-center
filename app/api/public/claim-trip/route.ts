@@ -9,8 +9,12 @@ export async function POST(req: NextRequest) {
   try {
     const { shipmentId, name, whatsapp, documentNumber, phoneVerificationToken } = await req.json();
 
-    if (!shipmentId || !name || !whatsapp) {
-      return Response.json({ error: "shipmentId, name, y whatsapp son requeridos." }, { status: 400 });
+    const missing: string[] = [];
+    if (!shipmentId) missing.push("ID del envío");
+    if (!name) missing.push("nombre");
+    if (!whatsapp) missing.push("WhatsApp");
+    if (missing.length > 0) {
+      return Response.json({ error: `Campos requeridos faltantes: ${missing.join(", ")}.` }, { status: 400 });
     }
 
     const cleanWhatsapp = whatsapp.replace(/\D/g, "");

@@ -527,8 +527,11 @@ export default function HomePage() {
   // Submit request / supply / driver
   const handleSubmitAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName || !formWhatsapp) {
-      setSubmitError("Nombre y WhatsApp son obligatorios.");
+    const missingFields: string[] = [];
+    if (!formName) missingFields.push("nombre");
+    if (!formWhatsapp) missingFields.push("WhatsApp");
+    if (missingFields.length > 0) {
+      setSubmitError(`Campos requeridos faltantes: ${missingFields.join(", ")}.`);
       return;
     }
 
@@ -615,8 +618,11 @@ export default function HomePage() {
   // Claim proposed trip
   const handleClaimTrip = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName || !formWhatsapp) {
-      setSubmitError("Nombre y WhatsApp son obligatorios.");
+    const missingFields: string[] = [];
+    if (!formName) missingFields.push("nombre");
+    if (!formWhatsapp) missingFields.push("WhatsApp");
+    if (missingFields.length > 0) {
+      setSubmitError(`Campos requeridos faltantes: ${missingFields.join(", ")}.`);
       return;
     }
 
