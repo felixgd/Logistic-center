@@ -394,11 +394,15 @@ export default function TripsPage() {
       showNotification("No hay registros en el historial para exportar.", "info");
       return;
     }
-    const headers = ["CÓDIGO", "ALMACÉN/ORIGEN", "CENTRO/DESTINO", "INSUMOS", "ESTADO", "FECHA CR.", "FECHA ACT."];
+    const headers = ["CÓDIGO", "ALMACÉN/ORIGEN", "WHATSAPP ALMACÉN", "CENTRO/DESTINO", "WHATSAPP CENTRO", "TRANSPORTISTA", "WHATSAPP TRANSPORTISTA", "INSUMOS", "ESTADO", "FECHA CR.", "FECHA ACT."];
     const rows = historyTrips.map(t => [
       t.codigoViaje,
       t.almacen?.name || "N/A",
+      t.almacen?.whatsapp || "N/A",
       t.centroAyuda?.name || "N/A",
+      t.centroAyuda?.whatsapp || "N/A",
+      t.transportista?.name || "N/A",
+      t.transportista?.whatsapp || "N/A",
       (t.insumos || []).map((i: any) => `${i.quantity} ${i.unit} ${i.name}`).join(" - "),
       STATUS_LABELS[t.estado] || t.estado,
       new Date(t.createdAt).toLocaleString("es-MX"),
