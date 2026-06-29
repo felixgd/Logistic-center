@@ -94,7 +94,7 @@ function RegisterFormInner() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!affiliateCode && !form.address.trim()) return "La dirección es requerida";
     if (!affiliateCode && form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
-    if (!affiliateCode && !documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
+    if (!affiliateCode && form.type === "transporter" && !documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -109,7 +109,7 @@ function RegisterFormInner() {
     const endpoint = affiliateCode ? "/api/actores/afiliar/registrar" : "/api/actores/register";
 
     let documentUrl = "";
-    if (!affiliateCode && documentFile) {
+    if (!affiliateCode && form.type === "transporter" && documentFile) {
       try {
         const fd = new FormData();
         fd.append("file", documentFile);
@@ -289,7 +289,7 @@ function RegisterFormInner() {
                 <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
               </>
             )}
-            <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />
+            {form.type === "transporter" && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Atrás</button>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={!verifToken}>Crear cuenta</button>

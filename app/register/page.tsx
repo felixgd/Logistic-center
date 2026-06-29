@@ -103,7 +103,7 @@ function RegisterPageContent() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!form.address.trim()) return "La dirección es requerida";
     if (form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
-    if (!documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
+    if (form.type === "transporter" && !documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -250,7 +250,7 @@ function RegisterPageContent() {
                     <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
                   </>
                 )}
-                <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />
+                {form.type === "transporter" && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
               </div>
 
               <div className="register-buttons-field">
