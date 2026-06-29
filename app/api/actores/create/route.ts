@@ -4,6 +4,7 @@ import { getAuthActor, signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 import { sanitizeText } from "@/lib/validation";
 import { generateCsrfToken } from "@/lib/csrf";
+import { createDiditSession } from "@/lib/didit";
 
 export async function POST(req: NextRequest) {
   const auth = getAuthActor(req);
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
     const lng = body.lng ? Number(body.lng) : null;
     const vehicleType = sanitizeText(body.vehicleType);
     const capacityKg = body.capacityKg ? Number(body.capacityKg) : null;
+    const documentNumber = body.documentNumber || null;
 
     if (!type || !name) {
       return jsonError(400, "Tipo de actor y nombre son requeridos");
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
         lng: lng || null,
         vehicleType: type === "transporter" ? vehicleType : null,
         capacityKg: type === "transporter" ? (capacityKg ? Number(capacityKg) : null) : null,
+        documentNumber: type === "transporter" ? documentNumber : null,
       },
     });
 
@@ -60,14 +63,34 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({ where: { id: auth.userId } });
 
-    // Switch context automatically to the newly created actor
-    const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: auth.userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
+    // Create Didit session for transporters
+    const isKycMocked = process.env.IS_KYC_MOCKED === "true";
+    let verificationUrl: string | undefined;
+    if (actor.type === "transporter" && !isKycMocked) {
+      try {
+        const session = await createDiditSession(actor.id, user?.email || undefined);
+        verificationUrl = session.url;
+        await prisma.actor.update({
+          where: { id: actor.id },
+          data: { diditSessionId: session.session_id, diditStatus: "pending" },
+        });
+        actor.diditStatus = "pending";
+      } catch (err) {
+        console.error("Error creating Didit session:", err);
+      }
+    }
+
+    // Sign token (skip for transporters with pending KYC)
+    let token: string | null = null;
+    let csrfToken: string | undefined;
+    if (!(actor.type === "transporter" && actor.diditStatus !== "approved")) {
+      csrfToken = generateCsrfToken();
+      token = signToken({ userId: auth.userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
+    }
 
     return Response.json({
       mensaje: "Perfil creado exitosamente",
-      token,
-      csrfToken,
+      ...(token ? { token, csrfToken } : {}),
       actor: {
         id: actor.id,
         type: actor.type,
@@ -77,6 +100,7 @@ export async function POST(req: NextRequest) {
         phone: actor.phone,
         isOwner: true,
       },
+      ...(verificationUrl ? { verificationUrl } : {}),
     }, { status: 201 });
   } catch (error: any) {
     return jsonError(500, error.message);

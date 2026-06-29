@@ -79,6 +79,7 @@ export default function DashboardPage() {
     address: "",
     city: "",
     lat: null as number | null,
+    documentNumber: "",
     lng: null as number | null,
     vehicleType: "",
     capacityKg: ""
@@ -791,11 +792,16 @@ export default function DashboardPage() {
                   setCreateProfileSaving(false);
                   return;
                 }
-                localStorage.setItem("token", data.token);
+                if (data.token) localStorage.setItem("token", data.token);
                 if (data.csrfToken) setCsrfToken(data.csrfToken);
-                localStorage.setItem("actor", JSON.stringify(data.actor));
+                if (data.actor) localStorage.setItem("actor", JSON.stringify(data.actor));
                 setShowCreateProfileModal(false);
-                window.location.href = "/dashboard";
+
+                if (data.verificationUrl) {
+                  window.location.href = data.verificationUrl;
+                } else {
+                  window.location.href = "/dashboard";
+                }
               } catch (err) {
                 setCreateProfileError("Error de conexión al crear el perfil");
                 setCreateProfileSaving(false);
@@ -974,16 +980,55 @@ export default function DashboardPage() {
               </div>
 
               {newProfileForm.type === "transporter" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-                  <div className="form-group">
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                    <div className="form-group">
+                      <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                        Tipo de Vehículo
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Camión, Camioneta"
+                        value={newProfileForm.vehicleType}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, vehicleType: e.target.value })}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: 14
+                        }}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                        Capacidad Carga (kg)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 1500"
+                        value={newProfileForm.capacityKg}
+                        onChange={(e) => setNewProfileForm({ ...newProfileForm, capacityKg: e.target.value })}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: 14
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 20 }}>
                     <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
-                      Tipo de Vehículo
+                      Número de identificación <small style={{ fontWeight: "normal" }}>(sujeto a verificación)</small>
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej. Camión, Camioneta"
-                      value={newProfileForm.vehicleType}
-                      onChange={(e) => setNewProfileForm({ ...newProfileForm, vehicleType: e.target.value })}
+                      placeholder="INE, pasaporte, cédula..."
+                      value={newProfileForm.documentNumber}
+                      onChange={(e) => setNewProfileForm({ ...newProfileForm, documentNumber: e.target.value })}
+                      required
                       style={{
                         width: "100%",
                         padding: "10px 12px",
@@ -993,25 +1038,7 @@ export default function DashboardPage() {
                       }}
                     />
                   </div>
-                  <div className="form-group">
-                    <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
-                      Capacidad Carga (kg)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Ej. 1500"
-                      value={newProfileForm.capacityKg}
-                      onChange={(e) => setNewProfileForm({ ...newProfileForm, capacityKg: e.target.value })}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: 14
-                      }}
-                    />
-                  </div>
-                </div>
+                </>
               )}
 
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>

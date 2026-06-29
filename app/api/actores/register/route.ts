@@ -68,10 +68,10 @@ export async function POST(req: NextRequest) {
         city: city || "",
         lat: lat || null,
         lng: lng || null,
-        vehicleType: type === "transportista" ? vehicleType : null,
-        capacityKg: type === "transportista" ? capacityKg : null,
+        vehicleType: type === "transporter" ? vehicleType : null,
+        capacityKg: type === "transporter" ? capacityKg : null,
         documentNumber,
-        diditStatus: type === "transportista" ? "pending" : "not_started",
+        diditStatus: type === "transporter" ? "pending" : "not_started",
       },
     });
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     // Create Didit session for transporters (skip if mocked)
     const isKycMocked = process.env.IS_KYC_MOCKED === "true";
     let verificationUrl: string | undefined;
-    if (actor.type === "transportista" && actor.diditStatus !== "approved") {
+    if (actor.type === "transporter" && actor.diditStatus !== "approved") {
       if (isKycMocked) {
         await prisma.actor.update({
           where: { id: actor.id },
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     let token: string | null = null;
     let csrfToken: string | undefined;
-    if (!(actor.type === "transportista" && actor.diditStatus !== "approved")) {
+    if (!(actor.type === "transporter" && actor.diditStatus !== "approved")) {
       csrfToken = generateCsrfToken();
       token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
     }
