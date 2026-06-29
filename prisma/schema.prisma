@@ -55,6 +55,7 @@ model actor {
   transporterShipment  shipment[] @relation("transporterActor")
   members     actor_user[]
   affiliateCodes affiliate_code[]
+  reportedIncidents order_incident[]
 }
 
 model actor_user {
@@ -146,6 +147,7 @@ model shipment {
   transporterActor   actor?    @relation("transporterActor", fields: [transporterActorId], references: [id], onUpdate: NoAction)
   shipmentItem       shipment_item[]
   eventLog           event_log[]
+  incident           order_incident[]
 }
 
 model shipment_item {
@@ -197,6 +199,17 @@ model user {
   eventLog      event_log[]
   actorMemberships actor_user[]
   notifications notification[]
+}
+
+model order_incident {
+  id          String   @id @default(cuid())
+  shipmentId  String
+  type        String
+  description String?
+  reportedBy  String
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  shipment    shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  reporter    actor    @relation(fields: [reportedBy], references: [id])
 }
 
 model notification {

@@ -430,20 +430,32 @@ export default function TripsPage() {
     showNotification("Historial de envíos exportado a CSV.", "success");
   };
 
-  const handleSendReport = (e: React.FormEvent) => {
+  const handleSendReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reportDesc.trim()) {
+    if (!reportDesc.trim() || !activeTrip) {
       showNotification("Por favor ingresa una descripción.", "error");
       return;
     }
     setLoadingReport(true);
-    // Simulate sending report
-    setTimeout(() => {
-      showNotification(`Incidente de tipo "${reportType.toUpperCase()}" reportado con éxito al Centro de Soporte.`, "success");
+    try {
+      const res = await fetch(`/api/viajes/${activeTrip.id}/incidentes`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ type: reportType, description: reportDesc }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        showNotification(d.error || "Error al reportar incidente", "error");
+        return;
+      }
+      showNotification("Incidente reportado con éxito. Todos los participantes han sido notificados.", "success");
       setIsReportModalOpen(false);
       setReportDesc("");
+    } catch {
+      showNotification("Error de conexión al reportar incidente", "error");
+    } finally {
       setLoadingReport(false);
-    }, 500);
+    }
   };
 
   // Helper values for simulated travel map overlay
