@@ -6,6 +6,7 @@ import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import DocumentUpload from "@/components/DocumentUpload";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
 
 function RegisterFormInner() {
   const router = useRouter();
@@ -255,7 +256,17 @@ function RegisterFormInner() {
           <form onSubmit={handleSubmit}>
             <div className="form-group"><label>Nombre de la organización</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
             <div className="form-group"><label>Persona de contacto</label><input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="Nombre de contacto" /></div>
-            <div className="form-group"><label>Dirección</label><input value={form.address} onChange={(e) => update("address", e.target.value)} required /></div>
+            <div className="form-group">
+              <label>Dirección</label>
+              <AutocompleteAddressInput
+                value={form.address}
+                onChange={(val) => update("address", val)}
+                onSelect={(address, city, lat, lng) => {
+                  setForm(f => ({ ...f, address, city, lat, lng }));
+                }}
+                required
+              />
+            </div>
             <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
             <div className="form-group">
               <label>WhatsApp</label>

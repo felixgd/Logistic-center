@@ -7,6 +7,7 @@ import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import DocumentUpload from "@/components/DocumentUpload";
 import RegisterForm from "./RegisterForm";
+import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
 import { isValidPhoneNumber } from "libphonenumber-js";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -70,7 +71,70 @@ function RegisterPageContent() {
     return () => clearInterval(timer);
   }, [countdown]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setForm((f) => ({ ...f, lat, lng }));
+
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+            headers: {
+              "User-Agent": "DisasterAcopioPortal/1.0"
+            }
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data && data.address) {
+                const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || "";
+                const road = data.address.road || "";
+                const houseNumber = data.address.house_number || "";
+                const neighborhood = data.address.neighbourhood || data.address.suburb || "";
+                let formattedAddress = road;
+                
+                if (houseNumber) {
+                  formattedAddress += ` #${houseNumber}`;
+                } else if (!road && neighborhood) {
+                  formattedAddress = neighborhood;
+                }
+                
+                if (!formattedAddress) {
+                  formattedAddress = data.display_name?.split(",")[0] || "Ubicación actual";
+                }
+
+                setForm((f) => ({ ...f, address: formattedAddress, city }));
+              }
+            })
+            .catch((err) => console.error("Error in reverse geocoding on registration mount:", err));
+        },
+        (err) => console.log("Geolocation permission not granted or failed on registration mount:", err)
+      );
+    }
+  }, []);
+
   const update = (field: string, value: any) => setForm((f) => ({ ...f, [field]: value }));
+
+  const geocodeAddress = async () => {
+    if (!form.address.trim()) return;
+    const query = form.city.trim() ? `${form.address}, ${form.city}` : form.address;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+        headers: {
+          "User-Agent": "DisasterAcopioPortal/1.0"
+        }
+      });
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const item = data[0];
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon);
+        setForm(f => ({ ...f, lat, lng }));
+      }
+    } catch (e) {
+      console.error("Error geocoding address on blur:", e);
+    }
+  };
 
   const selectTipo = (tipo: string) => { update("type", tipo); setStep(2); };
 
@@ -185,8 +249,19 @@ function RegisterPageContent() {
               <div className="register-left-fields">
                 <div className="form-group"><label>Nombre de la organización</label><input value={form.name} onChange={(e) => update("name", e.target.value)} required /></div>
                 <div className="form-group"><label>Persona de contacto</label><input value={form.contactName} onChange={(e) => update("contactName", e.target.value)} placeholder="Nombre de contacto" /></div>
-                <div className="form-group"><label>Dirección</label><input value={form.address} onChange={(e) => update("address", e.target.value)} required /></div>
-                <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
+                <div className="form-group">
+                  <label>Dirección</label>
+                  <AutocompleteAddressInput
+                    value={form.address}
+                    onChange={(val) => update("address", val)}
+                    onSelect={(address, city, lat, lng) => {
+                      setForm(f => ({ ...f, address, city, lat, lng }));
+                    }}
+                    onBlur={geocodeAddress}
+                    required
+                  />
+                </div>
+                <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} onBlur={geocodeAddress} /></div>
               </div>
 
               <div className="register-map-field">
@@ -197,6 +272,8 @@ function RegisterPageContent() {
                       containerId="register-map"
                       actors={[]}
                       interactive={true}
+                      initialLat={form.lat || undefined}
+                      initialLng={form.lng || undefined}
                       onLocationSelected={(lat, lng) => {
                         update("lat", lat);
                         update("lng", lng);

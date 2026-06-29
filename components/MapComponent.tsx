@@ -135,6 +135,52 @@ export default function MapComponent({
               iconAnchor: [6, 6],
             });
             L.marker(userPos, { icon: userIcon }).addTo(map).bindPopup("<strong>Tu Ubicación Actual</strong>");
+
+            if (interactive) {
+              // Add marker pin at user's current GPS position
+              const markerIcon = L.divIcon({
+                html: `<div class="marker-pin warehouse-pin"><span class="icon-inner" style="display:flex;align-items:center;justify-content:center;color:#4b5563;width:100%;height:100%;">${PIN_SVGs.warehouse}</span></div>`,
+                className: "custom-div-icon",
+                iconSize: [38, 38],
+                iconAnchor: [19, 38],
+              });
+              const newMarker = L.marker([userLat, userLng], { icon: markerIcon }).addTo(map);
+              clickMarkerRef.current = newMarker;
+
+              if (onLocationSelectedRef.current) {
+                onLocationSelectedRef.current(userLat, userLng);
+              }
+
+              // Geocode their current location to pre-fill form address & city
+              fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLng}&zoom=18&addressdetails=1`, {
+                headers: {
+                  "User-Agent": "DisasterAcopioPortal/1.0"
+                }
+              })
+                .then((r) => r.json())
+                .then((data) => {
+                  if (data && data.address && onAddressFoundRef.current) {
+                    const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || "";
+                    const road = data.address.road || "";
+                    const houseNumber = data.address.house_number || "";
+                    const neighborhood = data.address.neighbourhood || data.address.suburb || "";
+                    let formattedAddress = road;
+                    
+                    if (houseNumber) {
+                      formattedAddress += ` #${houseNumber}`;
+                    } else if (!road && neighborhood) {
+                      formattedAddress = neighborhood;
+                    }
+                    
+                    if (!formattedAddress) {
+                      formattedAddress = data.display_name?.split(",")[0] || "Mi ubicación";
+                    }
+
+                    onAddressFoundRef.current(formattedAddress, city);
+                  }
+                })
+                .catch((err) => console.error("Error in automatic reverse geocoding on load:", err));
+            }
           },
           (err) => {
             console.log("Geolocation permission denied, using default La Guaira, Venezuela.");
@@ -346,6 +392,34 @@ export default function MapComponent({
       hasFitBoundsRef.current = true;
     }
   }, [actors, interactive]);
+
+  // Listen to programmatically selected location updates (e.g. from autocomplete)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !interactive || typeof initialLat !== "number" || typeof initialLng !== "number") return;
+    
+    // Check if the coordinates are the default ones to avoid unnecessary updates on load
+    const isDefaultCoords = initialLat === 10.5925 && initialLng === -66.9317;
+    if (isDefaultCoords) return;
+
+    // Center map and add/update marker pin
+    map.setView([initialLat, initialLng], 15, { animate: true });
+
+    // Remove previous click marker
+    if (clickMarkerRef.current) {
+      map.removeLayer(clickMarkerRef.current);
+    }
+
+    const markerIcon = L.divIcon({
+      html: `<div class="marker-pin warehouse-pin"><span class="icon-inner" style="display:flex;align-items:center;justify-content:center;color:#4b5563;width:100%;height:100%;">${PIN_SVGs.warehouse}</span></div>`,
+      className: "custom-div-icon",
+      iconSize: [38, 38],
+      iconAnchor: [19, 38],
+    });
+
+    const newMarker = L.marker([initialLat, initialLng], { icon: markerIcon }).addTo(map);
+    clickMarkerRef.current = newMarker;
+  }, [initialLat, initialLng, interactive]);
 
   // Pan to selected actor
   useEffect(() => {

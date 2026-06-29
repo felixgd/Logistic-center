@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
+import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
 import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect, { COUNTRY_CODES } from "@/components/CountryCodeSelect";
 import DocumentUpload from "@/components/DocumentUpload";
@@ -438,6 +439,52 @@ export default function HomePage() {
     if (!isAuthenticated) {
       setFormLat(null);
       setFormLng(null);
+      setFormAddress("");
+      setFormCity("");
+      
+      // Auto-detect location on modal open if available
+      if (typeof window !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            setFormLat(lat);
+            setFormLng(lng);
+
+            // Fetch address and city
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+              headers: {
+                "User-Agent": "DisasterAcopioPortal/1.0"
+              }
+            })
+              .then((r) => r.json())
+              .then((data) => {
+                if (data && data.address) {
+                  const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || "";
+                  const road = data.address.road || "";
+                  const houseNumber = data.address.house_number || "";
+                  const neighborhood = data.address.neighbourhood || data.address.suburb || "";
+                  let formattedAddress = road;
+                  
+                  if (houseNumber) {
+                    formattedAddress += ` #${houseNumber}`;
+                  } else if (!road && neighborhood) {
+                    formattedAddress = neighborhood;
+                  }
+                  
+                  if (!formattedAddress) {
+                    formattedAddress = data.display_name?.split(",")[0] || "Ubicación actual";
+                  }
+
+                  setFormAddress(formattedAddress);
+                  setFormCity(city);
+                }
+              })
+              .catch((err) => console.error("Error in reverse geocoding on modal load:", err));
+          },
+          (err) => console.log("Geolocation permission not granted or failed on modal load:", err)
+        );
+      }
     }
     setVerifCode("");
     if (!isAuthenticated) setVerifToken("");
@@ -447,6 +494,26 @@ export default function HomePage() {
     setDocumentFile(null);
     setCountdown(0);
     setActiveModal(type);
+  };
+
+  const geocodeAddress = async () => {
+    if (!formAddress.trim()) return;
+    const query = formCity.trim() ? `${formAddress}, ${formCity}` : formAddress;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+        headers: {
+          "User-Agent": "DisasterAcopioPortal/1.0"
+        }
+      });
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const item = data[0];
+        setFormLat(parseFloat(item.lat));
+        setFormLng(parseFloat(item.lon));
+      }
+    } catch (e) {
+      console.error("Error geocoding address on blur:", e);
+    }
   };
 
   const openClaimModal = (shipmentId: string) => {
@@ -956,14 +1023,26 @@ export default function HomePage() {
                 </div>
               )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div className="form-group">
                   <label>Dirección</label>
-                  <input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} required placeholder="Calle 123..." />
+                  <AutocompleteAddressInput
+                    value={formAddress}
+                    onChange={(val) => setFormAddress(val)}
+                    onSelect={(address, city, lat, lng) => {
+                      setFormAddress(address);
+                      setFormCity(city);
+                      setFormLat(lat);
+                      setFormLng(lng);
+                    }}
+                    onBlur={geocodeAddress}
+                    placeholder="Calle 123..."
+                    required
+                  />
                 </div>
                 <div className="form-group">
                   <label>Ciudad</label>
-                  <input value={formCity} onChange={(e) => setFormCity(e.target.value)} required placeholder="Bogotá" />
+                  <input value={formCity} onChange={(e) => setFormCity(e.target.value)} onBlur={geocodeAddress} required placeholder="Bogotá" />
                 </div>
               </div>
 
@@ -975,6 +1054,8 @@ export default function HomePage() {
                     containerId="modal-map"
                     actors={[]}
                     interactive={true}
+                    initialLat={formLat || undefined}
+                    initialLng={formLng || undefined}
                     onLocationSelected={(lat, lng) => {
                       setFormLat(lat);
                       setFormLng(lng);
