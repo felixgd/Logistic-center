@@ -56,6 +56,8 @@ model actor {
   members     actor_user[]
   affiliateCodes affiliate_code[]
   reportedIncidents order_incident[]
+  pendingClaimShipmentId String?
+  pendingClaimShipment  shipment? @relation("pendingClaimShipment", fields: [pendingClaimShipmentId], references: [id])
 }
 
 model actor_user {
@@ -148,6 +150,7 @@ model shipment {
   shipmentItem       shipment_item[]
   eventLog           event_log[]
   incident           order_incident[]
+  pendingClaimActor  actor[]           @relation("pendingClaimShipment")
 }
 
 model shipment_item {
