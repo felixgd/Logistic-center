@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 6. WhatsApp Coordination Messages
-    const itemsStr = shipment.shipmentItem.map((i) => `${i.quantity} ${i.unit} de ${i.name}`).join(", ");
+    const itemsStr = (shipment.shipmentItem as Array<{ quantity: number; unit: string; name: string }>).map((i) => `${i.quantity} ${i.unit} de ${i.name}`).join(", ");
     const codigo = shipment.notes?.split(" ")[0] || shipment.id.slice(-8).toUpperCase();
 
     // Notify Warehouse

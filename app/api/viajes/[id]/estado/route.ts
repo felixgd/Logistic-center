@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.shipment.update({
         where: { id: params.id },
         data: { status, updatedAt: new Date() },
@@ -87,8 +87,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
                 where: { requestId: shipment.requestId, status: "delivered" },
                 include: { shipmentItem: true },
               });
-              const totalDelivered = deliveredShipments.reduce((sum, s) =>
-                sum + s.shipmentItem.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
+              const totalDelivered = (deliveredShipments as any[]).reduce((sum: number, s: any) =>
+                sum + (s.shipmentItem as any[]).reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0
               );
               const quantityOriginal = request.quantity + (request.quantityFulfilled || 0);
               if (totalDelivered >= quantityOriginal) {
@@ -188,6 +188,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (error.code === "P2034") {
       return jsonError(409, "Conflicto: intenta de nuevo.");
     }
-    return jsonError(500, error.message);
+    console.error("Shipment status update API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

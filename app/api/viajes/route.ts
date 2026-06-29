@@ -32,7 +32,19 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  const mapped = shipments.map((s) => ({
+  interface ShipmentWithActors {
+    id: string;
+    notes: string | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+    warehouseActor: { id: string; name: string; address: string | null; whatsapp: string | null; lat: number | null; lng: number | null };
+    reliefActor: { id: string; name: string; address: string | null; whatsapp: string | null; lat: number | null; lng: number | null };
+    transporterActor: { id: string; name: string; whatsapp: string | null } | null;
+    shipmentItem: Array<{ id: string; category: string; name: string; unit: string; quantity: number }>;
+  }
+
+  const mapped = (shipments as any as ShipmentWithActors[]).map((s) => ({
     id: s.id,
     codigoViaje: s.notes?.startsWith("VIA-") ? s.notes.split(" ")[0] : s.id.slice(-8).toUpperCase(),
     almacen: s.warehouseActor,
@@ -76,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     const codigo = `VIA-${Date.now().toString(36).toUpperCase().slice(-5)}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
-    const shipment = await prisma.$transaction(async (tx) => {
+    const shipment = await prisma.$transaction(async (tx: any) => {
       const created = await tx.shipment.create({
         data: {
           createdByUserId: auth.userId,
@@ -172,6 +184,7 @@ export async function POST(req: NextRequest) {
     if (error.code === "P2034") {
       return jsonError(409, "Conflicto: otro usuario está procesando esta solicitud. Intenta de nuevo.");
     }
-    return jsonError(500, error.message);
+    console.error("Shipment creation API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

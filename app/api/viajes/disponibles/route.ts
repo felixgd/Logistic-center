@@ -13,7 +13,18 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  const mapped = shipments.map((s) => ({
+  interface AvailableShipment {
+    id: string;
+    notes: string | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+    warehouseActor: { id: string; name: string; address: string | null; city: string | null; lat: number | null; lng: number | null };
+    reliefActor: { id: string; name: string; address: string | null; city: string | null; lat: number | null; lng: number | null };
+    shipmentItem: Array<{ id: string; category: string; name: string; unit: string; quantity: number }>;
+  }
+
+  const mapped = (shipments as any as AvailableShipment[]).map((s) => ({
     id: s.id,
     codigoViaje: s.notes?.startsWith("VIA-") ? s.notes.split(" ")[0] : s.id.slice(-8).toUpperCase(),
     almacen: s.warehouseActor,

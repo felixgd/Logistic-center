@@ -83,8 +83,19 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    interface ShipmentDetail {
+      id: string;
+      notes: string | null;
+      status: string;
+      createdAt: Date;
+      warehouseActor: { id: string; name: string; address: string | null; city: string | null; lat: number | null; lng: number | null };
+      reliefActor: { id: string; name: string; address: string | null; city: string | null; lat: number | null; lng: number | null };
+      transporterActor: { id: string; name: string } | null;
+      shipmentItem: Array<{ id: string; name: string; quantity: number; unit: string }>;
+    }
+
     // Format the shipments response nicely
-    const formattedShipments = recentShipments.map((s) => ({
+    const formattedShipments = (recentShipments as any as ShipmentDetail[]).map((s) => ({
       id: s.id,
       codigoViaje: s.notes?.startsWith("VIA-") ? s.notes.split(" ")[0] : s.id.slice(-8).toUpperCase(),
       almacen: s.warehouseActor,
@@ -101,7 +112,8 @@ export async function GET(req: NextRequest) {
       recentShipments: formattedShipments,
     });
   } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error("Public map-data API error:", error);
+    return Response.json({ error: "An internal server error occurred." }, { status: 500 });
   }
 }
 export const dynamic = "force-dynamic";

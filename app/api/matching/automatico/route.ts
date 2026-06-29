@@ -20,6 +20,19 @@ export async function POST(req: NextRequest) {
   try {
     const resultados: any[] = [];
 
+    interface SupplyWithActor {
+      id: string;
+      name: string;
+      unit: string;
+      quantity: number;
+      actor: {
+        id: string;
+        name: string;
+        lat: number | null;
+        lng: number | null;
+      };
+    }
+
     if (auth.actorType === "warehouse") {
       // Warehouse: match own supplies against open requests
       const supplies = await prisma.supply.findMany({
@@ -37,7 +50,7 @@ export async function POST(req: NextRequest) {
       });
 
       for (const r of pendientes) {
-        const matchingSupplies = supplies.filter(
+        const matchingSupplies = (supplies as any as SupplyWithActor[]).filter(
           (s) =>
             s.unit.toLowerCase() === r.unit.toLowerCase() &&
             (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))
@@ -84,7 +97,7 @@ export async function POST(req: NextRequest) {
       });
 
       for (const r of pendientes) {
-        const matchingSupplies = supplies.filter(
+        const matchingSupplies = (supplies as any as SupplyWithActor[]).filter(
           (s) =>
             s.unit.toLowerCase() === r.unit.toLowerCase() &&
             (r.name.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(r.name.toLowerCase()))

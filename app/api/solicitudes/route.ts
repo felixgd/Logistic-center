@@ -23,7 +23,31 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  const requestsWithOriginal = requests.map((r) => ({
+  interface RequestWithActor {
+    id: string;
+    userId: string;
+    actorId: string;
+    category: string;
+    name: string;
+    unit: string;
+    quantity: number;
+    quantityFulfilled: number;
+    urgency: string;
+    status: string;
+    notes: string | null;
+    createdAt: Date;
+    actor: {
+      id: string;
+      name: string;
+      address: string | null;
+      whatsapp: string | null;
+      city: string | null;
+      lat: number | null;
+      lng: number | null;
+    };
+  }
+
+  const requestsWithOriginal = (requests as any as RequestWithActor[]).map((r) => ({
     ...r,
     quantityOriginal: r.quantity + (r.quantityFulfilled || 0),
     quantityPending: r.quantity,
@@ -74,6 +98,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json(solicitud, { status: 201 });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    console.error("Requests creation API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

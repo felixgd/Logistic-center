@@ -18,8 +18,15 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
+  interface EventLog {
+    id: string;
+    eventType: string;
+    createdAt: Date;
+    payload: string | null;
+  }
+
   return Response.json(
-    events.map((e) => ({
+    (events as EventLog[]).map((e) => ({
       id: e.id,
       eventType: e.eventType,
       createdAt: e.createdAt.toISOString(),

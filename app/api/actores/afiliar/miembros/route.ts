@@ -17,7 +17,21 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  const mapped = members.map((m) => ({
+  interface MemberWithUser {
+    id: string;
+    userId: string;
+    role: string;
+    phone: string | null;
+    createdAt: Date;
+    user: {
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+    };
+  }
+
+  const mapped = (members as MemberWithUser[]).map((m) => ({
     id: m.id,
     userId: m.userId,
     name: m.user.name,

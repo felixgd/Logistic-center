@@ -42,7 +42,24 @@ export async function GET(req: NextRequest, { params }: { params: { solicitudId:
       include: { actor: { select: { id: true, name: true, address: true, whatsapp: true, city: true, lat: true, lng: true } } },
     });
 
-    const matches = supplies.map((s) => ({
+    interface SupplyWithActorDetails {
+      id: string;
+      name: string;
+      unit: string;
+      quantity: number;
+      actorId: string;
+      actor: {
+        id: string;
+        name: string;
+        address: string | null;
+        whatsapp: string | null;
+        city: string | null;
+        lat: number | null;
+        lng: number | null;
+      };
+    }
+
+    const matches = (supplies as any as SupplyWithActorDetails[]).map((s) => ({
       almacenId: s.actorId,
       almacenNombre: s.actor.name,
       almacenDireccion: s.actor.address,
@@ -64,6 +81,7 @@ export async function GET(req: NextRequest, { params }: { params: { solicitudId:
 
     return Response.json({ solicitud, matches });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    console.error("Matching by request API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }
