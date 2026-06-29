@@ -6,14 +6,14 @@ import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function POST(req: NextRequest) {
   try {
-    const { shipmentId, name, whatsapp, documentUrl } = await req.json();
+    const { shipmentId, name, whatsapp, documentNumber } = await req.json();
 
     if (!shipmentId || !name || !whatsapp) {
       return Response.json({ error: "shipmentId, name, y whatsapp son requeridos." }, { status: 400 });
     }
 
     // 1. Find or create the transporter actor
-    const { token, csrfToken, actor } = await findOrCreateActor({
+    const { token, csrfToken, actor, verificationUrl } = await findOrCreateActor({
       name,
       whatsapp,
       type: "transporter",
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       city: "Móvil",
       lat: null,
       lng: null,
-      documentUrl: documentUrl || null,
+      documentNumber: documentNumber || null,
     });
 
     // 2. Fetch the shipment to make sure it's valid and unassigned
@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
       csrfToken,
       actor,
       shipment: updatedShipment,
+      ...(verificationUrl ? { verificationUrl } : {}),
     });
   } catch (error: any) {
     console.error("Public claim-trip API error:", error);

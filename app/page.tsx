@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
 import { getAuthHeaders, setCsrfToken, clearCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect, { COUNTRY_CODES } from "@/components/CountryCodeSelect";
-import DocumentUpload from "@/components/DocumentUpload";
 import { 
   Compass, 
   Layout, 
@@ -227,7 +226,7 @@ export default function HomePage() {
   // Driver specific fields
   const [formVehicleType, setFormVehicleType] = useState("Camión");
   const [formCapacityKg, setFormCapacityKg] = useState("");
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentNumber, setDocumentNumber] = useState("");
 
   // OTP verification state
   const [verifCode, setVerifCode] = useState("");
@@ -491,7 +490,7 @@ export default function HomePage() {
     setVerifSent(false);
     setVerifMocked(false);
     setVerifMockCode("");
-    setDocumentFile(null);
+    setDocumentNumber("");
     setCountdown(0);
     setActiveModal(type);
   };
@@ -519,7 +518,7 @@ export default function HomePage() {
   const openClaimModal = (shipmentId: string) => {
     setSubmitError("");
     setSubmitSuccess("");
-    setDocumentFile(null);
+    setDocumentNumber("");
     setActiveClaimShipmentId(shipmentId);
     setActiveModal("claim");
   };
@@ -537,24 +536,14 @@ export default function HomePage() {
       return;
     }
 
-    if (activeModal === "driver" && !isAuthenticated && !documentFile) {
-      setSubmitError("Debes subir un documento de identificación (sujeto a verificación).");
+    if (activeModal === "driver" && !isAuthenticated && !documentNumber.trim()) {
+      setSubmitError("Debes ingresar tu número de identificación (sujeto a verificación).");
       return;
     }
 
     try {
       setSubmitLoading(true);
       setSubmitError("");
-
-      let documentUrl = "";
-      if (activeModal === "driver" && !isAuthenticated && documentFile) {
-        const fd = new FormData();
-        fd.append("file", documentFile);
-        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
-        const upData = await upRes.json();
-        if (!upRes.ok) { setSubmitError(upData.error); setSubmitLoading(false); return; }
-        documentUrl = upData.url;
-      }
 
       const payload: any = {
         action: activeModal,
@@ -572,7 +561,7 @@ export default function HomePage() {
         notes: formNotes,
         vehicleType: formVehicleType,
         capacityKg: Number(formCapacityKg) || 0,
-        ...(activeModal === "driver" && !isAuthenticated && documentUrl ? { documentUrl } : {}),
+        ...(activeModal === "driver" && !isAuthenticated && documentNumber.trim() ? { documentNumber: documentNumber.trim() } : {}),
       };
       if (!isAuthenticated && verifToken) {
         payload.phoneVerificationToken = verifToken;
@@ -603,6 +592,11 @@ export default function HomePage() {
       setIsAuthenticated(true);
       setActor(json.actor);
 
+      if (json.verificationUrl) {
+        window.location.href = json.verificationUrl;
+        return;
+      }
+
       setSubmitSuccess("¡Registro exitoso y publicado con éxito!");
       setTimeout(() => {
         setActiveModal(null);
@@ -623,24 +617,14 @@ export default function HomePage() {
       return;
     }
 
-    if (!isAuthenticated && !documentFile) {
-      setSubmitError("Debes subir un documento de identificación (sujeto a verificación).");
+    if (!isAuthenticated && !documentNumber.trim()) {
+      setSubmitError("Debes ingresar tu número de identificación (sujeto a verificación).");
       return;
     }
 
     try {
       setSubmitLoading(true);
       setSubmitError("");
-
-      let documentUrl = "";
-      if (!isAuthenticated && documentFile) {
-        const fd = new FormData();
-        fd.append("file", documentFile);
-        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
-        const upData = await upRes.json();
-        if (!upRes.ok) { setSubmitError(upData.error); setSubmitLoading(false); return; }
-        documentUrl = upData.url;
-      }
 
       const res = await fetch("/api/public/claim-trip", {
         method: "POST",
@@ -649,7 +633,7 @@ export default function HomePage() {
           shipmentId: activeClaimShipmentId,
           name: formName,
           whatsapp: fullFormPhone(),
-          ...(!isAuthenticated && documentUrl ? { documentUrl } : {}),
+          ...(!isAuthenticated && documentNumber.trim() ? { documentNumber: documentNumber.trim() } : {}),
         }),
       });
 
@@ -662,6 +646,12 @@ export default function HomePage() {
       if (json.token) localStorage.setItem("token", json.token);
       if (json.csrfToken) setCsrfToken(json.csrfToken);
       if (json.actor) localStorage.setItem("actor", JSON.stringify(json.actor));
+
+      if (json.verificationUrl) {
+        window.location.href = json.verificationUrl;
+        return;
+      }
+
       setSubmitSuccess("¡Viaje asignado con éxito! Revisa tus mensajes de WhatsApp para coordinar.");
       setTimeout(() => {
         setActiveModal(null);
@@ -1081,7 +1071,17 @@ export default function HomePage() {
                       <input type="number" value={formCapacityKg} onChange={(e) => setFormCapacityKg(e.target.value)} required placeholder="500" />
                     </div>
                   </div>
-                  {!isAuthenticated && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
+                  {!isAuthenticated && (
+                    <div className="form-group">
+                      <label>Número de identificación <small style={{ color: "var(--text-muted)", fontWeight: "normal" }}>(sujeto a verificación)</small></label>
+                      <input
+                        value={documentNumber}
+                        onChange={(e) => setDocumentNumber(e.target.value)}
+                        placeholder="INE, pasaporte, cédula..."
+                        required
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -1187,7 +1187,17 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {!isAuthenticated && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
+              {!isAuthenticated && (
+                <div className="form-group">
+                  <label>Número de identificación <small style={{ color: "var(--text-muted)", fontWeight: "normal" }}>(sujeto a verificación)</small></label>
+                  <input
+                    value={documentNumber}
+                    onChange={(e) => setDocumentNumber(e.target.value)}
+                    placeholder="INE, pasaporte, cédula..."
+                    required
+                  />
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>

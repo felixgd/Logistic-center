@@ -10,6 +10,7 @@ const EXEMPT_PATHS = [
   "/api/verificar/codigo",
   "/api/health",
   "/api/whatsapp/webhook",
+  "/api/webhooks/didit",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -36,7 +37,10 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "secret");
+    if (!process.env.JWT_SECRET) {
+      return NextResponse.json({ error: "JWT_SECRET no configurado" }, { status: 500 });
+    }
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jwtVerify(auth.slice(7), secret);
     const storedToken = (payload.csrfToken as string) || null;
 

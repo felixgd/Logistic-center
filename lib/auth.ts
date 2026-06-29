@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
 import { NextRequest } from "next/server";
 
-const SECRET = () => process.env.JWT_SECRET || "secret";
+const SECRET = () => {
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET no configurado");
+  return process.env.JWT_SECRET;
+};
 
 export type TokenPayload = {
   userId: string;

@@ -5,6 +5,7 @@ import { publishEvent } from "@/lib/pubsub";
 import { sanitizeText } from "@/lib/validation";
 import { generateCsrfToken } from "@/lib/csrf";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import { createDiditSession } from "@/lib/didit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     const lat = body.lat ? Number(body.lat) : null;
     const lng = body.lng ? Number(body.lng) : null;
     const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
-    const documentUrl = body.documentUrl || null;
+    const documentNumber = body.documentNumber || null;
 
     const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
     if (targetPhone.length < 7 || !isValidPhoneNumber(`+${targetPhone}`)) return jsonError(400, "Teléfono / WhatsApp inválido");
@@ -64,7 +65,8 @@ export async function POST(req: NextRequest) {
         lng: lng || null,
         vehicleType: type === "transportista" ? vehicleType : null,
         capacityKg: type === "transportista" ? capacityKg : null,
-        documentUrl,
+        documentNumber,
+        diditStatus: type === "transportista" ? "pending" : "not_started",
       },
     });
 
@@ -76,6 +78,21 @@ export async function POST(req: NextRequest) {
       whatsapp: actor.whatsapp,
     });
 
+    // Create Didit session for transporters
+    let verificationUrl: string | undefined;
+    if (actor.type === "transportista" && actor.diditStatus !== "approved") {
+      try {
+        const session = await createDiditSession(actor.id, user.email || undefined);
+        verificationUrl = session.url;
+        await prisma.actor.update({
+          where: { id: actor.id },
+          data: { diditSessionId: session.session_id, diditStatus: "pending" },
+        });
+      } catch (err) {
+        console.error("Error creating Didit session:", err);
+      }
+    }
+
     const csrfToken = generateCsrfToken();
     const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken });
 
@@ -85,6 +102,7 @@ export async function POST(req: NextRequest) {
         token,
         csrfToken,
         actor: { id: actor.id, type: actor.type, name: actor.name, email: user.email, isOwner: true },
+        ...(verificationUrl ? { verificationUrl } : {}),
       },
       { status: 201 }
     );

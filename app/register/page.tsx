@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
-import DocumentUpload from "@/components/DocumentUpload";
 import RegisterForm from "./RegisterForm";
 import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
 import { isValidPhoneNumber } from "libphonenumber-js";
@@ -58,7 +57,7 @@ function RegisterPageContent() {
   const [verifMocked, setVerifMocked] = useState(false);
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentNumber, setDocumentNumber] = useState("");
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -179,7 +178,7 @@ function RegisterPageContent() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!form.address.trim()) return "La dirección es requerida";
     if (form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
-    if (form.type === "transporter" && !documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
+    if (form.type === "transporter" && !documentNumber.trim()) return "Debes ingresar tu número de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -190,29 +189,22 @@ function RegisterPageContent() {
     const validationError = validateForm();
     if (validationError) { setError(validationError); return; }
 
-    let documentUrl = "";
-    if (documentFile) {
-      try {
-        const fd = new FormData();
-        fd.append("file", documentFile);
-        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
-        const upData = await upRes.json();
-        if (!upRes.ok) { setError(upData.error); return; }
-        documentUrl = upData.url;
-      } catch { setError("Error al subir el documento"); return; }
-    }
-
     try {
       const res = await fetch("/api/actores/register", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, phone: fullPhone(), whatsapp: fullPhone(), phoneVerificationToken: verifToken, documentUrl }),
+        body: JSON.stringify({ ...form, phone: fullPhone(), whatsapp: fullPhone(), phoneVerificationToken: verifToken, documentNumber: documentNumber || undefined }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       localStorage.setItem("token", data.token);
       if (data.csrfToken) setCsrfToken(data.csrfToken);
       localStorage.setItem("actor", JSON.stringify(data.actor));
-      router.push("/dashboard");
+
+      if (data.verificationUrl) {
+        window.location.href = data.verificationUrl;
+      } else {
+        router.push("/dashboard");
+      }
     } catch { setError("Error al registrarse"); }
   };
 
@@ -339,7 +331,17 @@ function RegisterPageContent() {
                     <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
                   </>
                 )}
-                {form.type === "transporter" && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
+                {form.type === "transporter" && (
+                  <div className="form-group">
+                    <label>Número de identificación <small style={{ color: "var(--text-muted)", fontWeight: "normal" }}>(sujeto a verificación)</small></label>
+                    <input
+                      value={documentNumber}
+                      onChange={(e) => setDocumentNumber(e.target.value)}
+                      placeholder="INE, pasaporte, cédula..."
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="register-buttons-field">
