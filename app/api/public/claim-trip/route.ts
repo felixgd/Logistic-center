@@ -3,13 +3,28 @@ import { prisma } from "@/lib/prisma";
 import { findOrCreateActor } from "@/lib/frictionless";
 import { publishEvent } from "@/lib/pubsub";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { getAuthActor } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { shipmentId, name, whatsapp, documentNumber } = await req.json();
+    const { shipmentId, name, whatsapp, documentNumber, phoneVerificationToken } = await req.json();
 
     if (!shipmentId || !name || !whatsapp) {
       return Response.json({ error: "shipmentId, name, y whatsapp son requeridos." }, { status: 400 });
+    }
+
+    const cleanWhatsapp = whatsapp.replace(/\D/g, "");
+    const authActor = getAuthActor(req);
+    if (!authActor) {
+      if (!phoneVerificationToken) {
+        return Response.json({ error: "Debes verificar tu teléfono antes de continuar." }, { status: 400 });
+      }
+      const verif = await prisma.phone_verification.findFirst({
+        where: { phone: cleanWhatsapp, token: phoneVerificationToken, verified: true },
+      });
+      if (!verif) {
+        return Response.json({ error: "Teléfono no verificado. Solicita un nuevo código." }, { status: 400 });
+      }
     }
 
     // 1. Find or create the transporter actor
