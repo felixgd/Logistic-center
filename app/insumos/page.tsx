@@ -181,7 +181,7 @@ export default function SuppliesPage() {
                 <div className="form-group"><label>Cantidad</label><input type="number" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))} required min="1" /></div>
                 <div className="form-group"><label>Unidad</label>
                   <select value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}>
-                    <option value="unidades">Unidades</option><option value="kg">Kilogramos</option><option value="litros">Litros</option><option value="cajas">Cajas</option><option value="palets">Palets</option>
+                    <option value="unidades">Unidades</option><option value="kg">Kilogramos</option><option value="litros">Litros</option><option value="cajas">Cajas</option><option value="paquetes">Paquetes</option><option value="palets">Palets</option>
                   </select>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>

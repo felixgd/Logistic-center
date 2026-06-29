@@ -4,6 +4,7 @@ const ALLOWED_UNITS: Record<string, string> = {
   litro: "litro", litros: "litro",
   caja: "caja", cajas: "caja",
   palet: "palet", palets: "palet",
+  paquete: "paquete", paquetes: "paquete",
 };
 
 const ALLOWED_URGENCIES = ["baja", "media", "alta", "critica"];
