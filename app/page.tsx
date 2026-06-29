@@ -950,37 +950,56 @@ export default function HomePage() {
             }}
           />
 
-          {/* Floating View Switcher */}
-          <button
-            onClick={() => setViewMode("list")}
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "80px",
-              zIndex: 1000,
-              backgroundColor: "var(--bg-card)",
-              color: "var(--text-main)",
-              border: "1px solid var(--border-color)",
-              padding: "0 16px",
-              height: "44px",
-              borderRadius: "22px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: "13px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              outline: "none"
-            }}
-          >
-            📋 Vista Lista
-          </button>
+          {/* Floating Controls Toolbar */}
+          <div style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+            zIndex: 1000,
+            display: "flex",
+            gap: "10px",
+            alignItems: "center"
+          }}>
+            {/* Floating View Switcher */}
+            <button
+              onClick={() => setViewMode("list")}
+              style={{
+                backgroundColor: "var(--bg-card)",
+                color: "var(--text-main)",
+                border: "1px solid var(--border-color)",
+                padding: "0 16px",
+                height: "44px",
+                borderRadius: "22px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                outline: "none"
+              }}
+            >
+              📋 Vista Lista
+            </button>
 
-          {/* Floating refresh button */}
-          <button className="floating-refresh" onClick={fetchData} title="Actualizar datos" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowsClockwise size={16} weight="bold" />
-          </button>
+            {/* Floating refresh button */}
+            <button 
+              className="floating-refresh" 
+              onClick={fetchData} 
+              title="Actualizar datos" 
+              style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                position: "static",
+                margin: 0,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+              }}
+            >
+              <ArrowsClockwise size={16} weight="bold" />
+            </button>
+          </div>
         </main>
       ) : (
         <main className="list-container-wrapper" style={{ flex: 1, padding: "24px", overflowY: "auto", backgroundColor: "#f8fafc" }}>
