@@ -24,6 +24,7 @@ export default function SuppliesPage() {
   const [solicitarId, setSolicitarId] = useState<string | null>(null);
   const [solicitarForm, setSolicitarForm] = useState({ quantity: "" });
   const [searchTerm, setSearchTerm] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = getAuthHeaders();
@@ -50,11 +51,17 @@ export default function SuppliesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setError("");
-    const res = await fetch("/api/insumos", { method: "POST", headers, body: JSON.stringify({ ...form, quantity: Number(form.quantity) }) });
-    const data = await res.json();
-    if (!res.ok) { setError(data.error); return; }
-    setForm({ category: "general", name: "", unit: "unidad", quantity: "" }); setShowForm(false);
-    invalidateCache("/api/insumos");
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/insumos", { method: "POST", headers, body: JSON.stringify({ ...form, quantity: Number(form.quantity) }) });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setForm({ category: "general", name: "", unit: "unidad", quantity: "" }); setShowForm(false);
+      invalidateCache("/api/insumos");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -81,22 +88,27 @@ export default function SuppliesPage() {
 
   const handleCrearViaje = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!solicitarId) return;
+    if (!solicitarId || submitting) return;
     const supply = supplies.find(s => s.id === solicitarId);
     if (!supply) return;
-    const res = await fetch("/api/viajes", {
-      method: "POST", headers,
-      body: JSON.stringify({
-        warehouseActorId: supply.actorId,
-        reliefActorId: actor.id,
-        items: [{ name: supply.name, quantity: Number(solicitarForm.quantity), unit: supply.unit, supplyId: supply.id }],
-      }),
-    });
-    if (!res.ok) { const d = await res.json(); setError(d.error); return; }
-    setSolicitarId(null);
-    setSolicitarForm({ quantity: "" });
-    invalidateCache("/api/insumos");
-    invalidateCache("/api/viajes");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/viajes", {
+        method: "POST", headers,
+        body: JSON.stringify({
+          warehouseActorId: supply.actorId,
+          reliefActorId: actor.id,
+          items: [{ name: supply.name, quantity: Number(solicitarForm.quantity), unit: supply.unit, supplyId: supply.id }],
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); setError(d.error); return; }
+      setSolicitarId(null);
+      setSolicitarForm({ quantity: "" });
+      invalidateCache("/api/insumos");
+      invalidateCache("/api/viajes");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isRelief = actor.type === "relief";
@@ -173,8 +185,8 @@ export default function SuppliesPage() {
                   </select>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary">Guardar</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)} disabled={submitting}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? "Guardando..." : "Guardar"}</button>
                 </div>
               </form>
             </div>
@@ -190,8 +202,8 @@ export default function SuppliesPage() {
               <form onSubmit={handleCrearViaje}>
                 <div className="form-group"><label>Cantidad</label><input type="number" value={solicitarForm.quantity} onChange={(e) => setSolicitarForm((f) => ({ ...f, quantity: e.target.value }))} required min="1" max={supplies.find(s => s.id === solicitarId)?.quantity} /></div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setSolicitarId(null)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary">Crear Viaje</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setSolicitarId(null)} disabled={submitting}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? "Creando..." : "Crear Viaje"}</button>
                 </div>
               </form>
             </div>
@@ -293,7 +305,8 @@ export default function SuppliesPage() {
                                 </div>
                                 {item.quantity > 0 && (
                                   <button className="btn btn-primary" style={{ alignSelf: "center", marginLeft: "auto" }}
-                                    onClick={() => { setSolicitarId(item.id); setSolicitarForm({ quantity: "" }); }}>
+                                    onClick={() => { setSolicitarId(item.id); setSolicitarForm({ quantity: "" }); }}
+                                    disabled={submitting}>
                                     Solicitar
                                   </button>
                                 )}
