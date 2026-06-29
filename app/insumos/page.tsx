@@ -109,27 +109,39 @@ export default function SuppliesPage() {
           acc[key].items.push(s);
           return acc;
         }, {})
-      ).map(([_, g]: any) => ({
-        name: g.name,
-        unit: g.unit,
-        totalQuantity: g.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0),
-        totalReserved: g.items.reduce((sum: number, i: any) => sum + (i.quantityReserved || 0), 0),
-        items: g.items,
-        _estado: g.totalQuantity > 0 ? "Disponible" : g.totalReserved > 0 ? "Reservado" : "Agotado",
-      }))
-    : supplies.map((s: any) => ({
-        name: s.name,
-        unit: s.unit,
-        totalQuantity: s.quantity,
-        totalReserved: s.quantityReserved || 0,
-        items: [s],
-        supplyId: s.id,
-        version: s.version,
-        _estado: s.quantity > 0 ? "Disponible" : (s.quantityReserved || 0) > 0 ? "Reservado" : "Agotado",
-      }));
+      ).map(([_, g]: any) => {
+        const totalQuantity = g.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
+        const totalReserved = g.items.reduce((sum: number, i: any) => sum + (i.quantityReserved || 0), 0);
+        const disponible = Math.max(totalQuantity - totalReserved, 0);
+        return {
+          name: g.name,
+          unit: g.unit,
+          totalQuantity,
+          totalReserved,
+          disponible,
+          items: g.items,
+          _estado: disponible > 0 ? "Disponible" : totalReserved > 0 ? "Reservado" : "Agotado",
+        };
+      })
+    : supplies.map((s: any) => {
+        const totalQuantity = s.quantity;
+        const totalReserved = s.quantityReserved || 0;
+        const disponible = Math.max(totalQuantity - totalReserved, 0);
+        return {
+          name: s.name,
+          unit: s.unit,
+          totalQuantity,
+          totalReserved,
+          disponible,
+          items: [s],
+          supplyId: s.id,
+          version: s.version,
+          _estado: disponible > 0 ? "Disponible" : totalReserved > 0 ? "Reservado" : "Agotado",
+        };
+      });
 
   const filteredSupplyRows = useSearch(supplyRows, searchTerm, [
-    "name", "totalQuantity", "totalReserved", "unit", "_estado",
+    "name", "disponible", "totalQuantity", "totalReserved", "unit", "_estado",
   ]);
   const { sortedData: sortedSupplyRows, SortHeader } = useSort(filteredSupplyRows, "name");
 
@@ -198,7 +210,7 @@ export default function SuppliesPage() {
                 <thead>
                   <tr>
                     <SortHeader label="Insumo" sortKey="name" />
-                    <SortHeader label="Disponible" sortKey="totalQuantity" />
+                    <SortHeader label="Disponible" sortKey="disponible" />
                     <SortHeader label="Reservado" sortKey="totalReserved" />
                     <SortHeader label="Unidad" sortKey="unit" />
                     <SortHeader label="Estado" sortKey="_estado" />
@@ -207,8 +219,8 @@ export default function SuppliesPage() {
                 </thead>
                 <tbody>
                   {sortedSupplyRows.map((g: any) => {
-                    const badgeClass = g.totalQuantity > 0 ? "badge-completado" : g.totalReserved > 0 ? "badge-pendiente" : "badge-cancelado";
-                    const badgeLabel = g.totalQuantity > 0 ? "Disponible" : g.totalReserved > 0 ? "Reservado" : "Agotado";
+                    const badgeClass = g.disponible > 0 ? "badge-completado" : g.totalReserved > 0 ? "badge-pendiente" : "badge-cancelado";
+                    const badgeLabel = g.disponible > 0 ? "Disponible" : g.totalReserved > 0 ? "Reservado" : "Agotado";
                     const groupKey = isRelief ? g.name : g.supplyId;
                     const expanded = detalleId === groupKey;
                     return (
@@ -238,7 +250,7 @@ export default function SuppliesPage() {
                             ) : (
                               <span onClick={() => { setEditingId(g.supplyId); setEditValue(String(g.totalQuantity)); }}
                                 style={{ cursor: "pointer", padding: "2px 8px", minWidth: 40, textAlign: "center", display: "inline-block", borderBottom: "1px dashed #94a3b8" }}>
-                                {g.totalQuantity}
+                                {g.disponible}
                               </span>
                             )}
                             <button className="btn btn-secondary" style={{ padding: "2px 8px", fontSize: 12, minWidth: 28, borderRadius: 4 }}
@@ -275,7 +287,7 @@ export default function SuppliesPage() {
                                   <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
                                     <div>Ubicación: {[item.actor?.address, item.actor?.city].filter(Boolean).join(", ")}</div>
                                     <div>Distancia: {dist !== null ? `${dist} km` : "—"}</div>
-                                    <div>Disponible: <strong>{item.quantity}</strong> {item.unit}</div>
+                                    <div>Disponible: <strong>{Math.max((item.quantity || 0) - (item.quantityReserved || 0), 0)}</strong> {item.unit}</div>
                                     <div>Reservado: <strong>{item.quantityReserved || 0}</strong> {item.unit}</div>
                                   </div>
                                 </div>
