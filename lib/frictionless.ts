@@ -63,6 +63,8 @@ export async function findOrCreateActor(input: FrictionlessInput) {
       data: {
         name,
         email,
+        phone: cleanWhatsapp,
+        phoneVerified: true,
       },
     });
 
