@@ -49,6 +49,10 @@ export async function POST(req: NextRequest) {
     });
     if (existing) return jsonError(400, "Ya tienes registrado este insumo");
 
+    const quantityReserved = body.quantityReserved !== undefined ? Number(body.quantityReserved) : 0;
+    if (isNaN(quantityReserved) || quantityReserved < 0) return jsonError(400, "Cantidad reservada inválida");
+    if (qtyValidation.quantity - quantityReserved < 0) return jsonError(400, "La cantidad disponible no puede ser menor a 0");
+
     const supply = await prisma.supply.create({
       data: {
         userId: auth.userId,
@@ -57,6 +61,7 @@ export async function POST(req: NextRequest) {
         name,
         unit,
         quantity: qtyValidation.quantity,
+        quantityReserved,
         status: "available",
         notes,
       },
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     await publishEvent("insumo.registrado", {
       userId: auth.userId, actorId: auth.actorId,
-      supplyId: supply.id, name, quantity: qtyValidation.quantity, unit,
+      supplyId: supply.id, name, quantity: qtyValidation.quantity, quantityReserved, unit,
     });
 
     return Response.json(supply, { status: 201 });

@@ -111,6 +111,7 @@ export default function RequestsPage() {
             name: request.name,
             unit: request.unit,
             quantity: Number(envioForm.quantity),
+            quantityReserved: Number(envioForm.quantity),
           }),
         });
         if (!createRes.ok) {
