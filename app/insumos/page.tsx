@@ -200,7 +200,7 @@ export default function SuppliesPage() {
                 {supplies.find(s => s.id === solicitarId)?.name} — {supplies.find(s => s.id === solicitarId)?.actor?.name}
               </p>
               <form onSubmit={handleCrearViaje}>
-                <div className="form-group"><label>Cantidad</label><input type="number" value={solicitarForm.quantity} onChange={(e) => setSolicitarForm((f) => ({ ...f, quantity: e.target.value }))} required min="1" max={supplies.find(s => s.id === solicitarId)?.quantity} /></div>
+                <div className="form-group"><label>Cantidad</label><input type="number" value={solicitarForm.quantity} onChange={(e) => setSolicitarForm((f) => ({ ...f, quantity: e.target.value }))} required min="1" max={Math.max((supplies.find(s => s.id === solicitarId)?.quantity || 0) - (supplies.find(s => s.id === solicitarId)?.quantityReserved || 0), 0)} /></div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setSolicitarId(null)} disabled={submitting}>Cancelar</button>
                   <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? "Creando..." : "Crear Viaje"}</button>
@@ -269,7 +269,7 @@ export default function SuppliesPage() {
                               onClick={() => updateQuantity(g.supplyId, "add", 1)}>+</button>
                           </span>
                         ) : (
-                          g.totalQuantity
+                          g.disponible
                         )}
                       </td>
                       <td><span style={{ color: "var(--text-muted)", fontSize: 14 }}>{g.totalReserved}</span></td>
