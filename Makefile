@@ -13,7 +13,7 @@ build:
 
 # Docker
 up:
-	docker compose up -d
+	docker compose up -d postgres nats
 
 down:
 	docker compose down
