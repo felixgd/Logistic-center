@@ -948,12 +948,6 @@ export default function TripsPage() {
                             {insumosText(activeTrip) || "Sin insumos asignados"}
                           </p>
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em" }}>ETA ESTIMADO</span>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginTop: 4 }}>
-                            {activeTrip.scheduledAt ? formatDate(activeTrip.scheduledAt) : "14:30 PM"}
-                          </p>
-                        </div>
                       </div>
 
                       {/* Navigation buttons */}
@@ -978,76 +972,6 @@ export default function TripsPage() {
                         </a>
                       </div>
 
-                      {/* WhatsApp Contacts Section */}
-                      {(activeTrip.estado === "assigned" || activeTrip.estado === "in_transit") && (
-                        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 16, marginTop: 12 }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
-                            CONTACTOS DE WHATSAPP
-                          </span>
-                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                            {actor?.type !== "warehouse" && activeTrip.almacen && (
-                              <div style={{ flex: "1 1 180px", background: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>ALMACÉN</span>
-                                  <p style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-main)" }}>{activeTrip.almacen.name}</p>
-                                </div>
-                                {activeTrip.almacen.whatsapp ? (
-                                  <a 
-                                    href={`https://wa.me/${activeTrip.almacen.whatsapp.replace(/[^0-9]/g, "")}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
-                                  >
-                                    WhatsApp
-                                  </a>
-                                ) : (
-                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
-                                )}
-                              </div>
-                            )}
-                            {actor?.type !== "relief" && activeTrip.centroAyuda && (
-                              <div style={{ flex: "1 1 180px", background: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>CENTRO AYUDA</span>
-                                  <p style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-main)" }}>{activeTrip.centroAyuda.name}</p>
-                                </div>
-                                {activeTrip.centroAyuda.whatsapp ? (
-                                  <a 
-                                    href={`https://wa.me/${activeTrip.centroAyuda.whatsapp.replace(/[^0-9]/g, "")}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
-                                  >
-                                    WhatsApp
-                                  </a>
-                                ) : (
-                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
-                                )}
-                              </div>
-                            )}
-                            {actor?.type !== "transporter" && activeTrip.transportista && (
-                              <div style={{ flex: "1 1 180px", background: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>TRANSPORTISTA</span>
-                                  <p style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-main)" }}>{activeTrip.transportista.name}</p>
-                                </div>
-                                {activeTrip.transportista.whatsapp ? (
-                                  <a 
-                                    href={`https://wa.me/${activeTrip.transportista.whatsapp.replace(/[^0-9]/g, "")}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
-                                  >
-                                    WhatsApp
-                                  </a>
-                                ) : (
-                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     {/* Right: Map */}
@@ -1061,6 +985,80 @@ export default function TripsPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* WhatsApp Contacts Section */}
+                  {(activeTrip.estado === "assigned" || activeTrip.estado === "in_transit" || activeTrip.estado === "delivered") && (
+                    <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 16, marginTop: 20 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
+                        CONTACTOS DE WHATSAPP
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+                        {actor?.type !== "warehouse" && activeTrip.almacen && (
+                          <div style={{ background: "var(--bg-main)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>ALMACÉN</span>
+                              <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "var(--text-main)", lineHeight: "1.2" }}>{activeTrip.almacen.name}</p>
+                              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "2px 0 0 0" }}>{activeTrip.almacen.whatsapp || "—"}</p>
+                            </div>
+                            {activeTrip.almacen.whatsapp ? (
+                              <a 
+                                href={`https://wa.me/${activeTrip.almacen.whatsapp.replace(/[^0-9]/g, "")}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+                              >
+                                WhatsApp
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
+                            )}
+                          </div>
+                        )}
+                        {actor?.type !== "relief" && activeTrip.centroAyuda && (
+                          <div style={{ background: "var(--bg-main)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>CENTRO AYUDA</span>
+                              <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "var(--text-main)", lineHeight: "1.2" }}>{activeTrip.centroAyuda.name}</p>
+                              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "2px 0 0 0" }}>{activeTrip.centroAyuda.whatsapp || "—"}</p>
+                            </div>
+                            {activeTrip.centroAyuda.whatsapp ? (
+                              <a 
+                                href={`https://wa.me/${activeTrip.centroAyuda.whatsapp.replace(/[^0-9]/g, "")}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+                              >
+                                WhatsApp
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
+                            )}
+                          </div>
+                        )}
+                        {actor?.type !== "transporter" && activeTrip.transportista && (
+                          <div style={{ background: "var(--bg-main)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>TRANSPORTISTA</span>
+                              <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "var(--text-main)", lineHeight: "1.2" }}>{activeTrip.transportista.name}</p>
+                              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "2px 0 0 0" }}>{activeTrip.transportista.whatsapp || "—"}</p>
+                            </div>
+                            {activeTrip.transportista.whatsapp ? (
+                              <a 
+                                href={`https://wa.me/${activeTrip.transportista.whatsapp.replace(/[^0-9]/g, "")}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+                              >
+                                WhatsApp
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {activeTrip && (activeTrip.estado === "assigned" || activeTrip.estado === "in_transit") && actor?.type === "transporter" && (
                     <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 20, paddingTop: 16 }}>
@@ -1186,7 +1184,7 @@ export default function TripsPage() {
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)" }}>
-                          {t.scheduledAt ? formatDate(t.scheduledAt).toUpperCase() : "HOY, 14:30 PM"}
+                          {formatDate(t.createdAt).toUpperCase()}
                         </span>
                         <span className={`v-badge ${t.estado === "in_transit" ? "v-badge-transito" : "v-badge-pendiente"}`} style={{ fontSize: 9, padding: "2px 6px" }}>
                           {STATUS_LABELS[t.estado] || t.estado}
