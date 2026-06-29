@@ -798,6 +798,8 @@ export default function DashboardPage() {
                 setShowCreateProfileModal(false);
 
                 if (data.verificationUrl) {
+                  localStorage.removeItem("token");
+                  localStorage.removeItem("actor");
                   window.location.href = data.verificationUrl;
                 } else {
                   window.location.href = "/dashboard";
