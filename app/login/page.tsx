@@ -59,6 +59,8 @@ export default function LoginPage() {
     return true;
   };
 
+  const [kycUrl, setKycUrl] = useState("");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -79,7 +81,13 @@ export default function LoginPage() {
         body: JSON.stringify({ phone: fullPhone(), code }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error); return; }
+      if (!res.ok) {
+        setError(data.error);
+        if (data.code === "KYC_PENDING" && data.verificationUrl) {
+          setKycUrl(data.verificationUrl);
+        }
+        return;
+      }
       localStorage.setItem("token", data.token);
       if (data.csrfToken) setCsrfToken(data.csrfToken);
       localStorage.setItem("actor", JSON.stringify(data.actor));
@@ -102,6 +110,14 @@ export default function LoginPage() {
         <h2>Iniciar Sesión</h2>
         <p className="subtitle">Sistema de Logística</p>
         {error && <div className={`alert ${error.includes("enviado") || error.includes("reenviado") ? "" : "alert-error"}`}>{error}</div>}
+        {kycUrl && (
+          <div style={{ marginBottom: 16 }}>
+            <a href={kycUrl} className="btn btn-primary" style={{ width: "100%", textAlign: "center", display: "block" }}>
+              Continuar verificación
+            </a>
+          </div>
+        )}
+        {!kycUrl && (
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Teléfono / WhatsApp</label>
@@ -151,6 +167,7 @@ export default function LoginPage() {
             </div>
           )}
         </form>
+        )}
         <div className="link">¿No tienes cuenta? <Link href="/register">Regístrate aquí</Link></div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken, jsonError } from "@/lib/auth";
 import { generateCsrfToken } from "@/lib/csrf";
+import { createDiditSession } from "@/lib/didit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,8 +22,36 @@ export async function POST(req: NextRequest) {
     const actor = membership?.actor || await prisma.actor.findFirst({ where: { userId: user.id } });
     if (!actor) return jsonError(404, "Cuenta sin perfil de actor");
 
-    if (actor.kycBlocked) {
-      return jsonError(403, "Cuenta bloqueada por exceder intentos de verificación de identidad. Contacta a soporte.");
+    const isKycMocked = process.env.IS_KYC_MOCKED === "true";
+    if (!isKycMocked) {
+      const userActors = await prisma.actor.findMany({ where: { userId: user.id }, include: { user: true } });
+      const transporterActors = userActors.filter((a) => a.type === "transporter" || a.type === "transportista");
+      const blockedTransporter = transporterActors.find((a) => a.kycBlocked);
+      if (blockedTransporter) {
+        return jsonError(403, "Cuenta bloqueada por exceder intentos de verificación de identidad. Contacta a soporte.");
+      }
+      const pendingTransporter = transporterActors.find((a) => a.diditStatus !== "approved");
+      if (pendingTransporter) {
+        let verificationUrl: string | undefined;
+        try {
+          const session = await createDiditSession(pendingTransporter.id, pendingTransporter.user?.email || undefined);
+          verificationUrl = session.url;
+          await prisma.actor.update({
+            where: { id: pendingTransporter.id },
+            data: { diditSessionId: session.session_id, diditStatus: "pending" },
+          });
+        } catch {
+          // fallback: return error without verificationUrl
+        }
+        return Response.json(
+          {
+            error: "Debes completar la verificación de identidad (KYC) antes de usar la plataforma.",
+            code: "KYC_PENDING",
+            ...(verificationUrl ? { verificationUrl } : {}),
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const isOwner = !membership;
