@@ -978,11 +978,6 @@ export default function HomePage() {
           <ArrowsClockwise size={16} weight="bold" />
         </button>
       </main>
-          {/* Floating refresh button */}
-          <button className="floating-refresh" onClick={fetchData} title="Actualizar datos">
-            🔄
-          </button>
-        </main>
       ) : (
         <main className="list-container-wrapper" style={{ flex: 1, padding: "24px", overflowY: "auto", backgroundColor: "#f8fafc" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
