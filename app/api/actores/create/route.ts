@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     // Switch context automatically to the newly created actor
     const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: auth.userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus });
+    const token = signToken({ userId: auth.userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
 
     return Response.json({
       mensaje: "Perfil creado exitosamente",

@@ -13,7 +13,7 @@ function decodeJwt(token: string): Record<string, unknown> | null {
 }
 
 export default function KycBanner() {
-  const [info, setInfo] = useState<{ actorType?: string; diditStatus?: string } | null>(null);
+  const [info, setInfo] = useState<{ actorType?: string; diditStatus?: string; kycBlocked?: boolean } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +24,7 @@ export default function KycBanner() {
     setInfo({
       actorType: payload.actorType as string,
       diditStatus: payload.diditStatus as string,
+      kycBlocked: payload.kycBlocked as boolean,
     });
   }, []);
 
@@ -46,6 +47,22 @@ export default function KycBanner() {
 
   if (!info || info.actorType !== "transporter" || info.diditStatus === "approved") {
     return null;
+  }
+
+  if (info.kycBlocked) {
+    return (
+      <div style={{
+        background: "#1a1a2e",
+        color: "#e0e0e0",
+        padding: "10px 16px",
+        textAlign: "center",
+        fontSize: 14,
+        fontWeight: 500,
+        borderBottom: "1px solid #e53e3e",
+      }}>
+        🚫 Tu cuenta ha sido bloqueada por exceder los intentos de verificación. Contacta a soporte.
+      </div>
+    );
   }
 
   const isPending = !info.diditStatus || info.diditStatus === "not_started" || info.diditStatus === "pending";

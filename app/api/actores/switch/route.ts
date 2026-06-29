@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
       actorType: actor.type,
       csrfToken,
       diditStatus: actor.diditStatus,
+      kycBlocked: actor.kycBlocked,
     });
 
     return Response.json({

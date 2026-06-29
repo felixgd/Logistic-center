@@ -40,6 +40,9 @@ export async function findOrCreateActor(input: FrictionlessInput) {
   let userId = "";
 
   if (actor) {
+    if (actor.kycBlocked) {
+      throw new Error("No puedes usar esta cuenta. Ha sido bloqueada por exceder intentos de verificación.");
+    }
     userId = actor.userId;
     // Update coordinates, address, and city if provided, to keep it current
     actor = await prisma.actor.update({
@@ -125,7 +128,7 @@ export async function findOrCreateActor(input: FrictionlessInput) {
 
   // 4. Sign and return token along with actor details
   const csrfToken = generateCsrfToken();
-  const token = signToken({ userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus });
+  const token = signToken({ userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
 
   return {
     token,

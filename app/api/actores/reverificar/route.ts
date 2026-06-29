@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     const actor = await prisma.actor.findUnique({ where: { id: auth.actorId }, include: { user: true } });
     if (!actor) return jsonError(404, "Actor no encontrado");
     if (actor.type !== "transporter") return jsonError(400, "Solo transportistas pueden verificar identidad");
+    if (actor.kycBlocked) return jsonError(403, "Cuenta bloqueada por exceder intentos de verificación");
 
     const isKycMocked = process.env.IS_KYC_MOCKED === "true";
     if (isKycMocked) {

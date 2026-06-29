@@ -28,6 +28,11 @@ export async function POST(req: NextRequest) {
     const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
     if (targetPhone.length < 7 || !isValidPhoneNumber(`+${targetPhone}`)) return jsonError(400, "Teléfono / WhatsApp inválido");
 
+    const blockedActor = await prisma.actor.findFirst({ where: { whatsapp: targetPhone, kycBlocked: true } });
+    if (blockedActor) {
+      return jsonError(403, "No puedes registrarte con este número. La cuenta asociada fue bloqueada por exceder intentos de verificación.");
+    }
+
     if (!phoneVerificationToken) return jsonError(400, "Debes verificar tu teléfono antes de registrarte");
 
     const verif = await prisma.phone_verification.findFirst({
@@ -103,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus });
+    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
 
     return Response.json(
       {

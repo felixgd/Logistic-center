@@ -39,14 +39,18 @@ export async function middleware(req: NextRequest) {
 
       const actorType = payload.actorType as string;
       const diditStatus = payload.diditStatus as string;
+      const kycBlocked = payload.kycBlocked as boolean;
       const isKycMocked = process.env.IS_KYC_MOCKED === "true";
 
-      if (
-        !isKycMocked &&
-        actorType === "transporter" &&
-        diditStatus !== "approved" &&
-        !KYC_EXEMPT_PATHS.some((p) => req.nextUrl.pathname === p)
-      ) {
+      const isOnKycExemptPath = KYC_EXEMPT_PATHS.some((p) => req.nextUrl.pathname === p);
+
+      if (!isKycMocked && actorType === "transporter" && diditStatus !== "approved" && !isOnKycExemptPath) {
+        if (kycBlocked) {
+          return NextResponse.json(
+            { error: "Cuenta bloqueada por exceder intentos de verificación", code: "KYC_BLOCKED" },
+            { status: 403 }
+          );
+        }
         return NextResponse.json(
           { error: "Debes completar la verificación KYC antes de usar la plataforma", code: "KYC_PENDING" },
           { status: 403 }

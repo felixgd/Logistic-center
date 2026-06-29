@@ -12,6 +12,7 @@ export type TokenPayload = {
   actorType: string;
   csrfToken?: string;
   diditStatus?: string;
+  kycBlocked?: boolean;
 };
 
 export function signToken(payload: TokenPayload): string {

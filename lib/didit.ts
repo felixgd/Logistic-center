@@ -134,15 +134,32 @@ export async function processDiditWebhook(body: any) {
   const updateData: Record<string, unknown> = { diditStatus, diditSessionId: session_id };
 
   if (status === "Approved" && decision) {
-    updateData.verified = true;
     const idVerification = decision.id_verifications?.[0];
-    if (idVerification?.document_number && !actor.documentNumber) {
-      updateData.documentNumber = idVerification.document_number;
+    const diditDocumentNumber = idVerification?.document_number;
+
+    if (actor.documentNumber && diditDocumentNumber && actor.documentNumber !== diditDocumentNumber) {
+      updateData.diditStatus = "document_mismatch";
+      updateData.verified = false;
+    } else {
+      updateData.verified = true;
+      if (diditDocumentNumber && !actor.documentNumber) {
+        updateData.documentNumber = diditDocumentNumber;
+      }
     }
   }
 
   if (status === "Declined" || status === "Expired" || status === "Kyc Expired" || status === "Abandoned") {
     updateData.verified = false;
+  }
+
+  const resolvedStatus = (updateData.diditStatus as string) || diditStatus;
+  const TERMINAL_FAILURES = ["rejected", "expired", "abandoned", "document_mismatch"];
+  if (TERMINAL_FAILURES.includes(resolvedStatus)) {
+    const newAttempts = (actor.kycAttempts || 0) + 1;
+    updateData.kycAttempts = newAttempts;
+    if (newAttempts >= 2) {
+      updateData.kycBlocked = true;
+    }
   }
 
   await prisma.actor.update({ where: { id: vendor_data }, data: updateData });

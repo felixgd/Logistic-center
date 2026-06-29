@@ -66,6 +66,12 @@ function VerificationCompleteContent() {
       color: "#dc2626",
       message: "No pudimos verificar tu identidad. Puedes intentar nuevamente con un documento diferente.",
     },
+    document_mismatch: {
+      title: "Documento no coincide",
+      icon: "⚠️",
+      color: "#dc2626",
+      message: "El número de identificación registrado no coincide con el verificado por Didit. Contacta a soporte para resolver este problema.",
+    },
     "In Review": {
       title: "Verificación en revisión",
       icon: "⏳",

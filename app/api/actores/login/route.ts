@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
     const actor = membership?.actor || await prisma.actor.findFirst({ where: { userId: user.id } });
     if (!actor) return jsonError(404, "Cuenta sin perfil de actor");
 
+    if (actor.kycBlocked) {
+      return jsonError(403, "Cuenta bloqueada por exceder intentos de verificación de identidad. Contacta a soporte.");
+    }
+
     const isOwner = !membership;
 
     const verif = await prisma.phone_verification.findFirst({
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus });
+    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
 
     return Response.json({
       token,
