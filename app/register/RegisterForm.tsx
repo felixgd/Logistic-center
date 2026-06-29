@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
-import DocumentUpload from "@/components/DocumentUpload";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
 
@@ -34,7 +33,7 @@ function RegisterFormInner() {
   const [verifMockCode, setVerifMockCode] = useState("");
   const [countdown, setCountdown] = useState(0);
   const [countryCode, setCountryCode] = useState("+52");
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentNumber, setDocumentNumber] = useState("");
 
   useEffect(() => {
     if (affiliateCode) {
@@ -108,7 +107,7 @@ function RegisterFormInner() {
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!affiliateCode && !form.address.trim()) return "La dirección es requerida";
     if (!affiliateCode && form.type === "transporter" && !form.vehicleType.trim()) return "El tipo de vehículo es requerido";
-    if (!affiliateCode && form.type === "transporter" && !documentFile) return "Debes subir un documento de identificación (sujeto a verificación)";
+    if (!affiliateCode && form.type === "transporter" && !documentNumber.trim()) return "Debes ingresar tu número de identificación (sujeto a verificación)";
     if (!verifToken) return "Debes verificar tu teléfono antes de registrarte";
     return null;
   };
@@ -122,21 +121,9 @@ function RegisterFormInner() {
     const full = fullPhone();
     const endpoint = affiliateCode ? "/api/actores/afiliar/registrar" : "/api/actores/register";
 
-    let documentUrl = "";
-    if (!affiliateCode && form.type === "transporter" && documentFile) {
-      try {
-        const fd = new FormData();
-        fd.append("file", documentFile);
-        const upRes = await fetch("/api/upload/document", { method: "POST", body: fd });
-        const upData = await upRes.json();
-        if (!upRes.ok) { setError(upData.error); return; }
-        documentUrl = upData.url;
-      } catch { setError("Error al subir el documento"); return; }
-    }
-
     const body = affiliateCode
       ? { code: affiliateCode, name: form.name, phone: full, email: form.email, phoneVerificationToken: verifToken || undefined }
-      : { ...form, phone: full, whatsapp: full, phoneVerificationToken: verifToken || undefined, documentUrl };
+      : { ...form, phone: full, whatsapp: full, phoneVerificationToken: verifToken || undefined, documentNumber: documentNumber || undefined };
 
     try {
       const res = await fetch(endpoint, {
@@ -148,7 +135,12 @@ function RegisterFormInner() {
       localStorage.setItem("token", data.token);
       if (data.csrfToken) setCsrfToken(data.csrfToken);
       localStorage.setItem("actor", JSON.stringify(data.actor));
-      router.push("/dashboard");
+
+      if (data.verificationUrl) {
+        window.location.href = data.verificationUrl;
+      } else {
+        router.push("/dashboard");
+      }
     } catch { setError("Error al registrarse"); }
   };
 
@@ -313,7 +305,17 @@ function RegisterFormInner() {
                 <div className="form-group"><label>Capacidad (kg)</label><input type="number" value={form.capacityKg || ""} onChange={(e) => update("capacityKg", Number(e.target.value))} /></div>
               </>
             )}
-            {form.type === "transporter" && <DocumentUpload file={documentFile} onFileChange={setDocumentFile} />}
+            {form.type === "transporter" && (
+              <div className="form-group">
+                <label>Número de identificación <small style={{ color: "var(--text-muted)", fontWeight: "normal" }}>(sujeto a verificación)</small></label>
+                <input
+                  value={documentNumber}
+                  onChange={(e) => setDocumentNumber(e.target.value)}
+                  placeholder="INE, pasaporte, cédula..."
+                  required
+                />
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Atrás</button>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={!verifToken}>Crear cuenta</button>

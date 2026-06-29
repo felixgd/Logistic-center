@@ -26,26 +26,28 @@ model account {
 }
 
 model actor {
-  id          String   @id @default(cuid())
-  userId      String
-  type        String
-  name        String
-  contactName String?
-  phone       String?
-  whatsapp    String?
-  address     String?
-  city        String?
-  lat         Float?
-  lng         Float?
-  vehicleType String?
-  capacityKg  Int?
-  verified    Boolean  @default(false)
-  documentUrl String?
-  createdAt   DateTime @default(now()) @db.Timestamp(6)
-  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  supply      supply[]
-  request     request[]
-  eventLog    event_log[]
+  id              String   @id @default(cuid())
+  userId          String
+  type            String
+  name            String
+  contactName     String?
+  phone           String?
+  whatsapp        String?
+  address         String?
+  city            String?
+  lat             Float?
+  lng             Float?
+  vehicleType     String?
+  capacityKg      Int?
+  verified        Boolean  @default(false)
+  documentNumber  String?
+  diditSessionId  String?
+  diditStatus     String   @default("not_started")
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  user            user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  supply          supply[]
+  request         request[]
+  eventLog        event_log[]
   warehouseShipment    shipment[] @relation("warehouseActor")
   reliefShipment       shipment[] @relation("reliefActor")
   transporterShipment  shipment[] @relation("transporterActor")

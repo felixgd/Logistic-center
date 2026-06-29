@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 import { generateCsrfToken } from "@/lib/csrf";
 import { sanitizeText } from "@/lib/validation";
+import { createDiditSession } from "@/lib/didit";
 
 interface FrictionlessInput {
   name: string;
@@ -13,7 +14,7 @@ interface FrictionlessInput {
   lng: number | null;
   vehicleType?: string;
   capacityKg?: number;
-  documentUrl?: string;
+  documentNumber?: string;
 }
 
 export async function findOrCreateActor(input: FrictionlessInput) {
@@ -51,7 +52,7 @@ export async function findOrCreateActor(input: FrictionlessInput) {
         lng: lng !== null ? lng : actor.lng,
         vehicleType: vehicleType || actor.vehicleType,
         capacityKg: capacityKg !== undefined ? capacityKg : actor.capacityKg,
-        documentUrl: input.documentUrl || actor.documentUrl,
+        documentNumber: input.documentNumber || actor.documentNumber,
       },
       include: { user: true },
     });
@@ -92,13 +93,28 @@ export async function findOrCreateActor(input: FrictionlessInput) {
         lng,
         vehicleType: type === "transporter" ? vehicleType || "Camión" : null,
         capacityKg: type === "transporter" ? capacityKg || 500 : null,
-        documentUrl: input.documentUrl || null,
+        documentNumber: input.documentNumber || null,
       },
       include: { user: true },
     });
   }
 
-  // 3. Sign and return token along with actor details
+  // 3. Create Didit session for transporters (skip if already verified)
+  let verificationUrl: string | undefined;
+  if (actor.type === "transporter" && actor.diditStatus !== "approved") {
+    try {
+      const session = await createDiditSession(actor.id, actor.user?.email || undefined);
+      verificationUrl = session.url;
+      await prisma.actor.update({
+        where: { id: actor.id },
+        data: { diditSessionId: session.session_id, diditStatus: "pending" },
+      });
+    } catch (err) {
+      console.error("Error creating Didit session:", err);
+    }
+  }
+
+  // 4. Sign and return token along with actor details
   const csrfToken = generateCsrfToken();
   const token = signToken({ userId, actorId: actor.id, actorType: actor.type, csrfToken });
 
@@ -115,5 +131,6 @@ export async function findOrCreateActor(input: FrictionlessInput) {
       lat: actor.lat,
       lng: actor.lng,
     },
+    verificationUrl,
   };
 }

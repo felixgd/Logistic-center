@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const urgency = body.urgency;
     const notes = sanitizeText(body.notes);
     const phoneVerificationToken = sanitizeText(body.phoneVerificationToken);
-    const documentUrl = body.documentUrl || null;
+    const documentNumber = body.documentNumber || null;
 
     if (!name || !whatsapp) {
       return Response.json({ error: "Nombre y WhatsApp son requeridos." }, { status: 400 });
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Find or create the actor
-    const { token, csrfToken, actor } = await findOrCreateActor({
+    const { token, csrfToken, actor, verificationUrl } = await findOrCreateActor({
       name,
       whatsapp,
       type,
@@ -66,10 +66,10 @@ export async function POST(req: NextRequest) {
       lng,
       vehicleType,
       capacityKg,
-      documentUrl,
+      documentNumber,
     });
 
-    let resultPayload: any = { token, csrfToken, actor };
+    let resultPayload: any = { token, csrfToken, actor, ...(verificationUrl ? { verificationUrl } : {}) };
 
     // 3. Perform the specific action
     if (action === "request") {
