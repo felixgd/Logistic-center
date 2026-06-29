@@ -119,7 +119,6 @@ export async function POST(req: NextRequest) {
           await tx.supply.update({
             where: { id: item.supplyId },
             data: {
-              quantity: { decrement: item.quantity },
               quantityReserved: { increment: item.quantity },
             },
           });

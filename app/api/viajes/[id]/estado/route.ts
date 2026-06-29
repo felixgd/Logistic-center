@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
               where: { id: item.supplyId },
               data: {
                 quantityReserved: { decrement: item.quantity },
-                ...(status === "cancelled" ? { quantity: { increment: item.quantity } } : {}),
+                ...(status === "delivered" ? { quantity: { decrement: item.quantity } } : {}),
               },
             });
           }

@@ -19,6 +19,7 @@ export default function RequestsPage() {
   const [envioForm, setEnvioForm] = useState<{ requestId: string; quantity: string } | null>(null);
   const [envioLoading, setEnvioLoading] = useState(false);
   const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; type: "no_supply" | "low_stock"; onConfirm: () => void } | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = getAuthHeaders();
@@ -84,6 +85,34 @@ export default function RequestsPage() {
     invalidateCache("/api/solicitudes");
   };
 
+  const ejecutarCrearEnvio = async (request: any, supply: any) => {
+    setEnvioLoading(true);
+    const actorData = JSON.parse(localStorage.getItem("actor") || "{}");
+    const tripRes = await fetch("/api/viajes", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        warehouseActorId: actorData.id,
+        reliefActorId: request.actorId,
+        requestId: request.id,
+        items: [{
+          supplyId: supply.id,
+          name: request.name,
+          quantity: Number(envioForm!.quantity),
+          unit: request.unit,
+        }],
+      }),
+    });
+    if (!tripRes.ok) {
+      const data = await tripRes.json();
+      setError(data.error || "Error al crear el envío");
+      setEnvioLoading(false);
+      return;
+    }
+    setEnvioForm(null);
+    invalidateCache("/api/solicitudes");
+  };
+
   const handleCrearEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -94,60 +123,70 @@ export default function RequestsPage() {
 
     setEnvioLoading(true);
     try {
-      const actorData = JSON.parse(localStorage.getItem("actor") || "{}");
-
       // 1. Buscar si ya existe un insumo con el mismo nombre
       const suppliesRes = await fetch("/api/insumos", { headers });
       const supplies = await suppliesRes.json();
-      let supply = supplies.find((s: any) => s.name.toLowerCase() === request.name.toLowerCase());
+      const supply = supplies.find((s: any) => s.name.toLowerCase() === request.name.toLowerCase());
 
-      // 2. Si no existe, crearlo
       if (!supply) {
-        const createRes = await fetch("/api/insumos", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            category: request.category || "general",
-            name: request.name,
-            unit: request.unit,
-            quantity: Number(envioForm.quantity),
-            quantityReserved: Number(envioForm.quantity),
-          }),
+        const qty = Number(envioForm.quantity);
+        const confirmMsg = `El insumo "${request.name}" no existe en tu almacén. Se creará automáticamente con cantidad ${qty} y todo quedará reservado para este envío. ¿Deseas continuar?`;
+        setConfirmDialog({
+          message: confirmMsg,
+          type: "no_supply",
+          onConfirm: async () => {
+            setConfirmDialog(null);
+            try {
+              const createRes = await fetch("/api/insumos", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                  category: request.category || "general",
+                  name: request.name,
+                  unit: request.unit,
+                  quantity: qty,
+                }),
+              });
+              if (!createRes.ok) {
+                const data = await createRes.json();
+                setError(data.error || "Error al crear el insumo");
+                setEnvioLoading(false);
+                return;
+              }
+              await ejecutarCrearEnvio(request, await createRes.json());
+            } catch {
+              setError("Error al procesar la solicitud");
+              setEnvioLoading(false);
+            }
+          },
         });
-        if (!createRes.ok) {
-          const data = await createRes.json();
-          setError(data.error || "Error al crear el insumo");
-          setEnvioLoading(false);
-          return;
-        }
-        supply = await createRes.json();
-      }
-
-      // 3. Crear el viaje
-      const tripRes = await fetch("/api/viajes", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          warehouseActorId: actorData.id,
-          reliefActorId: request.actorId,
-          requestId: request.id,
-          items: [{
-            supplyId: supply.id,
-            name: request.name,
-            quantity: Number(envioForm.quantity),
-            unit: request.unit,
-          }],
-        }),
-      });
-      if (!tripRes.ok) {
-        const data = await tripRes.json();
-        setError(data.error || "Error al crear el envío");
         setEnvioLoading(false);
         return;
       }
 
-      setEnvioForm(null);
-      invalidateCache("/api/solicitudes");
+      // 2. Verificar stock disponible
+      const available = (supply.quantity || 0) - (supply.quantityReserved || 0);
+      if (available < Number(envioForm.quantity)) {
+        const confirmMsg = `Stock insuficiente para "${request.name}". Disponible: ${Math.max(available, 0)}, solicitado: ${envioForm.quantity}. El envío se creará de todas formas. ¿Deseas continuar?`;
+        setConfirmDialog({
+          message: confirmMsg,
+          type: "low_stock",
+          onConfirm: async () => {
+            setConfirmDialog(null);
+            try {
+              await ejecutarCrearEnvio(request, supply);
+            } catch {
+              setError("Error al procesar la solicitud");
+              setEnvioLoading(false);
+            }
+          },
+        });
+        setEnvioLoading(false);
+        return;
+      }
+
+      // 3. Stock suficiente, crear viaje directamente
+      await ejecutarCrearEnvio(request, supply);
     } catch {
       setError("Error al procesar la solicitud");
     } finally {
@@ -195,6 +234,18 @@ export default function RequestsPage() {
                   <button type="submit" className="btn btn-primary">Crear Solicitud</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {confirmDialog && (
+          <div className="modal-overlay" onClick={() => !envioLoading && setConfirmDialog(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Confirmar envío</h3>
+              <p style={{ marginBottom: 16 }}>{confirmDialog.message}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => { setConfirmDialog(null); setEnvioLoading(false); }} disabled={envioLoading}>Cancelar</button>
+                <button type="button" className="btn btn-primary" onClick={confirmDialog.onConfirm} disabled={envioLoading}>{envioLoading ? "Procesando..." : "Continuar"}</button>
+              </div>
             </div>
           </div>
         )}
