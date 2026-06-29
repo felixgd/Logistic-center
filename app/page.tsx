@@ -586,11 +586,13 @@ export default function HomePage() {
       }
 
       // Save credentials in browser
-      localStorage.setItem("token", json.token);
+      if (json.token) localStorage.setItem("token", json.token);
       if (json.csrfToken) setCsrfToken(json.csrfToken);
-      localStorage.setItem("actor", JSON.stringify(json.actor));
-      setIsAuthenticated(true);
-      setActor(json.actor);
+      if (json.actor) localStorage.setItem("actor", JSON.stringify(json.actor));
+      if (json.token) {
+        setIsAuthenticated(true);
+        setActor(json.actor);
+      }
 
       if (json.verificationUrl) {
         window.location.href = json.verificationUrl;

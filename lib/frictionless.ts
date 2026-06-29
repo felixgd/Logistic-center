@@ -126,9 +126,13 @@ export async function findOrCreateActor(input: FrictionlessInput) {
     }
   }
 
-  // 4. Sign and return token along with actor details
-  const csrfToken = generateCsrfToken();
-  const token = signToken({ userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
+  // 4. Sign and return token (skip for transporters with pending KYC — must verify first)
+  let token: string | null = null;
+  let csrfToken: string | undefined;
+  if (!(actor.type === "transporter" && actor.diditStatus !== "approved")) {
+    csrfToken = generateCsrfToken();
+    token = signToken({ userId, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
+  }
 
   return {
     token,
