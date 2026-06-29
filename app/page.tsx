@@ -746,30 +746,7 @@ export default function HomePage() {
       {/* Top Header Navigation */}
       <Navbar isAuthenticated={isAuthenticated} actor={actor} />
       
-      {/* Floating View Switcher */}
-      <button
-        onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
-        style={{
-          position: "absolute",
-          top: "70px",
-          right: "20px",
-          zIndex: 1000,
-          backgroundColor: "#fff",
-          color: "#0f172a",
-          border: "1px solid #cbd5e1",
-          padding: "8px 16px",
-          borderRadius: "20px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-          cursor: "pointer",
-          fontWeight: 600,
-          fontSize: "13px",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px"
-        }}
-      >
-        {viewMode === "map" ? "📋 Vista Lista" : "🗺️ Vista Mapa"}
-      </button>
+
 
       <div className="homepage-container">
 
@@ -973,17 +950,53 @@ export default function HomePage() {
             }}
           />
 
-        {/* Floating refresh button */}
-        <button className="floating-refresh" onClick={fetchData} title="Actualizar datos" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <ArrowsClockwise size={16} weight="bold" />
-        </button>
-      </main>
+          {/* Floating View Switcher */}
+          <button
+            onClick={() => setViewMode("list")}
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "80px",
+              zIndex: 1000,
+              backgroundColor: "var(--bg-card)",
+              color: "var(--text-main)",
+              border: "1px solid var(--border-color)",
+              padding: "0 16px",
+              height: "44px",
+              borderRadius: "22px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "13px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              outline: "none"
+            }}
+          >
+            📋 Vista Lista
+          </button>
+
+          {/* Floating refresh button */}
+          <button className="floating-refresh" onClick={fetchData} title="Actualizar datos" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ArrowsClockwise size={16} weight="bold" />
+          </button>
+        </main>
       ) : (
         <main className="list-container-wrapper" style={{ flex: 1, padding: "24px", overflowY: "auto", backgroundColor: "#f8fafc" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-            <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", marginBottom: "20px" }}>
-              Panel de Actividad Terremoto
-            </h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Panel de Actividad Terremoto
+              </h2>
+              <button
+                onClick={() => setViewMode("map")}
+                className="btn btn-secondary"
+                style={{ padding: "8px 16px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                🗺️ Ver en Mapa
+              </button>
+            </div>
             
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
               {/* Actors Summary Cards */}
