@@ -46,6 +46,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (auth.actorId !== shipment.warehouseActorId && auth.actorId !== shipment.reliefActorId) {
         return jsonError(403, "Solo el almacén o el centro de ayuda pueden cancelar este viaje");
       }
+      if (shipment.status !== "proposed" && shipment.status !== "approved") {
+        return jsonError(400, "Solo se pueden cancelar viajes que aún no han sido aceptados por un transportista");
+      }
     }
 
     if (status === "in_transit" || status === "delivered") {

@@ -247,14 +247,22 @@ export default function TripsPage() {
   const activeTrip = tripsMapped.find(t => t.id === selectedTripId) || 
                      tripsMapped.find(t => t.estado === "in_transit") || 
                      tripsMapped.find(t => t.estado === "assigned") || 
+                     (actor?.type !== "transporter" ? (tripsMapped.find(t => t.estado === "proposed") || tripsMapped.find(t => t.estado === "approved")) : null) ||
                      tripsMapped[0];
 
   // Agenda upcoming is for currently assigned shipments
   const agendaTrips = tripsMapped.filter((t: any) => {
-    if (agendaFilter === "en-transito") {
-      return t.estado === "in_transit";
+    if (actor?.type === "transporter") {
+      if (agendaFilter === "en-transito") {
+        return t.estado === "in_transit";
+      }
+      return t.estado === "assigned" || t.estado === "in_transit";
+    } else {
+      if (agendaFilter === "en-transito") {
+        return t.estado === "in_transit";
+      }
+      return t.estado === "proposed" || t.estado === "approved" || t.estado === "assigned" || t.estado === "in_transit";
     }
-    return t.estado === "assigned" || t.estado === "in_transit";
   });
 
   // History includes delivered and cancelled trips
@@ -969,6 +977,77 @@ export default function TripsPage() {
                           <MapTrifold size={16} /> Waze
                         </a>
                       </div>
+
+                      {/* WhatsApp Contacts Section */}
+                      {(activeTrip.estado === "assigned" || activeTrip.estado === "in_transit") && (
+                        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 16, marginTop: 12 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>
+                            CONTACTOS DE WHATSAPP
+                          </span>
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                            {actor?.type !== "warehouse" && activeTrip.almacen && (
+                              <div style={{ flex: "1 1 180px", background: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>ALMACÉN</span>
+                                  <p style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-main)" }}>{activeTrip.almacen.name}</p>
+                                </div>
+                                {activeTrip.almacen.whatsapp ? (
+                                  <a 
+                                    href={`https://wa.me/${activeTrip.almacen.whatsapp.replace(/[^0-9]/g, "")}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  >
+                                    WhatsApp
+                                  </a>
+                                ) : (
+                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
+                                )}
+                              </div>
+                            )}
+                            {actor?.type !== "relief" && activeTrip.centroAyuda && (
+                              <div style={{ flex: "1 1 180px", background: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>CENTRO AYUDA</span>
+                                  <p style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-main)" }}>{activeTrip.centroAyuda.name}</p>
+                                </div>
+                                {activeTrip.centroAyuda.whatsapp ? (
+                                  <a 
+                                    href={`https://wa.me/${activeTrip.centroAyuda.whatsapp.replace(/[^0-9]/g, "")}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  >
+                                    WhatsApp
+                                  </a>
+                                ) : (
+                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
+                                )}
+                              </div>
+                            )}
+                            {actor?.type !== "transporter" && activeTrip.transportista && (
+                              <div style={{ flex: "1 1 180px", background: "var(--bg-main)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text-muted)" }}>TRANSPORTISTA</span>
+                                  <p style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-main)" }}>{activeTrip.transportista.name}</p>
+                                </div>
+                                {activeTrip.transportista.whatsapp ? (
+                                  <a 
+                                    href={`https://wa.me/${activeTrip.transportista.whatsapp.replace(/[^0-9]/g, "")}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ fontSize: 12, color: "#25D366", fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  >
+                                    WhatsApp
+                                  </a>
+                                ) : (
+                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>—</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Right: Map */}
@@ -983,7 +1062,7 @@ export default function TripsPage() {
                     </div>
                   </div>
 
-                  {activeTrip && (activeTrip.estado === "assigned" || activeTrip.estado === "in_transit") && (
+                  {activeTrip && (activeTrip.estado === "assigned" || activeTrip.estado === "in_transit") && actor?.type === "transporter" && (
                     <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 20, paddingTop: 16 }}>
                       <h4 style={{ fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, color: "var(--text-main)" }}>
                         <CheckCircle size={16} style={{ color: "#10b981" }} /> Próximos Pasos (Tarea Actual)
@@ -1002,6 +1081,48 @@ export default function TripsPage() {
                         >
                           {activeTrip.estado === "in_transit" ? "FINALIZAR ENTREGA" : "INICIAR TRÁNSITO"}
                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTrip && (activeTrip.estado === "proposed" || activeTrip.estado === "approved") && (actor?.type === "warehouse" || actor?.type === "relief") && (
+                    <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 20, paddingTop: 16 }}>
+                      <h4 style={{ fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, color: "var(--text-main)" }}>
+                        <CheckCircle size={16} style={{ color: "#10b981" }} /> Próximos Pasos (Tarea Actual)
+                      </h4>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, flex: 1, minWidth: 240, lineHeight: "1.5" }}>
+                          {activeTrip.estado === "proposed" 
+                            ? (actor?.type === "warehouse" 
+                              ? "Este envío ha sido propuesto. Como almacén de origen, debes aceptar/aprobar el envío para que un transportista pueda tomarlo."
+                              : "Este envío ha sido propuesto y está esperando aprobación por parte del almacén.")
+                            : "Este envío está aprobado y en espera de ser asignado o tomado por un transportista voluntario."
+                          }
+                        </p>
+                        
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {actor?.type === "warehouse" && activeTrip.estado === "proposed" && actor?.id === activeTrip.almacen?.id && (
+                            <button 
+                              className="btn btn-success" 
+                              style={{ padding: "10px 24px", background: "#10b981", borderColor: "#10b981", color: "#ffffff", fontWeight: 700 }}
+                              onClick={() => updateStatus(activeTrip.id, "approved")}
+                            >
+                              ACEPTAR ENVÍO
+                            </button>
+                          )}
+                          
+                          <button 
+                            className="btn btn-danger" 
+                            style={{ padding: "10px 24px", background: "#ef4444", borderColor: "#ef4444", color: "#ffffff", fontWeight: 700 }}
+                            onClick={() => {
+                              if (confirm("¿Estás seguro de que deseas cancelar este envío?")) {
+                                updateStatus(activeTrip.id, "cancelled");
+                              }
+                            }}
+                          >
+                            CANCELAR ENVÍO
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
