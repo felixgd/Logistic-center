@@ -4,9 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
-const isValidLocalPhone = (value: string) => normalizePhone(value).length >= 10;
+
+// Validate a full phone number using libphonenumber-js
+const isValidPhone = (cc: string, local: string) => {
+  const cleanCC = cc.replace(/\D/g, "");
+  const cleanLocal = local.replace(/\D/g, "");
+  if (cleanLocal.length < 7) return false; // Ensure at least 7 digits as a baseline
+  try {
+    return isValidPhoneNumber(`+${cleanCC}${cleanLocal}`);
+  } catch (e) {
+    return false;
+  }
+};
 
 export default function LoginPage() {
   const [localPhone, setLocalPhone] = useState("");
@@ -34,7 +46,7 @@ export default function LoginPage() {
   }, [countdown]);
 
   const enviarCodigo = async () => {
-    if (!isValidLocalPhone(localPhone)) { setError("Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)"); return false; }
+    if (!isValidPhone(countryCode, localPhone)) { setError("Ingresa un teléfono válido para el código de país seleccionado (mínimo 7 dígitos)"); return false; }
     setSending(true); setError("");
     const res = await fetch("/api/verificar/enviar", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -51,7 +63,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!isValidLocalPhone(localPhone)) { setError("Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)"); return; }
+    if (!isValidPhone(countryCode, localPhone)) { setError("Ingresa un teléfono válido para el código de país seleccionado (mínimo 7 dígitos)"); return; }
 
     if (!sent || code.length < 6) {
       const ok = await enviarCodigo();

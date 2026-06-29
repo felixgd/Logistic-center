@@ -22,7 +22,21 @@ import {
   ChatCircle
 } from "@phosphor-icons/react";
 
+import { isValidPhoneNumber } from "libphonenumber-js";
+
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
+
+// Validate a full phone number using libphonenumber-js
+const isValidPhone = (cc: string, local: string) => {
+  const cleanCC = cc.replace(/\D/g, "");
+  const cleanLocal = local.replace(/\D/g, "");
+  if (cleanLocal.length < 7) return false; // Ensure at least 7 digits as a baseline
+  try {
+    return isValidPhoneNumber(`+${cleanCC}${cleanLocal}`);
+  } catch (e) {
+    return false;
+  }
+};
 
 function splitCountryCode(phone: string): { countryCode: string; local: string } {
   const digits = normalizePhone(phone);
@@ -364,8 +378,8 @@ export default function HomePage() {
   const fullFormPhone = () => normalizePhone(formCountryCode) + normalizePhone(formWhatsapp);
 
   const enviarCodigoVerificacion = async () => {
-    if (!formWhatsapp || normalizePhone(formWhatsapp).length < 10) {
-      setSubmitError("Ingresa un número de WhatsApp válido (mínimo 10 dígitos)");
+    if (!formWhatsapp || !isValidPhone(formCountryCode, formWhatsapp)) {
+      setSubmitError("Ingresa un número de WhatsApp válido para el código de país seleccionado (mínimo 7 dígitos)");
       return;
     }
     setVerifSending(true);
@@ -907,15 +921,15 @@ export default function HomePage() {
                       className="btn btn-secondary"
                       style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
                       onClick={enviarCodigoVerificacion}
-                      disabled={verifSending || countdown > 0 || normalizePhone(formWhatsapp).length < 10}
+                      disabled={verifSending || countdown > 0 || !isValidPhone(formCountryCode, formWhatsapp)}
                     >
                       {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
                     </button>
                   )}
                 </div>
-                  {!isAuthenticated && !verifToken && normalizePhone(formWhatsapp).length > 0 && normalizePhone(formWhatsapp).length < 10 && (
+                  {!isAuthenticated && !verifToken && normalizePhone(formWhatsapp).length > 0 && !isValidPhone(formCountryCode, formWhatsapp) && (
                     <small style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4, display: "block" }}>
-                      Ingresa al menos 10 dígitos para activar la verificación
+                      Ingresa un número de WhatsApp válido para el país seleccionado
                     </small>
                   )}
                 </div>

@@ -7,6 +7,7 @@ import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import DocumentUpload from "@/components/DocumentUpload";
 import RegisterForm from "./RegisterForm";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -14,7 +15,18 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
 });
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
-const isValidLocalPhone = (value: string) => normalizePhone(value).length >= 10;
+
+// Validate a full phone number using libphonenumber-js
+const isValidPhone = (cc: string, local: string) => {
+  const cleanCC = cc.replace(/\D/g, "");
+  const cleanLocal = local.replace(/\D/g, "");
+  if (cleanLocal.length < 7) return false; // Ensure at least 7 digits as a baseline
+  try {
+    return isValidPhoneNumber(`+${cleanCC}${cleanLocal}`);
+  } catch (e) {
+    return false;
+  }
+};
 
 function RegisterPageContent() {
   const router = useRouter();
@@ -68,7 +80,7 @@ function RegisterPageContent() {
   };
 
   const enviarCodigo = async () => {
-    if (!isValidLocalPhone(form.phone)) { setError("Ingresa un número de teléfono válido (mínimo 10 dígitos sin código de país)"); return; }
+    if (!isValidPhone(countryCode, form.phone)) { setError("Ingresa un número de teléfono válido para el código de país seleccionado (mínimo 7 dígitos)"); return; }
     setVerifSending(true); setError("");
     const res = await fetch("/api/verificar/enviar", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -98,7 +110,7 @@ function RegisterPageContent() {
   const validateForm = (): string | null => {
     if (!form.type) return "Selecciona un tipo de actor";
     if (!form.name.trim()) return "El nombre de la organización es requerido";
-    if (!form.phone || !isValidLocalPhone(form.phone)) return "Ingresa un teléfono válido (mínimo 10 dígitos sin código de país)";
+    if (!form.phone || !isValidPhone(countryCode, form.phone)) return "Ingresa un teléfono válido para el código de país seleccionado (mínimo 7 dígitos)";
     if (!form.email.trim()) return "El email es requerido";
     if (!isValidEmail(form.email)) return "Ingresa un email válido";
     if (!form.address.trim()) return "La dirección es requerida";
@@ -219,7 +231,7 @@ function RegisterPageContent() {
                         className="btn btn-secondary"
                         style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
                         onClick={enviarCodigo}
-                        disabled={verifSending || countdown > 0 || !isValidLocalPhone(targetPhone)}
+                        disabled={verifSending || countdown > 0 || !isValidPhone(countryCode, targetPhone)}
                       >
                         {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
                       </button>

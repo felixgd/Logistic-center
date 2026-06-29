@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { jsonError } from "@/lib/auth";
 import { sendSms } from "@/lib/zavu";
 import { isOtpMocked, MOCK_OTP_CODE } from "@/lib/otp";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +11,9 @@ export async function POST(req: NextRequest) {
     if (!phone) return jsonError(400, "Teléfono requerido");
 
     const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length < 10) return jsonError(400, "Teléfono inválido. Debe tener al menos 10 dígitos.");
+    if (cleanPhone.length < 7 || !isValidPhoneNumber(`+${cleanPhone}`)) {
+      return jsonError(400, "Teléfono inválido. Por favor, ingresa un número de teléfono válido para tu país.");
+    }
 
     const mocked = isOtpMocked();
     const code = mocked ? MOCK_OTP_CODE : Math.floor(100000 + Math.random() * 900000).toString();

@@ -4,6 +4,7 @@ import { signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
 import { sanitizeText } from "@/lib/validation";
 import { generateCsrfToken } from "@/lib/csrf";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     const documentUrl = body.documentUrl || null;
 
     const targetPhone = (whatsapp || phone || "").replace(/\D/g, "");
-    if (targetPhone.length < 10) return jsonError(400, "Teléfono / WhatsApp inválido");
+    if (targetPhone.length < 7 || !isValidPhoneNumber(`+${targetPhone}`)) return jsonError(400, "Teléfono / WhatsApp inválido");
 
     if (!phoneVerificationToken) return jsonError(400, "Debes verificar tu teléfono antes de registrarte");
 
