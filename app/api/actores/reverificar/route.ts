@@ -12,6 +12,11 @@ export async function POST(req: NextRequest) {
     if (!actor) return jsonError(404, "Actor no encontrado");
     if (actor.type !== "transporter") return jsonError(400, "Solo transportistas pueden verificar identidad");
 
+    const isKycMocked = process.env.IS_KYC_MOCKED === "true";
+    if (isKycMocked) {
+      return jsonError(400, "KYC está mockeado — no es necesario verificar");
+    }
+
     const { session_id, url } = await createDiditSession(actor.id, actor.user?.email || undefined);
 
     await prisma.actor.update({

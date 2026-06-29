@@ -11,6 +11,7 @@ export type TokenPayload = {
   actorId: string;
   actorType: string;
   csrfToken?: string;
+  diditStatus?: string;
 };
 
 export function signToken(payload: TokenPayload): string {

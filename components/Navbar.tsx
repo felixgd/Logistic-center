@@ -15,6 +15,7 @@ import {
   Users
 } from "@phosphor-icons/react";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import KycBanner from "@/components/KycBanner";
 
 const LABELS: Record<string, string> = {
   warehouse: "Almacén",
@@ -118,6 +119,8 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
   const canCreateProfile = ownedTypes.size < 3;
 
   return (
+    <>
+    <KycBanner />
     <nav className="navbar">
       <Link href="/" className="navbar-logo" style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
         <Plus size={24} weight="bold" style={{ color: "#22c55e" }} />
@@ -172,5 +175,6 @@ export default function Navbar({ isAuthenticated: propIsAuthenticated, actor: pr
         </button>
       </div>
     </nav>
+    </>
   );
 }

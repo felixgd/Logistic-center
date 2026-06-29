@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken });
+    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus });
 
     return Response.json({
       token,

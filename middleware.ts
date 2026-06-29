@@ -13,44 +13,56 @@ const EXEMPT_PATHS = [
   "/api/webhooks/didit",
 ];
 
+const KYC_EXEMPT_PATHS = [
+  "/api/actores/reverificar",
+  "/api/actores/refresh-token",
+];
+
 export async function middleware(req: NextRequest) {
-  // Solo proteger rutas de API
   if (!req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
-  // Eximir endpoints públicos o de verificación
   if (EXEMPT_PATHS.some((p) => req.nextUrl.pathname === p)) {
-    return NextResponse.next();
-  }
-
-  // Métodos seguros no requieren protección CSRF
-  if (isSafeMethod(req.method)) {
     return NextResponse.next();
   }
 
   const auth = req.headers.get("authorization");
 
-  // Si no hay token de autenticación, no hay nada que proteger con CSRF
-  if (!auth?.startsWith("Bearer ")) {
-    return NextResponse.next();
-  }
+  if (auth?.startsWith("Bearer ")) {
+    try {
+      if (!process.env.JWT_SECRET) {
+        return NextResponse.json({ error: "JWT_SECRET no configurado" }, { status: 500 });
+      }
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+      const { payload } = await jwtVerify(auth.slice(7), secret);
 
-  try {
-    if (!process.env.JWT_SECRET) {
-      return NextResponse.json({ error: "JWT_SECRET no configurado" }, { status: 500 });
-    }
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(auth.slice(7), secret);
-    const storedToken = (payload.csrfToken as string) || null;
+      const actorType = payload.actorType as string;
+      const diditStatus = payload.diditStatus as string;
+      const isKycMocked = process.env.IS_KYC_MOCKED === "true";
 
-    // Validar CSRF: primero contra el token en el JWT, luego por origen
-    const result = validateCsrf(req, storedToken);
-    if (!result.valid) {
-      return NextResponse.json({ error: result.error }, { status: 403 });
+      if (
+        !isKycMocked &&
+        actorType === "transporter" &&
+        diditStatus !== "approved" &&
+        !KYC_EXEMPT_PATHS.some((p) => req.nextUrl.pathname === p)
+      ) {
+        return NextResponse.json(
+          { error: "Debes completar la verificación KYC antes de usar la plataforma", code: "KYC_PENDING" },
+          { status: 403 }
+        );
+      }
+
+      if (!isSafeMethod(req.method)) {
+        const storedToken = (payload.csrfToken as string) || null;
+        const result = validateCsrf(req, storedToken);
+        if (!result.valid) {
+          return NextResponse.json({ error: result.error }, { status: 403 });
+        }
+      }
+    } catch {
+      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
     }
-  } catch {
-    return NextResponse.json({ error: "Token inválido" }, { status: 401 });
   }
 
   return NextResponse.next();

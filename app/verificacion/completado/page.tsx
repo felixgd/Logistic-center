@@ -15,6 +15,26 @@ function VerificationCompleteContent() {
     setStatus(s);
     setSessionId(sid);
 
+    if (s === "Approved") {
+      const refreshToken = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        try {
+          const res = await fetch("/api/actores/refresh-token", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem("token", data.token);
+          }
+        } catch {
+          // fallback: keep old token, user can still refresh manually
+        }
+      };
+      refreshToken();
+    }
+
     if (!s && !sid) {
       const token = localStorage.getItem("token");
       if (token) {

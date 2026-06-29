@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       actorId: actor.id, 
       actorType: actor.type,
       csrfToken,
+      diditStatus: actor.diditStatus,
     });
 
     return Response.json({

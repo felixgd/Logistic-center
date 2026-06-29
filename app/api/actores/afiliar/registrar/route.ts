@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     });
 
     const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: user.id, actorId: parentActor.id, actorType: parentActor.type, csrfToken });
+    const token = signToken({ userId: user.id, actorId: parentActor.id, actorType: parentActor.type, csrfToken, diditStatus: parentActor.diditStatus });
 
     return Response.json({
       mensaje: "Registro exitoso como voluntario",
