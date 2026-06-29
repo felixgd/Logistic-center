@@ -129,6 +129,7 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"requests" | "shipments">("requests");
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -744,10 +745,33 @@ export default function HomePage() {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden" }}>
       {/* Top Header Navigation */}
       <Navbar isAuthenticated={isAuthenticated} actor={actor} />
+      
+      {/* Floating View Switcher */}
+      <button
+        onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
+        style={{
+          position: "absolute",
+          top: "70px",
+          right: "20px",
+          zIndex: 1000,
+          backgroundColor: "#fff",
+          color: "#0f172a",
+          border: "1px solid #cbd5e1",
+          padding: "8px 16px",
+          borderRadius: "20px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          cursor: "pointer",
+          fontWeight: 600,
+          fontSize: "13px",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px"
+        }}
+      >
+        {viewMode === "map" ? "📋 Vista Lista" : "🗺️ Vista Mapa"}
+      </button>
 
       <div className="homepage-container">
-
-
 
         {/* Sidebar Section */}
         <aside 
@@ -861,7 +885,7 @@ export default function HomePage() {
                     </span>
                     {req.actor.whatsapp && (
                       <a
-                        href={`https://wa.me/${req.actor.whatsapp.replace(/\D/g, "")}?text=Hola%20${encodeURIComponent(req.actor.name)},%20te%20contacto%20desde%20la%20plataforma%20de%20acopio.%20Vi%20tu%20solicitud%20de%20${encodeURIComponent(req.quantity)}%20${encodeURIComponent(req.unit)}%20de%20${encodeURIComponent(req.name)}%20y%20quiero%20coordinar%20ayuda.`}
+                        href={`https://wa.me/${req.actor.whatsapp.replace(/\D/g, "")}?text=Hola%20${encodeURIComponent(req.actor.name)},%20te%20contacto%20desde%20la%20plataforma%20de%20acopio.%20Vi%20tu%20solicitud%20de%20${encodeURIComponent(req.quantity)}%20${encodeURIComponent(req.unit)}%20de%20${encodeURIComponent(req.name)}%20(Urgencia:%20${encodeURIComponent(req.urgency)})%20y%20quiero%20coordinar%20ayuda.`}
                         target="_blank"
                         rel="noreferrer"
                         className="btn btn-success"
@@ -934,25 +958,190 @@ export default function HomePage() {
         </div>
       </aside>
 
-      {/* Map Section */}
-      <main className="map-container-wrapper">
-        <MapComponent 
-          containerId="main-map" 
-          actors={data.actors} 
-          selectedActorId={selectedActorId} 
-          sidebarOpen={sidebarOpen}
-          onMapClick={() => {
-            if (sidebarOpen) {
-              setSidebarOpen(false);
-            }
-          }}
-        />
+      {/* Map Section or List Section */}
+      {viewMode === "map" ? (
+        <main className="map-container-wrapper">
+          <MapComponent 
+            containerId="main-map" 
+            actors={data.actors} 
+            selectedActorId={selectedActorId} 
+            sidebarOpen={sidebarOpen}
+            onMapClick={() => {
+              if (sidebarOpen) {
+                setSidebarOpen(false);
+              }
+            }}
+          />
 
         {/* Floating refresh button */}
         <button className="floating-refresh" onClick={fetchData} title="Actualizar datos" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           <ArrowsClockwise size={16} weight="bold" />
         </button>
       </main>
+          {/* Floating refresh button */}
+          <button className="floating-refresh" onClick={fetchData} title="Actualizar datos">
+            🔄
+          </button>
+        </main>
+      ) : (
+        <main className="list-container-wrapper" style={{ flex: 1, padding: "24px", overflowY: "auto", backgroundColor: "#f8fafc" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+            <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", marginBottom: "20px" }}>
+              Panel de Actividad Terremoto
+            </h2>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+              {/* Actors Summary Cards */}
+              <div className="card" style={{ padding: "16px", borderRadius: "8px", backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+                <h4 style={{ fontSize: "14px", fontWeight: 700, color: "#475569", margin: 0 }}>Centros de Acopio / Almacenes</h4>
+                <p style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: "8px 0 0 0" }}>
+                  {data.actors.filter(a => a.type === "warehouse").length}
+                </p>
+              </div>
+              <div className="card" style={{ padding: "16px", borderRadius: "8px", backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+                <h4 style={{ fontSize: "14px", fontWeight: 700, color: "#475569", margin: 0 }}>Puntos de Entrega / Ayuda</h4>
+                <p style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: "8px 0 0 0" }}>
+                  {data.actors.filter(a => a.type === "relief").length}
+                </p>
+              </div>
+              <div className="card" style={{ padding: "16px", borderRadius: "8px", backgroundColor: "#fff", border: "1px solid #e2e8f0" }}>
+                <h4 style={{ fontSize: "14px", fontWeight: 700, color: "#475569", margin: 0 }}>Transportistas Activos</h4>
+                <p style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: "8px 0 0 0" }}>
+                  {data.actors.filter(a => a.type === "transporter").length}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {/* Active Help Requests Section */}
+              <div className="card" style={{ padding: "20px", borderRadius: "12px", backgroundColor: "#fff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  🚨 Solicitudes de Ayuda Urgentes
+                </h3>
+                {data.recentRequests.length === 0 ? (
+                  <p style={{ color: "#64748b", fontSize: "14px" }}>No hay solicitudes de ayuda activas en este momento.</p>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #f1f5f9", textAlign: "left", color: "#64748b" }}>
+                          <th style={{ padding: "10px" }}>Artículo / Requerimiento</th>
+                          <th style={{ padding: "10px" }}>Cantidad</th>
+                          <th style={{ padding: "10px" }}>Solicitado por</th>
+                          <th style={{ padding: "10px" }}>Ubicación</th>
+                          <th style={{ padding: "10px" }}>Prioridad</th>
+                          <th style={{ padding: "10px", textAlign: "center" }}>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.recentRequests.map((req) => (
+                          <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px 10px", fontWeight: 600, color: "#0f172a" }}>{req.name}</td>
+                            <td style={{ padding: "12px 10px" }}>{req.quantity} {req.unit}</td>
+                            <td style={{ padding: "12px 10px" }}>{req.actor.name}</td>
+                            <td style={{ padding: "12px 10px" }}>{req.actor.city || "N/A"}</td>
+                            <td style={{ padding: "12px 10px" }}>
+                              <span style={{
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                background: getUrgencyBadgeColor(req.urgency),
+                                color: getUrgencyTextColor(req.urgency)
+                              }}>
+                                {req.urgency}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 10px", textAlign: "center" }}>
+                              {req.actor.whatsapp && (
+                                <a
+                                  href={`https://wa.me/${req.actor.whatsapp.replace(/\D/g, "")}?text=Hola%20${encodeURIComponent(req.actor.name)},%20te%20contacto%20desde%20la%20plataforma%20de%20acopio.%20Vi%20tu%20solicitud%20de%20${encodeURIComponent(req.quantity)}%20${encodeURIComponent(req.unit)}%20de%20${encodeURIComponent(req.name)}%20(Urgencia:%20${encodeURIComponent(req.urgency)})%20y%20quiero%20coordinar%20ayuda.`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="btn btn-success"
+                                  style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px", textDecoration: "none" }}
+                                >
+                                  💬 Ayudar
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Active Shipments Section */}
+              <div className="card" style={{ padding: "20px", borderRadius: "12px", backgroundColor: "#fff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  📦 Envíos y Viajes Coordinados
+                </h3>
+                {data.recentShipments.length === 0 ? (
+                  <p style={{ color: "#64748b", fontSize: "14px" }}>No hay envíos coordinados en este momento.</p>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #f1f5f9", textAlign: "left", color: "#64748b" }}>
+                          <th style={{ padding: "10px" }}>Código</th>
+                          <th style={{ padding: "10px" }}>Origen (Almacén)</th>
+                          <th style={{ padding: "10px" }}>Destino (Ayuda)</th>
+                          <th style={{ padding: "10px" }}>Insumos</th>
+                          <th style={{ padding: "10px" }}>Estado</th>
+                          <th style={{ padding: "10px", textAlign: "center" }}>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.recentShipments.map((ship) => (
+                          <tr key={ship.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px 10px", fontWeight: 700, color: "#2563eb" }}>{ship.codigoViaje}</td>
+                            <td style={{ padding: "12px 10px" }}>{ship.almacen.name}</td>
+                            <td style={{ padding: "12px 10px" }}>{ship.centroAyuda.name}</td>
+                            <td style={{ padding: "12px 10px", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ship.insumos.map((i) => `${i.quantity} ${i.unit} de ${i.name}`).join(", ")}
+                            </td>
+                            <td style={{ padding: "12px 10px" }}>
+                              <span className={`badge ${ship.estado === "approved" ? "badge-pendiente" : ship.estado === "assigned" ? "badge-proceso" : ship.estado === "in_transit" ? "badge-proceso" : "badge-completado"}`} style={{ padding: "2px 8px" }}>
+                                {ship.estado === "approved" ? "Por Transportar" : ship.estado === "assigned" ? "Conductor Asignado" : ship.estado === "in_transit" ? "En Tránsito" : ship.estado === "delivered" ? "Entregado" : ship.estado}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 10px", textAlign: "center" }}>
+                              {ship.estado === "approved" ? (
+                                <button
+                                  onClick={() => openClaimModal(ship.id)}
+                                  className="btn btn-warning"
+                                  style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px" }}
+                                >
+                                  🚚 Transportar
+                                </button>
+                              ) : (
+                                ship.transportista?.whatsapp && (
+                                  <a
+                                    href={`https://wa.me/${ship.transportista.whatsapp.replace(/\D/g, "")}?text=Hola%20${encodeURIComponent(ship.transportista.name)},%20te%20contacto%20sobre%20el%20envío%20${encodeURIComponent(ship.codigoViaje)}.%20Me%20gustaría%20coordinar%20detalles.`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="btn btn-secondary"
+                                    style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "6px", textDecoration: "none" }}
+                                  >
+                                    💬 Contactar
+                                  </a>
+                                )
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
 
       {/* Action Modals */}
       {activeModal && activeModal !== "claim" && (

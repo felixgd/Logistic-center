@@ -6,6 +6,8 @@ import { setCsrfToken } from "@/lib/api-client";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import AutocompleteAddressInput from "@/components/AutocompleteAddressInput";
+import DocumentUpload from "@/components/DocumentUpload";
+import { VENEZUELAN_LOCATIONS } from "@/lib/locations";
 
 function RegisterFormInner() {
   const router = useRouter();
@@ -14,8 +16,9 @@ function RegisterFormInner() {
 
   const [step, setStep] = useState(affiliateCode ? 3 : 1);
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
+  const [selectedState, setSelectedState] = useState("Sucre");
   const [form, setForm] = useState({
-    type: "", name: "", address: "", city: "", phone: "", whatsapp: "",
+    type: "", name: "", address: "", city: "Cariaco", phone: "", whatsapp: "",
     email: "", vehicleType: "", capacityKg: 0,
   });
 
@@ -256,12 +259,68 @@ function RegisterFormInner() {
                 value={form.address}
                 onChange={(val) => update("address", val)}
                 onSelect={(address, city, lat, lng) => {
-                  setForm(f => ({ ...f, address, city, lat, lng }));
+                  let matchedState = selectedState;
+                  let matchedCity = city || form.city;
+                  
+                  // Try to find if the geocoded city belongs to any state in VENEZUELAN_LOCATIONS
+                  for (const [state, cities] of Object.entries(VENEZUELAN_LOCATIONS)) {
+                    const found = cities.find(c => c.toLowerCase() === city.toLowerCase());
+                    if (found) {
+                      matchedState = state;
+                      matchedCity = found; // Use the exact casing from our locations registry
+                      break;
+                    }
+                  }
+                  
+                  setSelectedState(matchedState);
+                  setForm(f => ({ ...f, address, city: matchedCity, lat, lng }));
                 }}
                 required
               />
             </div>
-            <div className="form-group"><label>Ciudad</label><input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
+            <div className="form-group">
+              <label>Estado (Venezuela)</label>
+              <select
+                value={selectedState}
+                onChange={(e) => {
+                  const state = e.target.value;
+                  setSelectedState(state);
+                  const firstCity = VENEZUELAN_LOCATIONS[state][0];
+                  update("city", firstCity);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: 14,
+                  backgroundColor: "#fff"
+                }}
+              >
+                {Object.keys(VENEZUELAN_LOCATIONS).map((st) => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Ciudad / Municipio</label>
+              <select
+                value={form.city}
+                onChange={(e) => update("city", e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: 14,
+                  backgroundColor: "#fff"
+                }}
+              >
+                {(VENEZUELAN_LOCATIONS[selectedState] || []).map((ct) => (
+                  <option key={ct} value={ct}>{ct}</option>
+                ))}
+              </select>
+            </div>
             <div className="form-group">
               <label>WhatsApp</label>
               <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>

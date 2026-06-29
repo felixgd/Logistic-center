@@ -24,6 +24,7 @@ import {
   Scales,
   ArrowsClockwise
 } from "@phosphor-icons/react";
+import { VENEZUELAN_LOCATIONS } from "@/lib/locations";
 
 // Dynamically import the map component with SSR disabled
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -70,6 +71,7 @@ export default function DashboardPage() {
   const [profileError, setProfileError] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
+  const [selectedCreateProfileState, setSelectedCreateProfileState] = useState("Sucre");
   const [newProfileForm, setNewProfileForm] = useState({
     type: "warehouse",
     name: "",
@@ -77,7 +79,7 @@ export default function DashboardPage() {
     phone: "",
     whatsapp: "",
     address: "",
-    city: "",
+    city: "Cariaco",
     lat: null as number | null,
     documentNumber: "",
     lng: null as number | null,
@@ -943,30 +945,56 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
+                  Dirección
+                </label>
+                <input
+                  type="text"
+                  value={newProfileForm.address}
+                  onChange={(e) => setNewProfileForm({ ...newProfileForm, address: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <div className="form-group">
                   <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
-                    Dirección
+                    Estado
                   </label>
-                  <input
-                    type="text"
-                    value={newProfileForm.address}
-                    onChange={(e) => setNewProfileForm({ ...newProfileForm, address: e.target.value })}
+                  <select
+                    value={selectedCreateProfileState}
+                    onChange={(e) => {
+                      const state = e.target.value;
+                      setSelectedCreateProfileState(state);
+                      const firstCity = VENEZUELAN_LOCATIONS[state][0];
+                      setNewProfileForm((prev) => ({ ...prev, city: firstCity }));
+                    }}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "6px",
                       border: "1px solid #cbd5e1",
-                      fontSize: 14
+                      fontSize: 14,
+                      backgroundColor: "#fff"
                     }}
-                  />
+                  >
+                    {Object.keys(VENEZUELAN_LOCATIONS).map((st) => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13, color: "#475569" }}>
                     Ciudad
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={newProfileForm.city}
                     onChange={(e) => setNewProfileForm({ ...newProfileForm, city: e.target.value })}
                     style={{
@@ -974,9 +1002,14 @@ export default function DashboardPage() {
                       padding: "10px 12px",
                       borderRadius: "6px",
                       border: "1px solid #cbd5e1",
-                      fontSize: 14
+                      fontSize: 14,
+                      backgroundColor: "#fff"
                     }}
-                  />
+                  >
+                    {(VENEZUELAN_LOCATIONS[selectedCreateProfileState] || []).map((ct) => (
+                      <option key={ct} value={ct}>{ct}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
