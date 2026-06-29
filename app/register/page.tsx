@@ -196,14 +196,16 @@ function RegisterPageContent() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      localStorage.setItem("token", data.token);
+      if (data.token) localStorage.setItem("token", data.token);
       if (data.csrfToken) setCsrfToken(data.csrfToken);
-      localStorage.setItem("actor", JSON.stringify(data.actor));
+      if (data.actor) localStorage.setItem("actor", JSON.stringify(data.actor));
 
       if (data.verificationUrl) {
         window.location.href = data.verificationUrl;
-      } else {
+      } else if (data.token) {
         router.push("/dashboard");
+      } else {
+        router.push("/login");
       }
     } catch { setError("Error al registrarse"); }
   };

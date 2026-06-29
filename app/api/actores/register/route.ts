@@ -107,14 +107,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const csrfToken = generateCsrfToken();
-    const token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
+    let token: string | null = null;
+    let csrfToken: string | undefined;
+    if (!(actor.type === "transportista" && actor.diditStatus !== "approved")) {
+      csrfToken = generateCsrfToken();
+      token = signToken({ userId: user.id, actorId: actor.id, actorType: actor.type, csrfToken, diditStatus: actor.diditStatus, kycBlocked: actor.kycBlocked });
+    }
 
     return Response.json(
       {
         mensaje: "Registro exitoso",
-        token,
-        csrfToken,
+        ...(token ? { token, csrfToken } : {}),
         actor: { id: actor.id, type: actor.type, name: actor.name, email: user.email, isOwner: true },
         ...(verificationUrl ? { verificationUrl } : {}),
       },
