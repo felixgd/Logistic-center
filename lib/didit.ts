@@ -163,6 +163,32 @@ export async function processDiditWebhook(body: any) {
   }
 
   await prisma.actor.update({ where: { id: vendor_data }, data: updateData });
+
+  // Auto-assign pending claim shipment after KYC approval
+  if (status === "Approved" && !String(updateData.diditStatus || "").includes("mismatch")) {
+    const updatedActor = await prisma.actor.findUnique({
+      where: { id: vendor_data },
+      select: { pendingClaimShipmentId: true },
+    });
+    if (updatedActor?.pendingClaimShipmentId) {
+      const pendingShipment = await prisma.shipment.findUnique({
+        where: { id: updatedActor.pendingClaimShipmentId },
+      });
+      if (pendingShipment && !pendingShipment.transporterActorId) {
+        await prisma.shipment.update({
+          where: { id: updatedActor.pendingClaimShipmentId },
+          data: {
+            transporterActorId: vendor_data,
+            status: "assigned",
+          },
+        });
+        await prisma.actor.update({
+          where: { id: vendor_data },
+          data: { pendingClaimShipmentId: null },
+        });
+      }
+    }
+  }
 }
 
 function mapDiditStatus(s: string): string | null {

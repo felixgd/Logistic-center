@@ -3,13 +3,32 @@ import { prisma } from "@/lib/prisma";
 import { findOrCreateActor } from "@/lib/frictionless";
 import { publishEvent } from "@/lib/pubsub";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { getAuthActor } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { shipmentId, name, whatsapp, documentNumber } = await req.json();
+    const { shipmentId, name, whatsapp, documentNumber, phoneVerificationToken } = await req.json();
 
-    if (!shipmentId || !name || !whatsapp) {
-      return Response.json({ error: "shipmentId, name, y whatsapp son requeridos." }, { status: 400 });
+    const missing: string[] = [];
+    if (!shipmentId) missing.push("ID del envío");
+    if (!name) missing.push("nombre");
+    if (!whatsapp) missing.push("WhatsApp");
+    if (missing.length > 0) {
+      return Response.json({ error: `Campos requeridos faltantes: ${missing.join(", ")}.` }, { status: 400 });
+    }
+
+    const cleanWhatsapp = whatsapp.replace(/\D/g, "");
+    const authActor = getAuthActor(req);
+    if (!authActor) {
+      if (!phoneVerificationToken) {
+        return Response.json({ error: "Debes verificar tu teléfono antes de continuar." }, { status: 400 });
+      }
+      const verif = await prisma.phone_verification.findFirst({
+        where: { phone: cleanWhatsapp, token: phoneVerificationToken, verified: true },
+      });
+      if (!verif) {
+        return Response.json({ error: "Teléfono no verificado. Solicita un nuevo código." }, { status: 400 });
+      }
     }
 
     // 1. Find or create the transporter actor
@@ -42,7 +61,29 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Este envío ya tiene un transportista asignado." }, { status: 400 });
     }
 
-    // 3. Assign transporter to shipment and update status
+    // 3. Check KYC status — defer assignment if transporter is not KYC-approved
+    const freshActor = await prisma.actor.findUnique({
+      where: { id: actor.id },
+      select: { diditStatus: true },
+    });
+    const kycApproved = freshActor?.diditStatus === "approved";
+
+    if (!kycApproved) {
+      await prisma.actor.update({
+        where: { id: actor.id },
+        data: { pendingClaimShipmentId: shipmentId },
+      });
+
+      return Response.json({
+        mensaje: "Debes completar la verificación de identidad (KYC) antes de que el envío sea asignado.",
+        token,
+        csrfToken,
+        actor,
+        verificationUrl: verificationUrl || null,
+      });
+    }
+
+    // 4. Assign transporter to shipment and update status
     const updatedShipment = await prisma.shipment.update({
       where: { id: shipmentId },
       data: {
@@ -51,7 +92,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Publish Event
+    // 5. Publish Event
     await publishEvent("viaje.asignado", {
       shipmentId,
       transporterActorId: actor.id,
@@ -59,7 +100,7 @@ export async function POST(req: NextRequest) {
       driverWhatsapp: whatsapp,
     });
 
-    // 5. WhatsApp Coordination Messages
+    // 6. WhatsApp Coordination Messages
     const itemsStr = shipment.shipmentItem.map((i) => `${i.quantity} ${i.unit} de ${i.name}`).join(", ");
     const codigo = shipment.notes?.split(" ")[0] || shipment.id.slice(-8).toUpperCase();
 
@@ -91,7 +132,6 @@ export async function POST(req: NextRequest) {
       csrfToken,
       actor,
       shipment: updatedShipment,
-      ...(verificationUrl ? { verificationUrl } : {}),
     });
   } catch (error: any) {
     console.error("Public claim-trip API error:", error);

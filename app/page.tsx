@@ -517,6 +517,9 @@ export default function HomePage() {
     setSubmitError("");
     setSubmitSuccess("");
     setDocumentNumber("");
+    setVerifToken("");
+    setVerifSent(false);
+    setVerifCode("");
     setActiveClaimShipmentId(shipmentId);
     setActiveModal("claim");
   };
@@ -524,8 +527,11 @@ export default function HomePage() {
   // Submit request / supply / driver
   const handleSubmitAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName || !formWhatsapp) {
-      setSubmitError("Nombre y WhatsApp son obligatorios.");
+    const missingFields: string[] = [];
+    if (!formName) missingFields.push("nombre");
+    if (!formWhatsapp) missingFields.push("WhatsApp");
+    if (missingFields.length > 0) {
+      setSubmitError(`Campos requeridos faltantes: ${missingFields.join(", ")}.`);
       return;
     }
 
@@ -612,8 +618,16 @@ export default function HomePage() {
   // Claim proposed trip
   const handleClaimTrip = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName || !formWhatsapp) {
-      setSubmitError("Nombre y WhatsApp son obligatorios.");
+    const missingFields: string[] = [];
+    if (!formName) missingFields.push("nombre");
+    if (!formWhatsapp) missingFields.push("WhatsApp");
+    if (missingFields.length > 0) {
+      setSubmitError(`Campos requeridos faltantes: ${missingFields.join(", ")}.`);
+      return;
+    }
+
+    if (!isAuthenticated && !verifToken) {
+      setSubmitError("Debes verificar tu WhatsApp antes de continuar.");
       return;
     }
 
@@ -626,15 +640,20 @@ export default function HomePage() {
       setSubmitLoading(true);
       setSubmitError("");
 
+      const body: any = {
+        shipmentId: activeClaimShipmentId,
+        name: formName,
+        whatsapp: fullFormPhone(),
+      };
+      if (!isAuthenticated) {
+        body.phoneVerificationToken = verifToken;
+        if (documentNumber.trim()) body.documentNumber = documentNumber.trim();
+      }
+
       const res = await fetch("/api/public/claim-trip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shipmentId: activeClaimShipmentId,
-          name: formName,
-          whatsapp: fullFormPhone(),
-          ...(!isAuthenticated && documentNumber.trim() ? { documentNumber: documentNumber.trim() } : {}),
-        }),
+        body: JSON.stringify(body),
       });
 
       const json = await res.json();
@@ -1180,12 +1199,52 @@ export default function HomePage() {
                   <CountryCodeSelect value={formCountryCode} onChange={setFormCountryCode} showSearch />
                   <input
                     value={formWhatsapp}
-                    onChange={(e) => setFormWhatsapp(normalizePhone(e.target.value))}
+                    onChange={(e) => {
+                      setFormWhatsapp(normalizePhone(e.target.value));
+                      setVerifToken("");
+                      setVerifSent(false);
+                      setVerifCode("");
+                    }}
                     required
                     placeholder="1234567890"
                   />
+                  {isAuthenticated || verifToken ? (
+                    <span style={{ color: "#16a34a", display: "flex", alignItems: "center", padding: "0 8px", fontSize: 13, whiteSpace: "nowrap" }}>✓ Verificado</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: "4px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                      onClick={enviarCodigoVerificacion}
+                      disabled={verifSending || countdown > 0 || !isValidPhone(formCountryCode, formWhatsapp)}
+                    >
+                      {verifSending ? "Enviando..." : countdown > 0 ? `Reenviar (${countdown}s)` : verifSent ? "Reenviar código" : "Verificar"}
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {!isAuthenticated && verifSent && !verifToken && (
+                <div className="form-group" style={{ marginTop: 8 }}>
+                  <label>Código de verificación</label>
+                  {verifMocked && (
+                    <div className="alert" style={{ marginBottom: 8, fontSize: 13 }}>
+                      Modo de prueba activo. Usa el código: <strong>{verifMockCode}</strong>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <input
+                      value={verifCode}
+                      onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      style={{ flex: 1, textAlign: "center", letterSpacing: 4, fontSize: 18 }}
+                    />
+                    <button type="button" className="btn btn-success" style={{ padding: "4px 12px", fontSize: 12 }}
+                      onClick={verificarCodigoVerificacion} disabled={verifCode.length < 6}>Confirmar</button>
+                  </div>
+                </div>
+              )}
 
               {!isAuthenticated && (
                 <div className="form-group">
@@ -1203,10 +1262,15 @@ export default function HomePage() {
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitLoading}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitLoading || (!isAuthenticated && !verifToken)}>
                   {submitLoading ? "Asignando..." : "Aceptar y Coordinar"}
                 </button>
               </div>
+              {!isAuthenticated && !verifToken && formName && formWhatsapp && (
+                <small style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 8, display: "block", textAlign: "center" }}>
+                  Debes verificar tu WhatsApp y completar la verificación de identidad (KYC) después de aceptar
+                </small>
+              )}
             </form>
           </div>
         </div>
