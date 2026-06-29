@@ -18,6 +18,7 @@ export default function RequestsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [envioForm, setEnvioForm] = useState<{ requestId: string; quantity: string } | null>(null);
   const [envioLoading, setEnvioLoading] = useState(false);
+  const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = getAuthHeaders();
@@ -76,8 +77,10 @@ export default function RequestsPage() {
 
   const handleCancel = async (id: string) => {
     if (!confirm("¿Cancelar esta solicitud?")) return;
+    setCancelLoadingId(id);
     const res = await fetch(`/api/solicitudes/${id}/estado`, { method: "PATCH", headers, body: JSON.stringify({ status: "cancelled" }) });
-    if (!res.ok) { setError((await res.json()).error); return; }
+    if (!res.ok) { setError((await res.json()).error); setCancelLoadingId(null); return; }
+    setCancelLoadingId(null);
     invalidateCache("/api/solicitudes");
   };
 
@@ -244,7 +247,10 @@ export default function RequestsPage() {
                       <td>{new Date(r.createdAt).toLocaleDateString()}</td>
                       <td>
                         {r.status === "open" && r.actorId === actor.id && (
-                          <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => handleCancel(r.id)}>Cancelar</button>
+                          <button className="btn btn-danger" style={{ padding: "4px 12px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}
+                            onClick={() => handleCancel(r.id)} disabled={cancelLoadingId === r.id}>
+                            {cancelLoadingId === r.id ? "Cancelando..." : "Cancelar"}
+                          </button>
                         )}
                         {r.status === "open" && actor.type === "warehouse" && (
                           <button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setEnvioForm({ requestId: r.id, quantity: String(r.quantity) })}>

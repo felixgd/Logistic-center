@@ -1080,6 +1080,10 @@ table tbody tr:last-child td {
   display: none;
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @media(max-width:768px){
   .homepage-nav-toolbar { display: none !important; }
   .header-hamburger{display:flex}

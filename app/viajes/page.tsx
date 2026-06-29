@@ -120,6 +120,9 @@ export default function TripsPage() {
   const [reportType, setReportType] = useState("retraso");
   const [reportDesc, setReportDesc] = useState("");
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [loadingAssign, setLoadingAssign] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(false);
 
   // Pagination for shipment history
   const [historyPage, setHistoryPage] = useState(1);
@@ -156,6 +159,7 @@ export default function TripsPage() {
 
   const assignTrip = async (id: string) => {
     setError("");
+    setLoadingAssign(true);
     try {
       const res = await fetch(`/api/viajes/${id}/asignar`, { method: "POST", headers, body: JSON.stringify({}) });
       if (!res.ok) {
@@ -172,10 +176,13 @@ export default function TripsPage() {
       invalidateCache("/api/viajes/disponibles");
     } catch (e: any) {
       showNotification("Error de red al asignar el viaje.", "error");
+    } finally {
+      setLoadingAssign(false);
     }
   };
 
   const updateStatus = async (id: string, estado: string) => {
+    setLoadingStatus(true);
     try {
       const res = await fetch(`/api/viajes/${id}/estado`, { method: "PATCH", headers, body: JSON.stringify({ status: estado }) });
       if (!res.ok) {
@@ -196,6 +203,8 @@ export default function TripsPage() {
       invalidateCache("/api/viajes/disponibles");
     } catch (e) {
       showNotification("Error de red al actualizar estado.", "error");
+    } finally {
+      setLoadingStatus(false);
     }
   };
 
@@ -427,10 +436,14 @@ export default function TripsPage() {
       showNotification("Por favor ingresa una descripción.", "error");
       return;
     }
+    setLoadingReport(true);
     // Simulate sending report
-    showNotification(`Incidente de tipo "${reportType.toUpperCase()}" reportado con éxito al Centro de Soporte.`, "success");
-    setIsReportModalOpen(false);
-    setReportDesc("");
+    setTimeout(() => {
+      showNotification(`Incidente de tipo "${reportType.toUpperCase()}" reportado con éxito al Centro de Soporte.`, "success");
+      setIsReportModalOpen(false);
+      setReportDesc("");
+      setLoadingReport(false);
+    }, 500);
   };
 
   // Helper values for simulated travel map overlay
@@ -1078,10 +1091,11 @@ export default function TripsPage() {
                         </p>
                         <button 
                           className="btn btn-success" 
-                          style={{ padding: "10px 24px", background: "#10b981", borderColor: "#10b981", color: "#ffffff", minWidth: 160 }}
+                          style={{ padding: "10px 24px", background: "#10b981", borderColor: "#10b981", color: "#ffffff", minWidth: 160, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                           onClick={() => updateStatus(activeTrip.id, activeTrip.estado === "in_transit" ? "delivered" : "in_transit")}
+                          disabled={loadingStatus}
                         >
-                          {activeTrip.estado === "in_transit" ? "FINALIZAR ENTREGA" : "INICIAR TRÁNSITO"}
+                          {loadingStatus ? "Actualizando..." : (activeTrip.estado === "in_transit" ? "FINALIZAR ENTREGA" : "INICIAR TRÁNSITO")}
                         </button>
                       </div>
                     </div>
@@ -1106,23 +1120,25 @@ export default function TripsPage() {
                           {actor?.type === "warehouse" && activeTrip.estado === "proposed" && actor?.id === activeTrip.almacen?.id && (
                             <button 
                               className="btn btn-success" 
-                              style={{ padding: "10px 24px", background: "#10b981", borderColor: "#10b981", color: "#ffffff", fontWeight: 700 }}
+                              style={{ padding: "10px 24px", background: "#10b981", borderColor: "#10b981", color: "#ffffff", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}
                               onClick={() => updateStatus(activeTrip.id, "approved")}
+                              disabled={loadingStatus}
                             >
-                              ACEPTAR ENVÍO
+                              {loadingStatus ? "Aprobando..." : "ACEPTAR ENVÍO"}
                             </button>
                           )}
                           
                           <button 
                             className="btn btn-danger" 
-                            style={{ padding: "10px 24px", background: "#ef4444", borderColor: "#ef4444", color: "#ffffff", fontWeight: 700 }}
+                            style={{ padding: "10px 24px", background: "#ef4444", borderColor: "#ef4444", color: "#ffffff", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}
+                            disabled={loadingStatus}
                             onClick={() => {
                               if (confirm("¿Estás seguro de que deseas cancelar este envío?")) {
                                 updateStatus(activeTrip.id, "cancelled");
                               }
                             }}
                           >
-                            CANCELAR ENVÍO
+                            {loadingStatus ? "Cancelando..." : "CANCELAR ENVÍO"}
                           </button>
                         </div>
                       </div>
@@ -1256,10 +1272,11 @@ export default function TripsPage() {
                           
                           <button 
                             className="btn btn-success" 
-                            style={{ width: "100%", padding: "8px 16px", background: "#10b981", borderColor: "#10b981", color: "#ffffff" }}
+                            style={{ width: "100%", padding: "8px 16px", background: "#10b981", borderColor: "#10b981", color: "#ffffff", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                             onClick={() => assignTrip(t.id)}
+                            disabled={loadingAssign}
                           >
-                            Tomar Envío
+                            {loadingAssign ? "Asignando..." : "Tomar Envío"}
                           </button>
                         </div>
                       );
@@ -1470,9 +1487,10 @@ export default function TripsPage() {
                   <button 
                     type="submit"
                     className="btn btn-danger" 
-                    style={{ flex: 1, background: "#ef4444", borderColor: "#ef4444" }}
+                    style={{ flex: 1, background: "#ef4444", borderColor: "#ef4444", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                    disabled={loadingReport}
                   >
-                    Enviar Reporte
+                    {loadingReport ? "Enviando..." : "Enviar Reporte"}
                   </button>
                 </div>
               </div>
