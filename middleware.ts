@@ -18,6 +18,13 @@ const KYC_EXEMPT_PATHS = [
   "/api/actores/refresh-token",
 ];
 
+// Rutas de comunicación API-a-API: mantienen la verificación de JWT pero
+// omiten CSRF (irrelevante fuera del navegador) y el gate de KYC. La capa de
+// API key (x-api-key) se valida en el handler con requireApiAuth (lib/apiauth).
+// Arranca vacía a propósito: activar una ruta = agregar aquí su path (exacto o
+// prefijo) y una llamada a requireApiAuth en su handler. Sin cambios adicionales.
+const API_TO_API_PATHS: string[] = [];
+
 export async function middleware(req: NextRequest) {
   if (!req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.next();
@@ -26,6 +33,10 @@ export async function middleware(req: NextRequest) {
   if (EXEMPT_PATHS.some((p) => req.nextUrl.pathname === p)) {
     return NextResponse.next();
   }
+
+  const isApiToApi = API_TO_API_PATHS.some(
+    (p) => req.nextUrl.pathname === p || req.nextUrl.pathname.startsWith(p + "/")
+  );
 
   const auth = req.headers.get("authorization");
 
@@ -44,7 +55,7 @@ export async function middleware(req: NextRequest) {
 
       const isOnKycExemptPath = KYC_EXEMPT_PATHS.some((p) => req.nextUrl.pathname === p);
 
-      if (!isKycMocked && actorType === "transporter" && diditStatus !== "approved" && !isOnKycExemptPath) {
+      if (!isApiToApi && !isKycMocked && actorType === "transporter" && diditStatus !== "approved" && !isOnKycExemptPath) {
         if (kycBlocked) {
           return NextResponse.json(
             { error: "Cuenta bloqueada por exceder intentos de verificación", code: "KYC_BLOCKED" },
@@ -57,7 +68,7 @@ export async function middleware(req: NextRequest) {
         );
       }
 
-      if (!isSafeMethod(req.method)) {
+      if (!isApiToApi && !isSafeMethod(req.method)) {
         const storedToken = (payload.csrfToken as string) || null;
         const result = validateCsrf(req, storedToken);
         if (!result.valid) {
