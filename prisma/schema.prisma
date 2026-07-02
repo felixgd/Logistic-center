@@ -246,3 +246,14 @@ model phone_verification {
   expiresAt DateTime @db.Timestamp(6)
   createdAt DateTime @default(now()) @db.Timestamp(6)
 }
+
+model api_key {
+  id         String    @id @default(cuid())
+  name       String
+  purpose    String
+  keyHash    String    @unique
+  trackingId String    @unique @default(cuid())
+  lastUsedAt DateTime? @db.Timestamp(6)
+  revokedAt  DateTime? @db.Timestamp(6)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
+}
