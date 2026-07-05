@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 
@@ -13,10 +14,10 @@ export async function DELETE(req: NextRequest) {
     if (!user) return jsonError(404, "Usuario no encontrado");
 
     // Collect all actor IDs owned by this user
-    const actors = await prisma.actor.findMany({ where: { userId }, select: { id: true } });
+    const actors: { id: string }[] = await prisma.actor.findMany({ where: { userId }, select: { id: true } });
     const actorIds = actors.map((a) => a.id);
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Remove transporter references (NoAction constraint)
       if (actorIds.length > 0) {
         await tx.shipment.updateMany({

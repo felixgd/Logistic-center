@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     const codigo = `VIA-${Date.now().toString(36).toUpperCase().slice(-5)}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
-    const shipment = await prisma.$transaction(async (tx: any) => {
+    const shipment = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.shipment.create({
         data: {
           createdByUserId: auth.userId,

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, requireTipo, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
@@ -74,6 +75,10 @@ export async function POST(req: NextRequest) {
 
     return Response.json(supply, { status: 201 });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return jsonError(400, "Este insumo ya está registrado.");
+    }
+    console.error("Create supply API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, jsonError } from "@/lib/auth";
 import { sanitizeText } from "@/lib/validation";
@@ -102,6 +103,10 @@ export async function PUT(req: NextRequest) {
       }
     });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return jsonError(400, "El recurso ya existe o viola una restricción única.");
+    }
+    console.error("Actors profile update API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

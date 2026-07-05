@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthActor, signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
@@ -106,6 +107,10 @@ export async function POST(req: NextRequest) {
       ...(verificationUrl ? { verificationUrl } : {}),
     }, { status: 201 });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return jsonError(400, "El perfil del actor ya existe.");
+    }
+    console.error("Actors creation API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

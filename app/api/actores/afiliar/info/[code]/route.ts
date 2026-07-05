@@ -19,6 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: { code: strin
       city: affiliateCode.actor.city,
     });
   } catch (error: any) {
-    return jsonError(500, error.message);
+    console.error("Affiliate code info API error:", error);
+    return jsonError(500, "An internal server error occurred.");
   }
 }

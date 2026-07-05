@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { signToken, jsonError } from "@/lib/auth";
 import { publishEvent } from "@/lib/pubsub";
@@ -131,6 +132,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return jsonError(400, "El correo, teléfono o documento ya está registrado.");
+    }
     console.error("Actors registration API error:", error);
     return jsonError(500, "An internal server error occurred.");
   }
